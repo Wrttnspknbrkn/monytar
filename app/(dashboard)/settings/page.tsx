@@ -1,8 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { User, Building2, Bell, Shield, Palette, Save, Check, Moon, Sun, Monitor } from "lucide-react"
-import { useStore, organization, organizationSettings } from "@/lib/store"
+import { User, Building2, Bell, Palette, Save, Check, Moon, Sun, Monitor, DollarSign } from "lucide-react"
+import { useStore, organization } from "@/lib/store"
 import { getRoleLabel, formatCurrency, cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,8 +16,27 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { toast } from "sonner"
 import { useTheme } from "next-themes"
 
+const SUPPORTED_CURRENCIES = [
+  { code: "USD", label: "US Dollar", symbol: "$" },
+  { code: "EUR", label: "Euro", symbol: "\u20AC" },
+  { code: "GBP", label: "British Pound", symbol: "\u00A3" },
+  { code: "CAD", label: "Canadian Dollar", symbol: "CA$" },
+  { code: "AUD", label: "Australian Dollar", symbol: "A$" },
+  { code: "JPY", label: "Japanese Yen", symbol: "\u00A5" },
+  { code: "CHF", label: "Swiss Franc", symbol: "CHF" },
+  { code: "NGN", label: "Nigerian Naira", symbol: "\u20A6" },
+  { code: "GHS", label: "Ghanaian Cedi", symbol: "GH\u20B5" },
+  { code: "KES", label: "Kenyan Shilling", symbol: "KSh" },
+  { code: "ZAR", label: "South African Rand", symbol: "R" },
+  { code: "INR", label: "Indian Rupee", symbol: "\u20B9" },
+  { code: "BRL", label: "Brazilian Real", symbol: "R$" },
+  { code: "MXN", label: "Mexican Peso", symbol: "MX$" },
+  { code: "SGD", label: "Singapore Dollar", symbol: "S$" },
+  { code: "AED", label: "UAE Dirham", symbol: "AED" },
+]
+
 export default function SettingsPage() {
-  const { currentUser, departments, updateUser } = useStore()
+  const { currentUser, departments, updateUser, orgSettings, updateOrgSettings } = useStore()
   const { theme, setTheme } = useTheme()
   const dept = departments.find((d) => d.id === currentUser.department_id)
   const [profileForm, setProfileForm] = useState({
@@ -25,6 +44,7 @@ export default function SettingsPage() {
     email: currentUser.email,
   })
   const [saved, setSaved] = useState(false)
+  const [currencySaved, setCurrencySaved] = useState(false)
   const [notifSettings, setNotifSettings] = useState({
     email_on_approve: true,
     email_on_reject: true,
@@ -39,6 +59,15 @@ export default function SettingsPage() {
     toast.success("Profile updated successfully")
     setTimeout(() => setSaved(false), 2000)
   }
+
+  function handleCurrencyChange(code: string) {
+    updateOrgSettings({ default_currency: code })
+    setCurrencySaved(true)
+    toast.success(`Currency changed to ${code}`)
+    setTimeout(() => setCurrencySaved(false), 2000)
+  }
+
+  const isAdminOrFinance = currentUser.role === "admin" || currentUser.role === "finance"
 
   return (
     <div className="flex flex-col gap-6 max-w-4xl">
@@ -151,25 +180,79 @@ export default function SettingsPage() {
           <Card className="border-border/60">
             <CardHeader className="pb-4">
               <CardTitle className="font-heading text-base font-bold">Organization Details</CardTitle>
-              <CardDescription className="text-xs">View your organization configuration</CardDescription>
+              <CardDescription className="text-xs">View and manage your organization configuration</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid sm:grid-cols-2 gap-y-5 gap-x-8">
                 {[
                   { label: "Organization", value: organization.name },
                   { label: "Slug", value: organization.slug },
-                  { label: "Plan", value: organization.plan.charAt(0).toUpperCase() + organization.plan.slice(1) },
-                  { label: "Currency", value: organizationSettings.default_currency },
-                  { label: "Auto Approve Threshold", value: formatCurrency(organizationSettings.auto_approve_threshold) },
-                  { label: "Require Receipts Above", value: formatCurrency(organizationSettings.require_receipt_above) },
-                  { label: "Max Attachments", value: String(organizationSettings.max_attachment_size_mb) + " MB" },
-                  { label: "Fiscal Year Start", value: `Month ${organizationSettings.fiscal_year_start_month}` },
+                  { label: "Plan", value: organization.subscription_tier.charAt(0).toUpperCase() + organization.subscription_tier.slice(1) },
+                  { label: "Auto Approve Threshold", value: formatCurrency(orgSettings.auto_approve_under_amount || 0, orgSettings.default_currency) },
+                  { label: "Require Receipts Above", value: formatCurrency(orgSettings.receipt_required_above_amount, orgSettings.default_currency) },
+                  { label: "Fiscal Year Start", value: orgSettings.fiscal_year_start },
                 ].map((item) => (
                   <div key={item.label}>
                     <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">{item.label}</p>
                     <p className="text-sm font-medium">{item.value}</p>
                   </div>
                 ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Currency Selector */}
+          <Card className="border-border/60">
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-2">
+                <DollarSign className="w-4 h-4 text-primary" />
+                <CardTitle className="font-heading text-base font-bold">Currency</CardTitle>
+              </div>
+              <CardDescription className="text-xs">
+                {isAdminOrFinance
+                  ? "Set the default currency for your organization. This affects how amounts are displayed across the platform."
+                  : "Your organization's default currency. Contact an admin to change this setting."}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+              <div className="flex items-center gap-4">
+                <div className="flex flex-col gap-2 flex-1 max-w-xs">
+                  <Label className="text-[13px] font-medium">Default Currency</Label>
+                  <Select
+                    value={orgSettings.default_currency}
+                    onValueChange={handleCurrencyChange}
+                    disabled={!isAdminOrFinance}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SUPPORTED_CURRENCIES.map((c) => (
+                        <SelectItem key={c.code} value={c.code}>
+                          <span className="flex items-center gap-2">
+                            <span className="font-mono text-xs text-muted-foreground w-8">{c.code}</span>
+                            <span>{c.label}</span>
+                            <span className="text-muted-foreground ml-1">({c.symbol})</span>
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {currencySaved && (
+                  <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 text-sm font-medium mt-6">
+                    <Check className="w-4 h-4" /> Updated
+                  </div>
+                )}
+              </div>
+              {!isAdminOrFinance && (
+                <p className="text-xs text-muted-foreground">Only admins and finance users can change the organization currency.</p>
+              )}
+              <div className="p-4 rounded-xl bg-secondary/40 border border-border/40">
+                <p className="text-xs text-muted-foreground">
+                  <span className="font-semibold text-foreground">Preview:</span> Amounts will display as{" "}
+                  <span className="font-mono font-semibold">{formatCurrency(1234.56, orgSettings.default_currency)}</span>
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -182,17 +265,17 @@ export default function SettingsPage() {
             <CardContent className="flex flex-col gap-4">
               <div className="flex flex-col gap-3">
                 {[
-                  { label: "Auto-approve expenses under threshold", description: `Requests under ${formatCurrency(organizationSettings.auto_approve_threshold)} are approved automatically`, enabled: true },
-                  { label: "Manager approval required", description: "All requests require direct manager approval", enabled: organizationSettings.approval_chain.includes("manager") },
-                  { label: "Finance review for large amounts", description: "Finance team reviews requests above department thresholds", enabled: organizationSettings.approval_chain.includes("finance") },
-                  { label: "Receipt requirement", description: `Receipts required for expenses over ${formatCurrency(organizationSettings.require_receipt_above)}`, enabled: true },
+                  { label: "Auto-approve expenses under threshold", description: `Requests under ${formatCurrency(orgSettings.auto_approve_under_amount || 0, orgSettings.default_currency)} are approved automatically`, enabled: true },
+                  { label: "Manager approval required", description: "All requests require direct manager approval", enabled: orgSettings.require_manager_approval },
+                  { label: "Finance review for large amounts", description: "Finance team reviews requests above department thresholds", enabled: orgSettings.require_finance_approval },
+                  { label: "Receipt requirement", description: `Receipts required for expenses over ${formatCurrency(orgSettings.receipt_required_above_amount, orgSettings.default_currency)}`, enabled: orgSettings.require_receipts },
                 ].map((rule) => (
                   <div key={rule.label} className="flex items-start justify-between p-4 rounded-xl bg-secondary/40 border border-border/40">
                     <div className="flex-1 mr-4">
                       <p className="text-sm font-medium">{rule.label}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">{rule.description}</p>
                     </div>
-                    <Switch checked={rule.enabled} onCheckedChange={() => toast.info("Workflow settings are demo only")} />
+                    <Switch checked={rule.enabled} onCheckedChange={() => toast.info("Workflow settings will be editable with Supabase integration")} />
                   </div>
                 ))}
               </div>

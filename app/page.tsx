@@ -163,15 +163,9 @@ export default function LandingPage() {
             <span className="text-lg font-heading font-bold tracking-tight">SpendFlow</span>
           </Link>
           <nav className="hidden md:flex items-center gap-8">
-            {["Features", "Pricing", "About"].map((item) => (
-              <a
-                key={item}
-                href={`#${item.toLowerCase()}`}
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200"
-              >
-                {item}
-              </a>
-            ))}
+            <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200">Features</a>
+            <a href="#pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200">Pricing</a>
+            <Link href="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200">About</Link>
           </nav>
           <div className="flex items-center gap-3">
             <Link href="/login">
@@ -525,31 +519,44 @@ export default function LandingPage() {
             <div>
               <h4 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-4">Product</h4>
               <ul className="flex flex-col gap-2.5">
-                {["Features", "Pricing", "Integrations", "Changelog"].map((item) => (
-                  <li key={item}><a href={`#${item.toLowerCase()}`} className="text-sm text-muted-foreground hover:text-foreground transition-colors">{item}</a></li>
+                {[
+                  { label: "Features", href: "#features" },
+                  { label: "Pricing", href: "#pricing" },
+                  { label: "Integrations", href: "#integrations" },
+                  { label: "Changelog", href: "#changelog" },
+                ].map((item) => (
+                  <li key={item.label}><a href={item.href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">{item.label}</a></li>
                 ))}
               </ul>
             </div>
             <div>
               <h4 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-4">Company</h4>
               <ul className="flex flex-col gap-2.5">
-                {["About", "Blog", "Careers", "Contact"].map((item) => (
-                  <li key={item}><a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">{item}</a></li>
+                {[
+                  { label: "About", href: "/about" },
+                  { label: "Contact", href: "/contact" },
+                ].map((item) => (
+                  <li key={item.label}><Link href={item.href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">{item.label}</Link></li>
                 ))}
               </ul>
             </div>
             <div>
               <h4 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-4">Legal</h4>
               <ul className="flex flex-col gap-2.5">
-                {["Privacy", "Terms", "Security", "GDPR"].map((item) => (
-                  <li key={item}><a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">{item}</a></li>
+                {[
+                  { label: "Privacy", href: "/privacy" },
+                  { label: "Terms", href: "/terms" },
+                  { label: "Security", href: "/security" },
+                  { label: "GDPR", href: "/gdpr" },
+                ].map((item) => (
+                  <li key={item.label}><Link href={item.href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">{item.label}</Link></li>
                 ))}
               </ul>
             </div>
           </div>
           <div className="pt-8 border-t border-border flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-sm text-muted-foreground">&copy; 2026 SpendFlow. All rights reserved.</p>
-            <p className="text-sm text-muted-foreground">Developed by <span className="font-semibold text-foreground">GydGen</span></p>
+            <p className="text-sm text-muted-foreground">Developed by <a href="https://www.gydgen.com" target="_blank" rel="noopener noreferrer" className="font-semibold text-foreground hover:text-primary transition-colors">GydGen</a></p>
           </div>
         </div>
       </footer>

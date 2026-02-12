@@ -140,7 +140,7 @@ export function Sidebar() {
           </Button>
           {!collapsed && (
             <p className="text-[10px] text-sidebar-foreground/40 text-center pb-1">
-              Developed by <span className="font-medium text-sidebar-foreground/60">GydGen</span>
+              Developed by <a href="https://www.gydgen.com" target="_blank" rel="noopener noreferrer" className="font-medium text-sidebar-foreground/60 hover:text-sidebar-primary transition-colors">GydGen</a>
             </p>
           )}
         </div>

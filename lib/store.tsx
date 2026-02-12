@@ -38,6 +38,7 @@ interface StoreState {
   approvalWorkflows: ApprovalWorkflow[]
   activityLogs: ActivityLog[]
   budgetAlerts: BudgetAlert[]
+  orgSettings: typeof import("./mock-data").organizationSettings
 }
 
 interface StoreActions {
@@ -59,6 +60,8 @@ interface StoreActions {
   // Users
   addUser: (user: User) => void
   updateUser: (id: string, updates: Partial<User>) => void
+  // Org settings
+  updateOrgSettings: (updates: Partial<StoreState["orgSettings"]>) => void
   // Notifications
   markNotificationRead: (id: string) => void
   markAllNotificationsRead: () => void
@@ -92,6 +95,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [approvalWorkflows, setApprovalWorkflows] = useState<ApprovalWorkflow[]>(initialWorkflows)
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>(initialLogs)
   const [budgetAlerts] = useState<BudgetAlert[]>(initialAlerts)
+  const [orgSettings, setOrgSettings] = useState(organizationSettings)
 
   const switchRole = useCallback(
     (role: UserRole) => {
@@ -290,6 +294,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, ...updates, updated_at: new Date().toISOString() } : u)))
   }, [])
 
+  const updateOrgSettings = useCallback((updates: Partial<typeof organizationSettings>) => {
+    setOrgSettings((prev) => ({ ...prev, ...updates }))
+  }, [])
+
   const markNotificationRead = useCallback((id: string) => {
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: true, read_at: new Date().toISOString() } : n)))
   }, [])
@@ -373,6 +381,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     approvalWorkflows,
     activityLogs,
     budgetAlerts,
+    orgSettings,
     switchRole,
     switchUser,
     addExpenseRequest,
@@ -387,6 +396,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     updateDepartment,
     addUser,
     updateUser,
+    updateOrgSettings,
     markNotificationRead,
     markAllNotificationsRead,
     getRequestWithRelations,
