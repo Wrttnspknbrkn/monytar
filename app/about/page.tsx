@@ -37,10 +37,10 @@ const values = [
 ]
 
 const stats = [
-  { label: "Founded", value: "2024" },
-  { label: "Team Members", value: "42" },
-  { label: "Organizations Served", value: "250+" },
-  { label: "Countries", value: "18" },
+  { label: "Founded", value: "2026" },
+  { label: "Team Members", value: "12" },
+  { label: "Launch Status", value: "Beta" },
+  { label: "Vision", value: "Global" },
 ]
 
 const team = [
@@ -110,8 +110,8 @@ export default function AboutPage() {
             </h2>
             <div className="flex flex-col gap-4 text-muted-foreground leading-relaxed">
               <p>
-                In 2024, our founders were running a growing company and realized they were spending more time
-                chasing expense receipts and approval signatures than actually growing the business.
+                Our founders spent years running growing companies and realized they were spending more time
+                chasing expense receipts and approval signatures than actually growing their businesses.
               </p>
               <p>
                 Existing tools were either too complex for small teams or too simple for scaling organizations.
@@ -119,8 +119,9 @@ export default function AboutPage() {
                 intuitive enough that any employee can submit an expense in under 30 seconds.
               </p>
               <p>
-                Today, we serve over 250 organizations across 18 countries, processing millions in expense
-                requests every month. And we are just getting started.
+                We're launching in 2026 with a vision to become the expense management platform that teams
+                actually love to use. Our beta is already showing promising results, and we're excited to
+                grow alongside the organizations we serve.
               </p>
             </div>
           </div>
@@ -200,7 +201,7 @@ export default function AboutPage() {
             Ready to simplify your expenses?
           </h2>
           <p className="text-lg text-muted-foreground mb-8 max-w-xl mx-auto leading-relaxed">
-            Join the hundreds of teams already saving time and money with SpendFlow.
+            Be among the first teams to experience the future of expense management with SpendFlow.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link href="/signup">
