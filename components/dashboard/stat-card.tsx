@@ -1,3 +1,5 @@
+"use client"
+
 import type { LucideIcon } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
@@ -9,32 +11,43 @@ interface StatCardProps {
   icon: LucideIcon
   trend?: { value: string; positive: boolean }
   className?: string
+  iconClassName?: string
 }
 
-export function StatCard({ title, value, icon: Icon, trend, className }: StatCardProps) {
+export function StatCard({ title, value, icon: Icon, trend, className, iconClassName }: StatCardProps) {
   return (
-    <Card className={cn("", className)}>
-      <CardContent className="p-6">
+    <Card
+      className={cn(
+        "group relative overflow-hidden border-border/60 hover:border-primary/20 transition-all duration-300 hover:shadow-md hover:shadow-foreground/[0.03]",
+        className,
+      )}
+    >
+      <CardContent className="p-5">
         <div className="flex items-start justify-between">
           <div className="flex flex-col gap-1">
-            <span className="text-sm text-muted-foreground">{title}</span>
-            <span className="text-2xl font-bold">{value}</span>
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{title}</span>
+            <span className="text-2xl font-heading font-extrabold tracking-tight animate-count-up">{value}</span>
           </div>
-          <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
+          <div
+            className={cn(
+              "flex items-center justify-center w-10 h-10 rounded-xl bg-primary/[0.08] transition-colors duration-300 group-hover:bg-primary/[0.12]",
+              iconClassName,
+            )}
+          >
             <Icon className="w-5 h-5 text-primary" />
           </div>
         </div>
         {trend && (
-          <div className="flex items-center gap-1 mt-3">
+          <div className="flex items-center gap-1.5 mt-3">
             {trend.positive ? (
               <TrendingUp className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
             ) : (
-              <TrendingDown className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
+              <TrendingDown className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
             )}
             <span
               className={cn(
-                "text-xs font-medium",
-                trend.positive ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400",
+                "text-xs font-semibold",
+                trend.positive ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400",
               )}
             >
               {trend.value}
@@ -43,6 +56,8 @@ export function StatCard({ title, value, icon: Icon, trend, className }: StatCar
           </div>
         )}
       </CardContent>
+      {/* Subtle hover gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.01] to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
     </Card>
   )
 }

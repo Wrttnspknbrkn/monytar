@@ -10,35 +10,39 @@ import {
   DollarSign,
   AlertTriangle,
   Users,
-  Building2,
   Plus,
   ArrowRight,
   CreditCard,
-  TrendingUp,
 } from "lucide-react"
 import { useStore } from "@/lib/store"
-import { formatCurrency, formatRelativeTime, formatDate } from "@/lib/utils"
+import { formatCurrency, formatRelativeTime, cn } from "@/lib/utils"
 import { StatCard } from "@/components/dashboard/stat-card"
 import { RequestStatusBadge } from "@/components/requests/request-status-badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
   ResponsiveContainer,
   PieChart,
   Pie,
   Cell,
   LineChart,
   Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  BarChart,
+  Bar,
 } from "recharts"
 
-const CHART_COLORS = ["hsl(217, 91%, 60%)", "hsl(160, 60%, 45%)", "hsl(38, 92%, 50%)", "hsl(0, 84%, 60%)", "hsl(270, 60%, 55%)"]
+const CHART_COLORS = [
+  "hsl(221, 83%, 53%)",
+  "hsl(162, 64%, 41%)",
+  "hsl(35, 92%, 52%)",
+  "hsl(346, 77%, 50%)",
+  "hsl(262, 60%, 55%)",
+]
 
 export default function DashboardPage() {
   const { currentUser, expenseRequests, departments, users, vendors, getDepartmentSpend, getPendingApprovals, budgetAlerts } =
@@ -46,14 +50,15 @@ export default function DashboardPage() {
 
   const role = currentUser.role
 
-  // Employee stats
-  const myRequests = useMemo(() => expenseRequests.filter((r) => r.employee_id === currentUser.id), [expenseRequests, currentUser])
+  const myRequests = useMemo(
+    () => expenseRequests.filter((r) => r.employee_id === currentUser.id),
+    [expenseRequests, currentUser],
+  )
   const myPending = myRequests.filter((r) => r.status === "pending").length
   const myApproved = myRequests.filter((r) => r.status === "approved" || r.status === "paid")
   const myRejected = myRequests.filter((r) => r.status === "rejected").length
   const myTotalApproved = myApproved.reduce((s, r) => s + r.amount, 0)
 
-  // Manager/Finance/Admin stats
   const pendingApprovals = getPendingApprovals()
   const pendingTotal = pendingApprovals.reduce((s, r) => s + r.amount, 0)
   const allApproved = expenseRequests.filter((r) => r.status === "approved" || r.status === "paid")
@@ -61,7 +66,6 @@ export default function DashboardPage() {
   const totalPaidAmount = expenseRequests.filter((r) => r.status === "paid").reduce((s, r) => s + r.amount, 0)
   const awaitingPayment = expenseRequests.filter((r) => r.status === "approved" && r.payment_status === "unpaid")
 
-  // Category breakdown
   const categoryData = useMemo(() => {
     const cats: Record<string, number> = {}
     const source = role === "employee" ? myRequests : expenseRequests
@@ -74,7 +78,6 @@ export default function DashboardPage() {
     }))
   }, [expenseRequests, myRequests, role])
 
-  // Monthly trend (mock)
   const monthlyTrend = [
     { month: "Sep", amount: 12400 },
     { month: "Oct", amount: 15800 },
@@ -84,13 +87,11 @@ export default function DashboardPage() {
     { month: "Feb", amount: 14300 },
   ]
 
-  // Department budget overview
   const deptBudgets = departments.map((d) => {
     const spend = getDepartmentSpend(d.id)
     return { ...d, spend, pct: d.budget_amount > 0 ? Math.round((spend / d.budget_amount) * 100) : 0 }
   })
 
-  // Recent requests
   const recentRequests = (role === "employee" ? myRequests : expenseRequests)
     .slice()
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
@@ -101,14 +102,14 @@ export default function DashboardPage() {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground text-sm">
-            Welcome back, {currentUser.full_name.split(" ")[0]}. Here&apos;s your overview.
+          <h1 className="font-heading text-2xl font-extrabold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">
+            Welcome back, {currentUser.full_name.split(" ")[0]}. {"Here's your overview."}
           </p>
         </div>
         {role === "employee" && (
           <Link href="/requests/new">
-            <Button>
+            <Button className="shadow-sm shadow-primary/25 font-semibold">
               <Plus className="w-4 h-4 mr-2" /> New Request
             </Button>
           </Link>
@@ -119,71 +120,88 @@ export default function DashboardPage() {
       {role === "employee" ? (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard title="Pending" value={String(myPending)} icon={Clock} />
-          <StatCard title="Approved Total" value={formatCurrency(myTotalApproved)} icon={CheckCircle2} trend={{ value: "+12%", positive: true }} />
+          <StatCard title="Approved" value={formatCurrency(myTotalApproved)} icon={CheckCircle2} trend={{ value: "+12%", positive: true }} />
           <StatCard title="Rejected" value={String(myRejected)} icon={XCircle} />
-          <StatCard title="This Month" value={formatCurrency(myRequests.filter((r) => r.status !== "draft").reduce((s, r) => s + r.amount, 0))} icon={DollarSign} />
+          <StatCard
+            title="This Month"
+            value={formatCurrency(myRequests.filter((r) => r.status !== "draft").reduce((s, r) => s + r.amount, 0))}
+            icon={DollarSign}
+          />
         </div>
       ) : (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
-            title="Pending Approvals"
+            title="Pending"
             value={String(pendingApprovals.length)}
             icon={Clock}
             trend={pendingApprovals.length > 0 ? { value: formatCurrency(pendingTotal), positive: false } : undefined}
           />
-          <StatCard title="Total Approved" value={formatCurrency(totalApprovedAmount)} icon={CheckCircle2} trend={{ value: "+8.5%", positive: true }} />
-          <StatCard title="Total Paid" value={formatCurrency(totalPaidAmount)} icon={CreditCard} />
+          <StatCard title="Approved" value={formatCurrency(totalApprovedAmount)} icon={CheckCircle2} trend={{ value: "+8.5%", positive: true }} />
+          <StatCard title="Paid" value={formatCurrency(totalPaidAmount)} icon={CreditCard} />
           {role === "admin" ? (
-            <StatCard title="Active Users" value={String(users.filter((u) => u.status === "active").length)} icon={Users} />
+            <StatCard title="Users" value={String(users.filter((u) => u.status === "active").length)} icon={Users} />
           ) : role === "finance" ? (
-            <StatCard title="Awaiting Payment" value={String(awaitingPayment.length)} icon={DollarSign} />
+            <StatCard title="Awaiting Pay" value={String(awaitingPayment.length)} icon={DollarSign} />
           ) : (
-            <StatCard title="Team Members" value={String(users.filter((u) => u.department_id === currentUser.department_id).length)} icon={Users} />
+            <StatCard
+              title="Team"
+              value={String(users.filter((u) => u.department_id === currentUser.department_id).length)}
+              icon={Users}
+            />
           )}
         </div>
       )}
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Main chart */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-base">Spending Trend</CardTitle>
-            <CardDescription>Monthly expense totals over the last 6 months</CardDescription>
+      <div className="grid lg:grid-cols-3 gap-5">
+        {/* Spending Trend Chart */}
+        <Card className="lg:col-span-2 border-border/60">
+          <CardHeader className="pb-2">
+            <CardTitle className="font-heading text-base font-bold">Spending Trend</CardTitle>
+            <CardDescription className="text-xs">Monthly expense totals over the last 6 months</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-64">
+            <div className="h-60">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={monthlyTrend}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                  <XAxis dataKey="month" className="text-xs" tick={{ fill: "hsl(var(--muted-foreground))" }} />
-                  <YAxis className="text-xs" tick={{ fill: "hsl(var(--muted-foreground))" }} tickFormatter={(v) => `$${v / 1000}k`} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="month" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v / 1000}k`} />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: "hsl(var(--card))",
                       border: "1px solid hsl(var(--border))",
-                      borderRadius: "8px",
+                      borderRadius: "10px",
+                      fontSize: "13px",
                       color: "hsl(var(--foreground))",
+                      boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)",
                     }}
                     formatter={(value: number) => [formatCurrency(value), "Amount"]}
                   />
-                  <Line type="monotone" dataKey="amount" stroke="hsl(217, 91%, 60%)" strokeWidth={2} dot={{ r: 4 }} />
+                  <Line
+                    type="monotone"
+                    dataKey="amount"
+                    stroke="hsl(221, 83%, 53%)"
+                    strokeWidth={2.5}
+                    dot={{ r: 4, fill: "hsl(var(--card))", stroke: "hsl(221, 83%, 53%)", strokeWidth: 2 }}
+                    activeDot={{ r: 6, fill: "hsl(221, 83%, 53%)", stroke: "hsl(var(--card))", strokeWidth: 2 }}
+                  />
                 </LineChart>
               </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>
 
-        {/* Category breakdown */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">By Category</CardTitle>
-            <CardDescription>Spending breakdown by expense type</CardDescription>
+        {/* Category Breakdown */}
+        <Card className="border-border/60">
+          <CardHeader className="pb-2">
+            <CardTitle className="font-heading text-base font-bold">By Category</CardTitle>
+            <CardDescription className="text-xs">Spending breakdown by type</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-48">
+            <div className="h-44">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={categoryData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} paddingAngle={4} dataKey="value">
+                  <Pie data={categoryData} cx="50%" cy="50%" innerRadius={50} outerRadius={76} paddingAngle={3} dataKey="value">
                     {categoryData.map((_, index) => (
                       <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
                     ))}
@@ -192,7 +210,8 @@ export default function DashboardPage() {
                     contentStyle={{
                       backgroundColor: "hsl(var(--card))",
                       border: "1px solid hsl(var(--border))",
-                      borderRadius: "8px",
+                      borderRadius: "10px",
+                      fontSize: "13px",
                       color: "hsl(var(--foreground))",
                     }}
                     formatter={(value: number) => [formatCurrency(value), "Amount"]}
@@ -200,11 +219,11 @@ export default function DashboardPage() {
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <div className="flex flex-wrap gap-3 mt-2">
+            <div className="flex flex-wrap gap-x-4 gap-y-2 mt-3">
               {categoryData.map((cat, i) => (
                 <div key={cat.name} className="flex items-center gap-1.5 text-xs">
-                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }} />
-                  <span className="text-muted-foreground">{cat.name}</span>
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }} />
+                  <span className="text-muted-foreground font-medium">{cat.name}</span>
                 </div>
               ))}
             </div>
@@ -212,36 +231,36 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div className="grid lg:grid-cols-2 gap-5">
         {/* Recent Requests */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
+        <Card className="border-border/60">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div>
-              <CardTitle className="text-base">Recent Requests</CardTitle>
-              <CardDescription>Latest expense submissions</CardDescription>
+              <CardTitle className="font-heading text-base font-bold">Recent Requests</CardTitle>
+              <CardDescription className="text-xs">Latest expense submissions</CardDescription>
             </div>
             <Link href="/requests">
-              <Button variant="ghost" size="sm">
-                View all <ArrowRight className="w-4 h-4 ml-1" />
+              <Button variant="ghost" size="sm" className="text-xs font-semibold text-primary hover:text-primary">
+                View all <ArrowRight className="w-3.5 h-3.5 ml-1" />
               </Button>
             </Link>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1">
               {recentRequests.map((req) => (
                 <Link key={req.id} href={`/requests/${req.id}`}>
-                  <div className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted/50 transition-colors">
-                    <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-muted">
+                  <div className="flex items-center gap-4 p-3 rounded-xl hover:bg-secondary/60 transition-colors duration-200">
+                    <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-secondary">
                       <FileText className="w-4 h-4 text-muted-foreground" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{req.purpose}</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-muted-foreground mt-0.5">
                         {req.request_number} &middot; {formatRelativeTime(req.created_at)}
                       </p>
                     </div>
-                    <div className="flex flex-col items-end gap-1">
-                      <span className="text-sm font-semibold">{formatCurrency(req.amount)}</span>
+                    <div className="flex flex-col items-end gap-1.5">
+                      <span className="text-sm font-heading font-bold">{formatCurrency(req.amount)}</span>
                       <RequestStatusBadge status={req.status} />
                     </div>
                   </div>
@@ -251,12 +270,12 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Budget Overview / Pending Approvals */}
+        {/* Budget or Vendor panel */}
         {role !== "employee" ? (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Department Budgets</CardTitle>
-              <CardDescription>Current budget utilization across departments</CardDescription>
+          <Card className="border-border/60">
+            <CardHeader className="pb-2">
+              <CardTitle className="font-heading text-base font-bold">Department Budgets</CardTitle>
+              <CardDescription className="text-xs">Current budget utilization</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex flex-col gap-5">
@@ -264,20 +283,26 @@ export default function DashboardPage() {
                   <div key={dept.id} className="flex flex-col gap-2">
                     <div className="flex items-center justify-between text-sm">
                       <span className="font-medium">{dept.name}</span>
-                      <span className="text-muted-foreground">
+                      <span className="text-xs text-muted-foreground tabular-nums">
                         {formatCurrency(dept.spend)} / {formatCurrency(dept.budget_amount)}
                       </span>
                     </div>
-                    <Progress
-                      value={Math.min(dept.pct, 100)}
-                      className="h-2"
-                    />
+                    <Progress value={Math.min(dept.pct, 100)} className="h-2" />
                     <div className="flex items-center justify-between">
-                      <span className={`text-xs font-medium ${dept.pct >= 90 ? "text-red-600 dark:text-red-400" : dept.pct >= 75 ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400"}`}>
+                      <span
+                        className={cn(
+                          "text-xs font-semibold",
+                          dept.pct >= 90
+                            ? "text-red-600 dark:text-red-400"
+                            : dept.pct >= 75
+                              ? "text-amber-600 dark:text-amber-400"
+                              : "text-emerald-600 dark:text-emerald-400",
+                        )}
+                      >
                         {dept.pct}% used
                       </span>
                       {dept.pct >= 75 && (
-                        <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+                        <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 font-medium">
                           <AlertTriangle className="w-3 h-3" />
                           {dept.pct >= 90 ? "Critical" : "Warning"}
                         </span>
@@ -287,17 +312,19 @@ export default function DashboardPage() {
                 ))}
               </div>
 
-              {/* Budget Alerts */}
               {budgetAlerts.length > 0 && (
                 <div className="mt-6 pt-4 border-t border-border">
-                  <h4 className="text-sm font-medium mb-3">Active Alerts</h4>
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Active Alerts</h4>
                   <div className="flex flex-col gap-2">
                     {budgetAlerts.map((alert) => {
                       const dept = departments.find((d) => d.id === alert.department_id)
                       return (
-                        <div key={alert.id} className="flex items-center gap-3 p-2 rounded-lg bg-amber-50 dark:bg-amber-900/10 text-sm">
+                        <div
+                          key={alert.id}
+                          className="flex items-center gap-3 p-2.5 rounded-lg bg-amber-50 dark:bg-amber-900/10 border border-amber-200/50 dark:border-amber-800/30 text-sm"
+                        >
                           <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-                          <span className="text-amber-800 dark:text-amber-300">
+                          <span className="text-amber-800 dark:text-amber-300 text-xs font-medium">
                             {dept?.name} at {alert.threshold_percentage}% of budget
                           </span>
                         </div>
@@ -309,10 +336,10 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         ) : (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Top Vendors</CardTitle>
-              <CardDescription>Your most used vendors this period</CardDescription>
+          <Card className="border-border/60">
+            <CardHeader className="pb-2">
+              <CardTitle className="font-heading text-base font-bold">Top Vendors</CardTitle>
+              <CardDescription className="text-xs">Your most used vendors this period</CardDescription>
             </CardHeader>
             <CardContent>
               {(() => {
@@ -331,19 +358,20 @@ export default function DashboardPage() {
                   <div className="h-48">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={data} layout="vertical">
-                        <CartesianGrid strokeDasharray="3 3" className="stroke-border" horizontal={false} />
-                        <XAxis type="number" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} tickFormatter={(v) => `$${v}`} />
-                        <YAxis type="category" dataKey="name" width={120} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
+                        <XAxis type="number" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}`} />
+                        <YAxis type="category" dataKey="name" width={100} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} axisLine={false} tickLine={false} />
                         <Tooltip
                           contentStyle={{
                             backgroundColor: "hsl(var(--card))",
                             border: "1px solid hsl(var(--border))",
-                            borderRadius: "8px",
+                            borderRadius: "10px",
+                            fontSize: "13px",
                             color: "hsl(var(--foreground))",
                           }}
                           formatter={(value: number) => [formatCurrency(value), "Spent"]}
                         />
-                        <Bar dataKey="amount" fill="hsl(217, 91%, 60%)" radius={[0, 4, 4, 0]} />
+                        <Bar dataKey="amount" fill="hsl(221, 83%, 53%)" radius={[0, 6, 6, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -354,37 +382,37 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* Pending Approvals for managers */}
+      {/* Pending Approvals */}
       {role !== "employee" && pendingApprovals.length > 0 && (
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
+        <Card className="border-border/60">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div>
-              <CardTitle className="text-base">Pending Approvals</CardTitle>
-              <CardDescription>{pendingApprovals.length} requests awaiting your review</CardDescription>
+              <CardTitle className="font-heading text-base font-bold">Pending Approvals</CardTitle>
+              <CardDescription className="text-xs">{pendingApprovals.length} requests awaiting your review</CardDescription>
             </div>
             <Link href="/approvals">
-              <Button variant="ghost" size="sm">
-                View all <ArrowRight className="w-4 h-4 ml-1" />
+              <Button variant="ghost" size="sm" className="text-xs font-semibold text-primary hover:text-primary">
+                View all <ArrowRight className="w-3.5 h-3.5 ml-1" />
               </Button>
             </Link>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1">
               {pendingApprovals.slice(0, 5).map((req) => {
                 const emp = users.find((u) => u.id === req.employee_id)
                 return (
                   <Link key={req.id} href={`/requests/${req.id}`}>
-                    <div className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted/50 transition-colors">
-                      <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-amber-100 dark:bg-amber-900/30">
+                    <div className="flex items-center gap-4 p-3 rounded-xl hover:bg-secondary/60 transition-colors duration-200">
+                      <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200/50 dark:border-amber-800/30">
                         <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{req.purpose}</p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-muted-foreground mt-0.5">
                           by {emp?.full_name || "Unknown"} &middot; {formatRelativeTime(req.submitted_at || req.created_at)}
                         </p>
                       </div>
-                      <span className="text-sm font-semibold">{formatCurrency(req.amount)}</span>
+                      <span className="text-sm font-heading font-bold">{formatCurrency(req.amount)}</span>
                     </div>
                   </Link>
                 )

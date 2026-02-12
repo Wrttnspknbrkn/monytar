@@ -2,9 +2,9 @@
 
 import { useMemo, useState } from "react"
 import Link from "next/link"
-import { Plus, Search, FileText } from "lucide-react"
+import { Plus, Search, FileText, SlidersHorizontal } from "lucide-react"
 import { useStore } from "@/lib/store"
-import { formatCurrency, formatDate, cn, getCategoryLabel } from "@/lib/utils"
+import { formatCurrency, formatDate, getCategoryLabel } from "@/lib/utils"
 import { RequestStatusBadge } from "@/components/requests/request-status-badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,16 +12,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent } from "@/components/ui/card"
-import type { RequestStatus } from "@/lib/types"
+import type { ExpenseCategory } from "@/lib/types"
 
 export default function RequestsPage() {
-  const { currentUser, expenseRequests, getMyRequests, getUserById, getVendorById, markRequestPaid } = useStore()
+  const { currentUser, expenseRequests, getMyRequests, getUserById, getVendorById } = useStore()
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [categoryFilter, setCategoryFilter] = useState<string>("all")
 
   const isEmployee = currentUser.role === "employee"
-  const isFinance = currentUser.role === "finance" || currentUser.role === "admin"
   const requests = isEmployee ? getMyRequests() : expenseRequests
 
   const filtered = useMemo(() => {
@@ -50,11 +49,11 @@ export default function RequestsPage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">{isEmployee ? "My Requests" : "All Requests"}</h1>
-          <p className="text-muted-foreground text-sm">{filtered.length} expense requests</p>
+          <h1 className="font-heading text-2xl font-extrabold tracking-tight">{isEmployee ? "My Requests" : "All Requests"}</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">{filtered.length} expense requests</p>
         </div>
         <Link href="/requests/new">
-          <Button>
+          <Button className="shadow-sm shadow-primary/25 font-semibold">
             <Plus className="w-4 h-4 mr-2" /> New Request
           </Button>
         </Link>
@@ -62,7 +61,7 @@ export default function RequestsPage() {
 
       {/* Status Tabs */}
       <Tabs value={statusFilter} onValueChange={setStatusFilter}>
-        <TabsList className="flex-wrap h-auto gap-1">
+        <TabsList className="h-9 gap-0.5 bg-secondary/60 p-0.5">
           {[
             { value: "all", label: "All" },
             { value: "draft", label: "Drafts" },
@@ -71,10 +70,10 @@ export default function RequestsPage() {
             { value: "rejected", label: "Rejected" },
             { value: "paid", label: "Paid" },
           ].map((tab) => (
-            <TabsTrigger key={tab.value} value={tab.value} className="text-xs">
+            <TabsTrigger key={tab.value} value={tab.value} className="text-xs font-semibold h-8 px-3">
               {tab.label}
               {statusCounts[tab.value] ? (
-                <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground text-[10px]">
+                <span className="ml-1.5 px-1.5 py-0.5 rounded bg-background text-muted-foreground text-[10px] font-bold tabular-nums">
                   {statusCounts[tab.value]}
                 </span>
               ) : null}
@@ -86,18 +85,24 @@ export default function RequestsPage() {
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input placeholder="Search requests..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Search requests..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9 h-9 text-sm"
+          />
         </div>
         <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="w-44">
+          <SelectTrigger className="w-44 h-9 text-sm">
+            <SlidersHorizontal className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
             <SelectValue placeholder="Category" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Categories</SelectItem>
-            {["travel", "meals", "supplies", "software", "equipment", "other"].map((c) => (
+            {(["travel", "meals", "supplies", "software", "equipment", "other"] as ExpenseCategory[]).map((c) => (
               <SelectItem key={c} value={c}>
-                {getCategoryLabel(c as any)}
+                {getCategoryLabel(c)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -105,29 +110,31 @@ export default function RequestsPage() {
       </div>
 
       {/* Table */}
-      <Card>
+      <Card className="border-border/60 overflow-hidden">
         <CardContent className="p-0">
           {filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <FileText className="w-12 h-12 text-muted-foreground/40 mb-4" />
-              <h3 className="font-medium mb-1">No requests found</h3>
-              <p className="text-sm text-muted-foreground">
-                {search || statusFilter !== "all" ? "Try adjusting your filters" : "Create your first expense request"}
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-secondary mb-4">
+                <FileText className="w-7 h-7 text-muted-foreground/40" />
+              </div>
+              <h3 className="font-heading font-bold mb-1">No requests found</h3>
+              <p className="text-sm text-muted-foreground max-w-xs">
+                {search || statusFilter !== "all" ? "Try adjusting your filters" : "Create your first expense request to get started"}
               </p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Request #</TableHead>
-                    {!isEmployee && <TableHead>Employee</TableHead>}
-                    <TableHead>Purpose</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Vendor</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Status</TableHead>
+                  <TableRow className="hover:bg-transparent border-border/60">
+                    <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Request #</TableHead>
+                    {!isEmployee && <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Employee</TableHead>}
+                    <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Purpose</TableHead>
+                    <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Category</TableHead>
+                    <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Vendor</TableHead>
+                    <TableHead className="text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Amount</TableHead>
+                    <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Date</TableHead>
+                    <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -135,9 +142,9 @@ export default function RequestsPage() {
                     const emp = getUserById(req.employee_id)
                     const vendor = req.vendor_id ? getVendorById(req.vendor_id) : undefined
                     return (
-                      <TableRow key={req.id} className="cursor-pointer">
+                      <TableRow key={req.id} className="cursor-pointer hover:bg-secondary/40 border-border/40 transition-colors">
                         <TableCell>
-                          <Link href={`/requests/${req.id}`} className="font-medium text-primary hover:underline">
+                          <Link href={`/requests/${req.id}`} className="font-semibold text-primary hover:underline text-sm">
                             {req.request_number}
                           </Link>
                         </TableCell>
@@ -147,8 +154,10 @@ export default function RequestsPage() {
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">{getCategoryLabel(req.category)}</TableCell>
                         <TableCell className="text-sm">{vendor?.name || "-"}</TableCell>
-                        <TableCell className="text-right font-medium">{formatCurrency(req.amount)}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                        <TableCell className="text-right font-heading font-bold text-sm tabular-nums">
+                          {formatCurrency(req.amount)}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground whitespace-nowrap tabular-nums">
                           {formatDate(req.expense_date || req.created_at)}
                         </TableCell>
                         <TableCell>

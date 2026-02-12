@@ -18,6 +18,7 @@ import {
 import { cn } from "@/lib/utils"
 import { useStore } from "@/lib/store"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useState } from "react"
 
 const navItems = [
@@ -48,67 +49,97 @@ export function Sidebar() {
   }
 
   return (
-    <aside
-      className={cn(
-        "hidden md:flex flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border transition-all duration-200",
-        collapsed ? "w-16" : "w-60",
-      )}
-    >
-      {/* Logo */}
-      <div className={cn("flex items-center h-16 px-4 border-b border-sidebar-border", collapsed ? "justify-center" : "gap-2")}>
-        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary">
-          <Wallet className="w-4 h-4 text-primary-foreground" />
-        </div>
-        {!collapsed && <span className="text-lg font-semibold text-sidebar-accent-foreground">SpendFlow</span>}
-      </div>
-
-      {/* Nav Items */}
-      <nav className="flex-1 py-4 px-2 flex flex-col gap-1">
-        {filteredItems.map((item) => {
-          const isActive = pathname.startsWith(item.href)
-          const badge = item.badge ? getBadgeCount(item.href) : undefined
-          const Icon = item.icon
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors relative",
-                isActive
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                  : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                collapsed && "justify-center px-0",
-              )}
-            >
-              <Icon className="w-5 h-5 shrink-0" />
-              {!collapsed && <span>{item.label}</span>}
-              {badge !== undefined && (
-                <span
-                  className={cn(
-                    "flex items-center justify-center min-w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs font-medium",
-                    collapsed ? "absolute -top-1 -right-1 min-w-4 h-4 text-[10px]" : "ml-auto",
-                  )}
-                >
-                  {badge}
-                </span>
-              )}
-            </Link>
-          )
-        })}
-      </nav>
-
-      {/* Collapse button */}
-      <div className="p-2 border-t border-sidebar-border">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setCollapsed(!collapsed)}
-          className="w-full flex items-center justify-center text-sidebar-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent"
+    <TooltipProvider delayDuration={0}>
+      <aside
+        className={cn(
+          "hidden md:flex flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border transition-all duration-300 ease-in-out",
+          collapsed ? "w-[68px]" : "w-[248px]",
+        )}
+      >
+        {/* Logo */}
+        <div
+          className={cn(
+            "flex items-center h-16 px-4 border-b border-sidebar-border",
+            collapsed ? "justify-center" : "gap-2.5",
+          )}
         >
-          {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-          {!collapsed && <span className="ml-2 text-xs">Collapse</span>}
-        </Button>
-      </div>
-    </aside>
+          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary shadow-sm shadow-primary/25">
+            <Wallet className="w-4 h-4 text-primary-foreground" />
+          </div>
+          {!collapsed && (
+            <span className="text-lg font-heading font-bold tracking-tight text-sidebar-accent-foreground">
+              SpendFlow
+            </span>
+          )}
+        </div>
+
+        {/* Nav Items */}
+        <nav className="flex-1 py-3 px-2.5 flex flex-col gap-0.5 overflow-y-auto">
+          {filteredItems.map((item) => {
+            const isActive = pathname.startsWith(item.href)
+            const badge = item.badge ? getBadgeCount(item.href) : undefined
+            const Icon = item.icon
+
+            const linkContent = (
+              <Link
+                href={item.href}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-200 relative group",
+                  isActive
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
+                    : "text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
+                  collapsed && "justify-center px-2.5",
+                )}
+              >
+                <Icon className={cn("w-[18px] h-[18px] shrink-0", isActive && "text-primary")} />
+                {!collapsed && <span>{item.label}</span>}
+                {badge !== undefined && (
+                  <span
+                    className={cn(
+                      "flex items-center justify-center rounded-full bg-primary text-primary-foreground font-semibold",
+                      collapsed
+                        ? "absolute -top-1 -right-1 min-w-[18px] h-[18px] text-[10px]"
+                        : "ml-auto min-w-[22px] h-[22px] text-[11px] px-1.5",
+                    )}
+                  >
+                    {badge}
+                  </span>
+                )}
+                {isActive && (
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 rounded-r-full bg-primary" />
+                )}
+              </Link>
+            )
+
+            if (collapsed) {
+              return (
+                <Tooltip key={item.href}>
+                  <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
+                  <TooltipContent side="right" className="font-medium">
+                    {item.label}
+                    {badge !== undefined && ` (${badge})`}
+                  </TooltipContent>
+                </Tooltip>
+              )
+            }
+
+            return <div key={item.href}>{linkContent}</div>
+          })}
+        </nav>
+
+        {/* Collapse button */}
+        <div className="p-2.5 border-t border-sidebar-border">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setCollapsed(!collapsed)}
+            className="w-full flex items-center justify-center text-sidebar-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/60 h-9"
+          >
+            {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+            {!collapsed && <span className="ml-2 text-xs font-medium">Collapse</span>}
+          </Button>
+        </div>
+      </aside>
+    </TooltipProvider>
   )
 }
