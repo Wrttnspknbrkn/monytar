@@ -510,16 +510,46 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 bg-card border-t border-border">
+      <footer className="py-16 bg-card border-t border-border">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2.5">
-              <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-primary shadow-sm shadow-primary/25">
-                <Wallet className="w-3.5 h-3.5 text-primary-foreground" />
+          <div className="grid md:grid-cols-4 gap-10 mb-12">
+            <div className="md:col-span-1">
+              <div className="flex items-center gap-2.5 mb-4">
+                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary shadow-sm shadow-primary/25">
+                  <Wallet className="w-4 h-4 text-primary-foreground" />
+                </div>
+                <span className="font-heading font-bold tracking-tight">SpendFlow</span>
               </div>
-              <span className="font-heading font-bold text-sm tracking-tight">SpendFlow</span>
+              <p className="text-sm text-muted-foreground leading-relaxed">Modern expense management for teams that move fast.</p>
             </div>
+            <div>
+              <h4 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-4">Product</h4>
+              <ul className="flex flex-col gap-2.5">
+                {["Features", "Pricing", "Integrations", "Changelog"].map((item) => (
+                  <li key={item}><a href={`#${item.toLowerCase()}`} className="text-sm text-muted-foreground hover:text-foreground transition-colors">{item}</a></li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-4">Company</h4>
+              <ul className="flex flex-col gap-2.5">
+                {["About", "Blog", "Careers", "Contact"].map((item) => (
+                  <li key={item}><a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">{item}</a></li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-4">Legal</h4>
+              <ul className="flex flex-col gap-2.5">
+                {["Privacy", "Terms", "Security", "GDPR"].map((item) => (
+                  <li key={item}><a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">{item}</a></li>
+                ))}
+              </ul>
+            </div>
+          </div>
+          <div className="pt-8 border-t border-border flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-sm text-muted-foreground">&copy; 2026 SpendFlow. All rights reserved.</p>
+            <p className="text-sm text-muted-foreground">Developed by <span className="font-semibold text-foreground">GydGen</span></p>
           </div>
         </div>
       </footer>

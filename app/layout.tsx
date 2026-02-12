@@ -1,21 +1,21 @@
 import React from "react"
 import type { Metadata, Viewport } from "next"
-import { Plus_Jakarta_Sans, Inter } from "next/font/google"
+import { Geist, Geist_Mono } from "next/font/google"
 import { ThemeProvider } from "next-themes"
 import { Toaster } from "sonner"
 import { StoreProvider } from "@/lib/store"
 
 import "./globals.css"
 
-const _plusJakarta = Plus_Jakarta_Sans({
+const _geist = Geist({
   subsets: ["latin"],
-  variable: "--font-heading",
+  variable: "--font-sans",
   display: "swap",
 })
 
-const _inter = Inter({
+const _geistMono = Geist_Mono({
   subsets: ["latin"],
-  variable: "--font-sans",
+  variable: "--font-mono",
   display: "swap",
 })
 

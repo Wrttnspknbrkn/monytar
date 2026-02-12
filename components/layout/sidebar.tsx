@@ -127,8 +127,8 @@ export function Sidebar() {
           })}
         </nav>
 
-        {/* Collapse button */}
-        <div className="p-2.5 border-t border-sidebar-border">
+        {/* Collapse + footer */}
+        <div className="p-2.5 border-t border-sidebar-border flex flex-col gap-2">
           <Button
             variant="ghost"
             size="sm"
@@ -138,6 +138,11 @@ export function Sidebar() {
             {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
             {!collapsed && <span className="ml-2 text-xs font-medium">Collapse</span>}
           </Button>
+          {!collapsed && (
+            <p className="text-[10px] text-sidebar-foreground/40 text-center pb-1">
+              Developed by <span className="font-medium text-sidebar-foreground/60">GydGen</span>
+            </p>
+          )}
         </div>
       </aside>
     </TooltipProvider>
