@@ -105,10 +105,10 @@ const features = [
 ]
 
 const metrics = [
-  { value: 98, suffix: "%", label: "Faster Approvals" },
-  { value: 250, suffix: "+", label: "Organizations" },
-  { value: 12, suffix: "M+", label: "Processed" },
-  { value: 4.9, suffix: "/5", label: "User Rating" },
+  { value: 60, suffix: "%", label: "Time Saved" },
+  { value: 50, suffix: "+", label: "Beta Users" },
+  { value: 30, suffix: " sec", label: "Avg Submit Time" },
+  { value: 2026, suffix: "", label: "Launching" },
 ]
 
 const tiers = [
@@ -193,7 +193,7 @@ export default function LandingPage() {
             {/* Pill badge */}
             <div className="animate-in-up inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/5 border border-primary/10 text-sm font-medium text-primary mb-8">
               <Sparkles className="w-3.5 h-3.5" />
-              Now available for teams of all sizes
+              Now in early access
               <ChevronRight className="w-3.5 h-3.5" />
             </div>
 
@@ -211,7 +211,7 @@ export default function LandingPage() {
             <div className="animate-in-up-delay-3 flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link href="/signup">
                 <Button size="lg" className="h-12 px-8 text-base font-semibold shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/25 transition-all">
-                  Start Free Trial
+                  Join Early Access
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </Link>
@@ -313,7 +313,7 @@ export default function LandingPage() {
             {metrics.map((metric) => (
               <div key={metric.label} className="text-center">
                 <p className="font-heading text-3xl md:text-4xl font-extrabold tracking-tight">
-                  {typeof metric.value === "number" && metric.value % 1 === 0 ? (
+                  {typeof metric.value === "number" && metric.value % 1 === 0 && metric.value < 100 ? (
                     <AnimatedCounter target={metric.value} />
                   ) : (
                     metric.value
@@ -485,12 +485,12 @@ export default function LandingPage() {
             Ready to take control?
           </h2>
           <p className="text-lg text-muted-foreground mb-8 max-w-xl mx-auto leading-relaxed">
-            Join hundreds of organizations that trust SpendFlow to manage their expenses efficiently and transparently.
+            Be among the first to experience the future of expense management. Join our early access program today.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link href="/signup">
               <Button size="lg" className="h-12 px-8 text-base font-semibold shadow-lg shadow-primary/20">
-                Start Free Trial
+                Join Early Access
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </Link>
