@@ -59,8 +59,8 @@ export default function ContactPage() {
           <div className="lg:col-span-2 flex flex-col gap-6">
             {[
               { icon: Mail, label: "Email", value: "hello@spendflow.io", href: "mailto:hello@spendflow.io" },
-              { icon: Phone, label: "Phone", value: "+1 (555) 123-4567", href: "tel:+15551234567" },
-              { icon: MapPin, label: "Office", value: "123 Finance Street\nSan Francisco, CA 94105", href: undefined },
+              { icon: Phone, label: "Phone", value: "+233 20 839 5962", href: "tel:+233208395962" },
+              { icon: MapPin, label: "Office", value: "Accra, Ghana", href: undefined },
             ].map((item) => {
               const Icon = item.icon
               return (
