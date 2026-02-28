@@ -154,7 +154,9 @@ export default function PricingPage() {
               <Button variant="ghost" size="sm" className="font-semibold">Sign In</Button>
             </Link>
             <Link href="/signup">
-              <Button size="sm" className="font-semibold shadow-sm shadow-primary/25">Get Started</Button>
+              <Button size="lg" className="font-semibold shadow-sm shadow-primary/25">
+                Start Free <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
             </Link>
           </div>
         </div>
@@ -197,7 +199,7 @@ export default function PricingPage() {
                 <p className="text-sm text-muted-foreground mt-2">{plan.description}</p>
               </CardHeader>
               <CardContent className="pt-4">
-                <Link href={plan.name === "Enterprise" ? "/contact" : "/signup"}>
+                <Link href={plan.name === "Enterprise" ? "/contact" : plan.name === "Free" ? "/signup" : `/checkout?plan=${plan.name.toLowerCase()}-monthly`}>
                   <Button
                     variant={plan.ctaVariant}
                     className={cn("w-full font-semibold", plan.popular && "shadow-sm shadow-primary/25")}

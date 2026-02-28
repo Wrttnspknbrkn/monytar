@@ -20,6 +20,7 @@ const steps = [
 export default function SignupPage() {
   const router = useRouter()
   const [step, setStep] = useState(0)
+  const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -27,11 +28,68 @@ export default function SignupPage() {
     orgName: "",
     orgSize: "",
   })
+  const [errors, setErrors] = useState<Record<string, string>>({})
 
-  function handleNext() {
-    if (step < 2) setStep(step + 1)
-    else {
-      toast.success("Account created! Redirecting to dashboard...")
+  function validateStep(currentStep: number): boolean {
+    const newErrors: Record<string, string> = {}
+
+    if (currentStep === 0) {
+      if (!formData.fullName.trim()) newErrors.fullName = "Name is required"
+      if (!formData.email.trim()) newErrors.email = "Email is required"
+      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = "Invalid email"
+      if (!formData.password) newErrors.password = "Password is required"
+      else if (formData.password.length < 8) newErrors.password = "Minimum 8 characters"
+    }
+
+    if (currentStep === 1) {
+      if (!formData.orgName.trim()) newErrors.orgName = "Organization name is required"
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
+  async function handleNext() {
+    if (step < 2) {
+      if (!validateStep(step)) return
+      if (step === 1) {
+        // Submit registration
+        setLoading(true)
+        try {
+          const res = await fetch("/api/auth/signup", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              fullName: formData.fullName,
+              email: formData.email,
+              password: formData.password,
+              orgName: formData.orgName,
+              orgSize: formData.orgSize,
+            }),
+          })
+
+          const data = await res.json().catch(() => ({}))
+
+          if (res.ok && data.demo) {
+            toast.success("Account created! (Demo Mode)")
+            setStep(2)
+          } else if (res.ok) {
+            toast.success("Account created!")
+            setStep(2)
+          } else {
+            toast.error(data.error || "Registration failed")
+          }
+        } catch {
+          // Network error - demo mode fallback
+          toast.success("Account created! (Demo Mode)")
+          setStep(2)
+        } finally {
+          setLoading(false)
+        }
+      } else {
+        setStep(step + 1)
+      }
+    } else {
       router.push("/dashboard")
     }
   }
@@ -40,21 +98,16 @@ export default function SignupPage() {
     <div className="min-h-screen flex">
       {/* Left Panel - Abstract Financial Visuals */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 via-primary to-cyan-600 relative overflow-hidden">
-        {/* Grid pattern */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:3rem_3rem]" />
-
-        {/* Animated gradient orbs */}
         <div className="absolute -top-20 right-10 w-64 h-64 rounded-full bg-cyan-300/10 blur-3xl animate-pulse" />
-        <div className="absolute bottom-20 -left-16 w-72 h-72 rounded-full bg-white/8 blur-3xl" />
+        <div className="absolute bottom-20 -left-16 w-72 h-72 rounded-full bg-white/[0.08] blur-3xl" />
 
         <div className="relative flex flex-col justify-between p-12 z-10 w-full">
-          {/* Logo */}
           <Logo size="lg" variant="white" />
 
           {/* Abstract Financial Illustration */}
           <div className="flex-1 flex flex-col items-center justify-center py-8">
             <div className="relative w-full max-w-sm">
-              {/* Central pie chart visual */}
               <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-6 shadow-2xl">
                 <p className="text-white/60 text-xs font-medium uppercase tracking-wider mb-4">Spending by Category</p>
                 <div className="flex items-center gap-6">
@@ -90,7 +143,6 @@ export default function SignupPage() {
                 </div>
               </div>
 
-              {/* Floating card - top right */}
               <div className="absolute -top-6 -right-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-3.5 shadow-lg">
                 <div className="flex items-center gap-2.5">
                   <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-400/20">
@@ -103,7 +155,6 @@ export default function SignupPage() {
                 </div>
               </div>
 
-              {/* Floating card - bottom left */}
               <div className="absolute -bottom-5 -left-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-3.5 shadow-lg">
                 <div className="flex items-center gap-2.5">
                   <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-400/20">
@@ -118,7 +169,6 @@ export default function SignupPage() {
             </div>
           </div>
 
-          {/* Feature highlights */}
           <div className="flex flex-col gap-3">
             {[
               { icon: Users, text: "Invite unlimited team members" },
@@ -182,9 +232,10 @@ export default function SignupPage() {
                   id="fullName"
                   placeholder="John Doe"
                   value={formData.fullName}
-                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                  className="h-10"
+                  onChange={(e) => { setFormData({ ...formData, fullName: e.target.value }); setErrors({}) }}
+                  className={cn("h-10", errors.fullName && "border-red-500")}
                 />
+                {errors.fullName && <p className="text-xs text-red-500">{errors.fullName}</p>}
               </div>
               <div className="flex flex-col gap-2">
                 <Label htmlFor="signupEmail" className="text-[13px] font-medium">Work Email</Label>
@@ -193,9 +244,10 @@ export default function SignupPage() {
                   type="email"
                   placeholder="you@company.com"
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="h-10"
+                  onChange={(e) => { setFormData({ ...formData, email: e.target.value }); setErrors({}) }}
+                  className={cn("h-10", errors.email && "border-red-500")}
                 />
+                {errors.email && <p className="text-xs text-red-500">{errors.email}</p>}
               </div>
               <div className="flex flex-col gap-2">
                 <Label htmlFor="signupPassword" className="text-[13px] font-medium">Password</Label>
@@ -204,9 +256,10 @@ export default function SignupPage() {
                   type="password"
                   placeholder="Min 8 characters"
                   value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="h-10"
+                  onChange={(e) => { setFormData({ ...formData, password: e.target.value }); setErrors({}) }}
+                  className={cn("h-10", errors.password && "border-red-500")}
                 />
+                {errors.password && <p className="text-xs text-red-500">{errors.password}</p>}
               </div>
             </div>
           )}
@@ -219,9 +272,10 @@ export default function SignupPage() {
                   id="orgName"
                   placeholder="Acme Corporation"
                   value={formData.orgName}
-                  onChange={(e) => setFormData({ ...formData, orgName: e.target.value })}
-                  className="h-10"
+                  onChange={(e) => { setFormData({ ...formData, orgName: e.target.value }); setErrors({}) }}
+                  className={cn("h-10", errors.orgName && "border-red-500")}
                 />
+                {errors.orgName && <p className="text-xs text-red-500">{errors.orgName}</p>}
               </div>
               <div className="flex flex-col gap-2">
                 <Label htmlFor="orgSize" className="text-[13px] font-medium">Team Size</Label>
@@ -249,13 +303,18 @@ export default function SignupPage() {
           )}
 
           <div className="flex items-center gap-3 mt-6">
-            {step > 0 && (
+            {step > 0 && step < 2 && (
               <Button variant="outline" onClick={() => setStep(step - 1)} className="flex-1 h-10 bg-transparent font-semibold">
                 <ArrowLeft className="w-4 h-4 mr-2" /> Back
               </Button>
             )}
-            <Button onClick={handleNext} className="flex-1 h-10 font-semibold shadow-sm shadow-primary/25 hover:shadow-md hover:shadow-primary/30 transition-all">
-              {step === 2 ? "Go to Dashboard" : "Continue"} <ArrowRight className="w-4 h-4 ml-2" />
+            <Button
+              onClick={handleNext}
+              disabled={loading}
+              className="flex-1 h-10 font-semibold shadow-sm shadow-primary/25 hover:shadow-md hover:shadow-primary/30 transition-all"
+            >
+              {loading ? "Creating account..." : step === 2 ? "Go to Dashboard" : "Continue"}{" "}
+              {!loading && <ArrowRight className="w-4 h-4 ml-2" />}
             </Button>
           </div>
 

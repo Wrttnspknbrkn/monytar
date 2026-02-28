@@ -18,25 +18,67 @@ import { cn } from "@/lib/utils"
 export default function LoginPage() {
   const router = useRouter()
   const { users, switchUser } = useStore()
-  const [email, setEmail] = useState("alex.johnson@acme.com")
-  const [password, setPassword] = useState("password123")
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (!email || !password) {
+      toast.error("Please enter your email and password")
+      return
+    }
     setLoading(true)
-    setTimeout(() => {
+
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      })
+
+      const data = await res.json().catch(() => ({}))
+
+      if (res.ok && !data.demo) {
+        // Production mode - Supabase auth succeeded
+        toast.success(`Welcome back!`)
+        router.push("/dashboard")
+        return
+      }
+
+      if (res.ok && data.demo) {
+        // Demo mode response from API - match against mock users
+        const user = users.find((u) => u.email === email)
+        if (user) {
+          switchUser(user.id)
+          toast.success(`Welcome back, ${user.full_name}!`)
+          router.push("/dashboard")
+        } else {
+          toast.error("User not found. Try one of the demo accounts below.")
+        }
+        return
+      }
+
+      toast.error(data.error || "Invalid email or password")
+    } catch {
+      // Network error - fall back to demo
       const user = users.find((u) => u.email === email)
       if (user) {
         switchUser(user.id)
         toast.success(`Welcome back, ${user.full_name}!`)
         router.push("/dashboard")
       } else {
-        toast.error("Invalid email or password")
+        toast.error("Login failed. Please check your credentials.")
       }
+    } finally {
       setLoading(false)
-    }, 500)
+    }
+  }
+
+  function handleDemoLogin(demoEmail: string) {
+    setEmail(demoEmail)
+    setPassword("demo123")
   }
 
   return (
@@ -52,12 +94,10 @@ export default function LoginPage() {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-blue-300/5 blur-3xl" />
 
         <div className="relative flex flex-col justify-between p-12 z-10 w-full">
-          {/* Logo */}
           <Logo size="lg" variant="white" />
 
           {/* Abstract Financial Dashboard Illustration */}
           <div className="flex-1 flex flex-col items-center justify-center py-8">
-            {/* Floating stat cards */}
             <div className="relative w-full max-w-sm">
               {/* Main card */}
               <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-6 shadow-2xl">
@@ -110,7 +150,7 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              {/* Donut chart indicator - bottom right */}
+              {/* Donut chart indicator */}
               <div className="absolute -bottom-10 -right-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-3.5 shadow-lg">
                 <div className="flex items-center gap-2.5">
                   <div className="relative w-10 h-10">
@@ -128,20 +168,18 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Bottom stats row */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-8">
-              {[
-                { metric: "98%", label: "Faster approvals" },
-                { metric: "$2.1M", label: "Savings generated" },
-                { metric: "4.9/5", label: "User satisfaction" },
-              ].map((stat) => (
-                <div key={stat.label}>
-                  <p className="font-heading text-xl font-extrabold text-white">{stat.metric}</p>
-                  <p className="text-xs text-white/50 mt-0.5">{stat.label}</p>
-                </div>
-              ))}
-            </div>
+          {/* Bottom stats */}
+          <div className="flex items-center gap-8">
+            {[
+              { metric: "98%", label: "Faster approvals" },
+              { metric: "$2.1M", label: "Savings generated" },
+              { metric: "4.9/5", label: "User satisfaction" },
+            ].map((stat) => (
+              <div key={stat.label}>
+                <p className="font-heading text-xl font-extrabold text-white">{stat.metric}</p>
+                <p className="text-xs text-white/50 mt-0.5">{stat.label}</p>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -218,9 +256,10 @@ export default function LoginPage() {
             </Button>
           </form>
 
+          {/* Demo quick login */}
           <div className="mt-8 pt-6 border-t border-border">
             <p className="text-xs text-muted-foreground text-center mb-3 font-medium uppercase tracking-wider">
-              Quick demo login
+              Try the demo
             </p>
             <div className="grid grid-cols-2 gap-2">
               {[
@@ -234,15 +273,15 @@ export default function LoginPage() {
                   variant="outline"
                   size="sm"
                   className={cn("text-xs font-medium bg-transparent transition-colors", demo.color)}
-                  onClick={() => {
-                    setEmail(demo.email)
-                    setPassword("password123")
-                  }}
+                  onClick={() => handleDemoLogin(demo.email)}
                 >
                   {demo.label}
                 </Button>
               ))}
             </div>
+            <p className="text-[11px] text-muted-foreground/60 text-center mt-2">
+              Demo data resets on page reload
+            </p>
           </div>
 
           <p className="text-sm text-center text-muted-foreground mt-8">
