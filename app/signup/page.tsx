@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Wallet, ArrowRight, ArrowLeft, Check, Sparkles, Users, BarChart3, TrendingUp, PieChart, CreditCard, Globe, ShieldCheck } from "lucide-react"
+import { ArrowRight, ArrowLeft, Check, Users, BarChart3, TrendingUp, Globe, ShieldCheck } from "lucide-react"
 import { Logo } from "@/components/ui/logo"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"

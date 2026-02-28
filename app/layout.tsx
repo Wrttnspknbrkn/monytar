@@ -21,11 +21,41 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "SpendWell - Modern Expense Management",
+    default: "SpendWell - Modern Expense Management Platform",
     template: "%s | SpendWell",
   },
   description:
-    "The modern way to manage expenses. Streamline requests, automate approvals, and gain real-time financial insights.",
+    "SpendWell is the modern way to manage business expenses. Streamline requests, automate approvals, track budgets, and gain real-time financial insights for your organization.",
+  keywords: [
+    "expense management",
+    "approval workflow",
+    "budget tracking",
+    "vendor management",
+    "financial reporting",
+    "business expenses",
+    "spend management",
+  ],
+  authors: [{ name: "GydGen" }],
+  creator: "GydGen",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://spendwell.io"),
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    siteName: "SpendWell",
+    title: "SpendWell - Modern Expense Management Platform",
+    description:
+      "Streamline expense requests, automate approvals, and gain real-time financial insights for your organization.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "SpendWell - Modern Expense Management Platform",
+    description:
+      "Streamline expense requests, automate approvals, and gain real-time financial insights.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 }
 
 export const viewport: Viewport = {

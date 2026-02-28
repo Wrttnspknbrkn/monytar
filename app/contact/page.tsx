@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useState } from "react"
-import { Wallet, ArrowRight, Mail, MapPin, Phone, Send, CheckCircle2 } from "lucide-react"
+import { ArrowRight, Mail, MapPin, Phone, Send, CheckCircle2 } from "lucide-react"
 import { Logo } from "@/components/ui/logo"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
