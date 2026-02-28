@@ -21,8 +21,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "SpendFlow - Modern Expense Management",
-    template: "%s | SpendFlow",
+    default: "SpendWell - Modern Expense Management",
+    template: "%s | SpendWell",
   },
   description:
     "The modern way to manage expenses. Streamline requests, automate approvals, and gain real-time financial insights.",

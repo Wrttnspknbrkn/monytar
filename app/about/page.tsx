@@ -12,6 +12,7 @@ import {
   Heart,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Logo } from "@/components/ui/logo"
 
 const values = [
   {
@@ -27,7 +28,7 @@ const values = [
   {
     icon: Users,
     title: "Built for Teams",
-    description: "From solo founders to enterprise finance departments, SpendFlow adapts to how your organization actually works.",
+    description: "From solo founders to enterprise finance departments, SpendWell adapts to how your organization actually works.",
   },
   {
     icon: Heart,
@@ -56,11 +57,8 @@ export default function AboutPage() {
       {/* Navigation */}
       <header className="sticky top-0 z-50 bg-background/60 backdrop-blur-xl border-b border-border/50">
         <div className="max-w-7xl mx-auto flex items-center justify-between h-16 px-6">
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary shadow-sm shadow-primary/25 transition-shadow group-hover:shadow-md group-hover:shadow-primary/30">
-              <Wallet className="w-4 h-4 text-primary-foreground" />
-            </div>
-            <span className="text-lg font-heading font-bold tracking-tight">SpendFlow</span>
+          <Link href="/" className="flex items-center group">
+            <Logo size="md" />
           </Link>
           <nav className="hidden md:flex items-center gap-8">
             <Link href="/#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200">Features</Link>
@@ -94,7 +92,7 @@ export default function AboutPage() {
             <span className="bg-gradient-to-r from-primary via-blue-600 to-cyan-500 bg-clip-text text-transparent">effortless</span>
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            SpendFlow was born from a simple frustration: managing business expenses was unnecessarily painful.
+            SpendWell was born from a simple frustration: managing business expenses was unnecessarily painful.
             We set out to change that.
           </p>
         </div>
@@ -115,7 +113,7 @@ export default function AboutPage() {
               </p>
               <p>
                 Existing tools were either too complex for small teams or too simple for scaling organizations.
-                SpendFlow fills that gap - powerful enough for enterprise finance teams,
+                SpendWell fills that gap - powerful enough for enterprise finance teams,
                 intuitive enough that any employee can submit an expense in under 30 seconds.
               </p>
               <p>
@@ -168,7 +166,7 @@ export default function AboutPage() {
           <div className="text-center mb-16">
             <p className="text-sm font-semibold text-primary uppercase tracking-widest mb-3">Leadership</p>
             <h2 className="font-heading text-3xl md:text-4xl font-extrabold tracking-tight mb-4 text-balance">
-              Meet the team behind SpendFlow
+              Meet the team behind SpendWell
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               A diverse group of builders, operators, and finance professionals united by a mission to make expense management better.
@@ -201,7 +199,7 @@ export default function AboutPage() {
             Ready to simplify your expenses?
           </h2>
           <p className="text-lg text-muted-foreground mb-8 max-w-xl mx-auto leading-relaxed">
-            Be among the first teams to experience the future of expense management with SpendFlow.
+            Be among the first teams to experience the future of expense management with SpendWell.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link href="/signup">
@@ -224,11 +222,8 @@ export default function AboutPage() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid md:grid-cols-4 gap-10 mb-12">
             <div className="md:col-span-1">
-              <div className="flex items-center gap-2.5 mb-4">
-                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary shadow-sm shadow-primary/25">
-                  <Wallet className="w-4 h-4 text-primary-foreground" />
-                </div>
-                <span className="font-heading font-bold tracking-tight">SpendFlow</span>
+              <div className="mb-4">
+                <Logo size="md" />
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed">Modern expense management for teams that move fast.</p>
             </div>
@@ -271,7 +266,7 @@ export default function AboutPage() {
             </div>
           </div>
           <div className="pt-8 border-t border-border flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-muted-foreground">&copy; 2026 SpendFlow. All rights reserved.</p>
+            <p className="text-sm text-muted-foreground">&copy; 2026 SpendWell. All rights reserved.</p>
             <p className="text-sm text-muted-foreground">Developed by <a href="https://www.gydgen.com" target="_blank" rel="noopener noreferrer" className="font-semibold text-foreground hover:text-primary transition-colors">GydGen</a></p>
           </div>
         </div>

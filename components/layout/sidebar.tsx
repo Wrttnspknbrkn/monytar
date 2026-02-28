@@ -15,6 +15,7 @@ import {
   ChevronRight,
   Wallet,
 } from "lucide-react"
+import { Logo } from "@/components/ui/logo"
 import { cn } from "@/lib/utils"
 import { useStore } from "@/lib/store"
 import { Button } from "@/components/ui/button"
@@ -63,13 +64,12 @@ export function Sidebar() {
             collapsed ? "justify-center" : "gap-2.5",
           )}
         >
-          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary shadow-sm shadow-primary/25">
-            <Wallet className="w-4 h-4 text-primary-foreground" />
-          </div>
-          {!collapsed && (
-            <span className="text-lg font-heading font-bold tracking-tight text-sidebar-accent-foreground">
-              SpendFlow
-            </span>
+          {collapsed ? (
+            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary shadow-sm shadow-primary/25">
+              <Wallet className="w-4 h-4 text-primary-foreground" />
+            </div>
+          ) : (
+            <Logo size="md" />
           )}
         </div>
 

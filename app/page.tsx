@@ -19,6 +19,7 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { Logo } from "@/components/ui/logo"
 
 function AnimatedCounter({ target, prefix = "" }: { target: number; prefix?: string }) {
   const [count, setCount] = useState(0)
@@ -156,11 +157,8 @@ export default function LandingPage() {
       {/* Navigation */}
       <header className="sticky top-0 z-50 bg-background/60 glass border-b border-border/50">
         <div className="max-w-7xl mx-auto flex items-center justify-between h-16 px-6">
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary shadow-sm shadow-primary/25 transition-shadow group-hover:shadow-md group-hover:shadow-primary/30">
-              <Wallet className="w-4 h-4 text-primary-foreground" />
-            </div>
-            <span className="text-lg font-heading font-bold tracking-tight">SpendFlow</span>
+          <Link href="/" className="flex items-center group">
+            <Logo size="md" />
           </Link>
           <nav className="hidden md:flex items-center gap-8">
             <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200">Features</a>
@@ -238,7 +236,7 @@ export default function LandingPage() {
             </div>
             <div className="ml-3 flex items-center gap-2 px-3 py-1 rounded-md bg-background/60 border border-border/50">
               <div className="w-3 h-3 rounded-full border-2 border-primary/50" />
-              <span className="text-xs text-muted-foreground font-mono">app.spendflow.io/dashboard</span>
+              <span className="text-xs text-muted-foreground font-mono">app.spendwell.io/dashboard</span>
             </div>
           </div>
 
@@ -508,11 +506,8 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid md:grid-cols-4 gap-10 mb-12">
             <div className="md:col-span-1">
-              <div className="flex items-center gap-2.5 mb-4">
-                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary shadow-sm shadow-primary/25">
-                  <Wallet className="w-4 h-4 text-primary-foreground" />
-                </div>
-                <span className="font-heading font-bold tracking-tight">SpendFlow</span>
+              <div className="mb-4">
+                <Logo size="md" />
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed">Modern expense management for teams that move fast.</p>
             </div>
@@ -555,7 +550,7 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="pt-8 border-t border-border flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-muted-foreground">&copy; 2026 SpendFlow. All rights reserved.</p>
+            <p className="text-sm text-muted-foreground">&copy; 2026 SpendWell. All rights reserved.</p>
             <p className="text-sm text-muted-foreground">Developed by <a href="https://www.gydgen.com" target="_blank" rel="noopener noreferrer" className="font-semibold text-foreground hover:text-primary transition-colors">GydGen</a></p>
           </div>
         </div>

@@ -5,7 +5,8 @@ import React from "react"
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Wallet, Eye, EyeOff, ArrowRight, Sparkles } from "lucide-react"
+import { Wallet, Eye, EyeOff, ArrowRight, Sparkles, BarChart3, TrendingUp, PieChart, DollarSign, Receipt, CreditCard, ShieldCheck, ArrowUpRight } from "lucide-react"
+import { Logo } from "@/components/ui/logo"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -40,56 +41,116 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex">
-      {/* Left Panel - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary via-blue-600 to-primary relative overflow-hidden">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:4rem_4rem]" />
-        <div className="relative flex flex-col justify-between p-12 z-10 text-white">
-          <div className="flex items-center gap-2.5">
-            <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-white/20 backdrop-blur-sm">
-              <Wallet className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-heading font-bold tracking-tight">SpendFlow</span>
-          </div>
+      {/* Left Panel - Abstract Financial Visuals */}
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary via-blue-600 to-cyan-600 relative overflow-hidden">
+        {/* Grid pattern */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:3rem_3rem]" />
 
-          <div className="max-w-md">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-sm font-medium mb-6 backdrop-blur-sm">
-              <Sparkles className="w-3.5 h-3.5" />
-              Trusted by 250+ organizations
-            </div>
-            <h1 className="font-heading text-4xl font-extrabold leading-tight mb-4">
-              Take control of every dollar your organization spends.
-            </h1>
-            <p className="text-white/70 text-lg leading-relaxed">
-              From expense submission to reimbursement. Real-time analytics, automated approvals, and complete financial visibility.
-            </p>
-          </div>
+        {/* Animated gradient orbs */}
+        <div className="absolute top-20 -right-20 w-72 h-72 rounded-full bg-white/10 blur-3xl animate-pulse" />
+        <div className="absolute -bottom-20 -left-20 w-80 h-80 rounded-full bg-cyan-400/15 blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-blue-300/5 blur-3xl" />
 
-          <div className="flex items-center gap-6">
-            {[
-              { metric: "98%", label: "Faster approvals" },
-              { metric: "$2.1M", label: "Savings generated" },
-              { metric: "4.9/5", label: "User satisfaction" },
-            ].map((stat) => (
-              <div key={stat.label}>
-                <p className="font-heading text-2xl font-extrabold">{stat.metric}</p>
-                <p className="text-sm text-white/60">{stat.label}</p>
+        <div className="relative flex flex-col justify-between p-12 z-10 w-full">
+          {/* Logo */}
+          <Logo size="lg" variant="white" />
+
+          {/* Abstract Financial Dashboard Illustration */}
+          <div className="flex-1 flex flex-col items-center justify-center py-8">
+            {/* Floating stat cards */}
+            <div className="relative w-full max-w-sm">
+              {/* Main card */}
+              <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-6 shadow-2xl">
+                <div className="flex items-center justify-between mb-5">
+                  <div>
+                    <p className="text-white/60 text-xs font-medium uppercase tracking-wider">Monthly Spend</p>
+                    <p className="text-white font-heading text-3xl font-extrabold mt-1">$24,580</p>
+                  </div>
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-400/20 text-emerald-300 text-xs font-semibold">
+                    <TrendingUp className="w-3 h-3" />
+                    +12.3%
+                  </div>
+                </div>
+                {/* Mini bar chart */}
+                <div className="flex items-end gap-1.5 h-20">
+                  {[35, 52, 48, 65, 58, 72, 68, 82, 75, 88, 80, 95].map((h, i) => (
+                    <div key={i} className="flex-1 flex items-end">
+                      <div
+                        className="w-full rounded-t-sm bg-white/25 hover:bg-white/40 transition-colors"
+                        style={{ height: `${h}%` }}
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
+
+              {/* Floating card - top right */}
+              <div className="absolute -top-8 -right-6 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4 shadow-lg">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-emerald-400/20">
+                    <ShieldCheck className="w-4 h-4 text-emerald-300" />
+                  </div>
+                  <div>
+                    <p className="text-white/60 text-[10px] font-medium uppercase tracking-wider">Approved</p>
+                    <p className="text-white font-heading font-bold text-sm">$18,205</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Floating card - bottom left */}
+              <div className="absolute -bottom-6 -left-6 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4 shadow-lg">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-amber-400/20">
+                    <Receipt className="w-4 h-4 text-amber-300" />
+                  </div>
+                  <div>
+                    <p className="text-white/60 text-[10px] font-medium uppercase tracking-wider">Pending</p>
+                    <p className="text-white font-heading font-bold text-sm">8 requests</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Donut chart indicator - bottom right */}
+              <div className="absolute -bottom-10 -right-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-3.5 shadow-lg">
+                <div className="flex items-center gap-2.5">
+                  <div className="relative w-10 h-10">
+                    <svg viewBox="0 0 36 36" className="w-10 h-10 -rotate-90">
+                      <circle cx="18" cy="18" r="15.5" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="3" />
+                      <circle cx="18" cy="18" r="15.5" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="3" strokeDasharray="72 28" strokeLinecap="round" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-white font-heading font-bold text-sm">72%</p>
+                    <p className="text-white/50 text-[10px]">Budget</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom stats row */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-8">
+              {[
+                { metric: "98%", label: "Faster approvals" },
+                { metric: "$2.1M", label: "Savings generated" },
+                { metric: "4.9/5", label: "User satisfaction" },
+              ].map((stat) => (
+                <div key={stat.label}>
+                  <p className="font-heading text-xl font-extrabold text-white">{stat.metric}</p>
+                  <p className="text-xs text-white/50 mt-0.5">{stat.label}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-        {/* Abstract shapes */}
-        <div className="absolute -bottom-32 -right-32 w-96 h-96 rounded-full bg-white/5 blur-3xl" />
-        <div className="absolute -top-32 -left-32 w-80 h-80 rounded-full bg-white/5 blur-3xl" />
       </div>
 
       {/* Right Panel - Form */}
       <div className="flex-1 flex items-center justify-center p-6 lg:p-12">
         <div className="w-full max-w-sm">
-          <div className="lg:hidden flex items-center justify-center gap-2.5 mb-10">
-            <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-primary shadow-sm shadow-primary/25">
-              <Wallet className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <span className="text-xl font-heading font-bold tracking-tight">SpendFlow</span>
+          <div className="lg:hidden flex items-center justify-center mb-10">
+            <Logo size="lg" />
           </div>
 
           <div className="mb-8">

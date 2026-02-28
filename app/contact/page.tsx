@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useState } from "react"
 import { Wallet, ArrowRight, Mail, MapPin, Phone, Send, CheckCircle2 } from "lucide-react"
+import { Logo } from "@/components/ui/logo"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -23,11 +24,8 @@ export default function ContactPage() {
       {/* Navigation */}
       <header className="sticky top-0 z-50 bg-background/60 backdrop-blur-xl border-b border-border/50">
         <div className="max-w-7xl mx-auto flex items-center justify-between h-16 px-6">
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary shadow-sm shadow-primary/25 transition-shadow group-hover:shadow-md group-hover:shadow-primary/30">
-              <Wallet className="w-4 h-4 text-primary-foreground" />
-            </div>
-            <span className="text-lg font-heading font-bold tracking-tight">SpendFlow</span>
+          <Link href="/" className="flex items-center group">
+            <Logo size="md" />
           </Link>
           <nav className="hidden md:flex items-center gap-8">
             <Link href="/#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200">Features</Link>
@@ -51,14 +49,14 @@ export default function ContactPage() {
         <div className="text-center mb-16">
           <p className="text-sm font-semibold text-primary uppercase tracking-widest mb-3">Contact</p>
           <h1 className="font-heading text-4xl md:text-5xl font-extrabold tracking-tight mb-4 text-balance">Get in touch</h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">Have questions about SpendFlow? We would love to hear from you.</p>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">Have questions about SpendWell? We would love to hear from you.</p>
         </div>
 
         <div className="grid lg:grid-cols-5 gap-12 max-w-5xl mx-auto">
           {/* Contact Info */}
           <div className="lg:col-span-2 flex flex-col gap-6">
             {[
-              { icon: Mail, label: "Email", value: "hello@spendflow.io", href: "mailto:hello@spendflow.io" },
+              { icon: Mail, label: "Email", value: "hello@spendwell.io", href: "mailto:hello@spendwell.io" },
               { icon: Phone, label: "Phone", value: "+233 20 839 5962", href: "tel:+233208395962" },
               { icon: MapPin, label: "Office", value: "Accra, Ghana", href: undefined },
             ].map((item) => {
@@ -130,11 +128,8 @@ export default function ContactPage() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid md:grid-cols-4 gap-10 mb-12">
             <div className="md:col-span-1">
-              <div className="flex items-center gap-2.5 mb-4">
-                <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary shadow-sm shadow-primary/25">
-                  <Wallet className="w-4 h-4 text-primary-foreground" />
-                </div>
-                <span className="font-heading font-bold tracking-tight">SpendFlow</span>
+              <div className="mb-4">
+                <Logo size="md" />
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed">Modern expense management for teams that move fast.</p>
             </div>
@@ -177,7 +172,7 @@ export default function ContactPage() {
             </div>
           </div>
           <div className="pt-8 border-t border-border flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-muted-foreground">&copy; 2026 SpendFlow. All rights reserved.</p>
+            <p className="text-sm text-muted-foreground">&copy; 2026 SpendWell. All rights reserved.</p>
             <p className="text-sm text-muted-foreground">Developed by <a href="https://www.gydgen.com" target="_blank" rel="noopener noreferrer" className="font-semibold text-foreground hover:text-primary transition-colors">GydGen</a></p>
           </div>
         </div>

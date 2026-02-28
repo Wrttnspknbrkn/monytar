@@ -3,7 +3,8 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Wallet, ArrowRight, ArrowLeft, Check, Sparkles, Users, BarChart3 } from "lucide-react"
+import { Wallet, ArrowRight, ArrowLeft, Check, Sparkles, Users, BarChart3, TrendingUp, PieChart, CreditCard, Globe, ShieldCheck } from "lucide-react"
+import { Logo } from "@/components/ui/logo"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -37,62 +38,112 @@ export default function SignupPage() {
 
   return (
     <div className="min-h-screen flex">
-      {/* Left Panel - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary via-blue-600 to-primary relative overflow-hidden">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:4rem_4rem]" />
-        <div className="relative flex flex-col justify-between p-12 z-10 text-white">
-          <div className="flex items-center gap-2.5">
-            <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-white/20 backdrop-blur-sm">
-              <Wallet className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-heading font-bold tracking-tight">SpendFlow</span>
-          </div>
+      {/* Left Panel - Abstract Financial Visuals */}
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 via-primary to-cyan-600 relative overflow-hidden">
+        {/* Grid pattern */}
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:3rem_3rem]" />
 
-          <div className="max-w-md">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-sm font-medium mb-6 backdrop-blur-sm">
-              <Sparkles className="w-3.5 h-3.5" />
-              Free plan available
-            </div>
-            <h1 className="font-heading text-4xl font-extrabold leading-tight mb-4">
-              Start managing expenses in minutes.
-            </h1>
-            <p className="text-white/70 text-lg leading-relaxed">
-              Set up your organization, invite your team, and start tracking every dollar with full transparency.
-            </p>
+        {/* Animated gradient orbs */}
+        <div className="absolute -top-20 right-10 w-64 h-64 rounded-full bg-cyan-300/10 blur-3xl animate-pulse" />
+        <div className="absolute bottom-20 -left-16 w-72 h-72 rounded-full bg-white/8 blur-3xl" />
 
-            <div className="flex flex-col gap-4 mt-8">
-              {[
-                { icon: Users, text: "Invite unlimited team members on every plan" },
-                { icon: BarChart3, text: "Real-time analytics and budget tracking" },
-                { icon: Check, text: "Automated approval workflows out of the box" },
-              ].map((item) => {
-                const Icon = item.icon
-                return (
-                  <div key={item.text} className="flex items-center gap-3">
-                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-white/10">
-                      <Icon className="w-4 h-4" />
+        <div className="relative flex flex-col justify-between p-12 z-10 w-full">
+          {/* Logo */}
+          <Logo size="lg" variant="white" />
+
+          {/* Abstract Financial Illustration */}
+          <div className="flex-1 flex flex-col items-center justify-center py-8">
+            <div className="relative w-full max-w-sm">
+              {/* Central pie chart visual */}
+              <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-6 shadow-2xl">
+                <p className="text-white/60 text-xs font-medium uppercase tracking-wider mb-4">Spending by Category</p>
+                <div className="flex items-center gap-6">
+                  <div className="relative w-28 h-28">
+                    <svg viewBox="0 0 36 36" className="w-28 h-28 -rotate-90">
+                      <circle cx="18" cy="18" r="13" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="5" />
+                      <circle cx="18" cy="18" r="13" fill="none" stroke="rgba(96,165,250,0.8)" strokeWidth="5" strokeDasharray="32 68" strokeLinecap="round" />
+                      <circle cx="18" cy="18" r="13" fill="none" stroke="rgba(52,211,153,0.7)" strokeWidth="5" strokeDasharray="22 78" strokeDashoffset="-32" strokeLinecap="round" />
+                      <circle cx="18" cy="18" r="13" fill="none" stroke="rgba(251,191,36,0.7)" strokeWidth="5" strokeDasharray="18 82" strokeDashoffset="-54" strokeLinecap="round" />
+                      <circle cx="18" cy="18" r="13" fill="none" stroke="rgba(248,113,113,0.6)" strokeWidth="5" strokeDasharray="12 88" strokeDashoffset="-72" strokeLinecap="round" />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="text-center">
+                        <p className="text-white font-heading text-lg font-extrabold">$24.5k</p>
+                        <p className="text-white/40 text-[9px]">Total</p>
+                      </div>
                     </div>
-                    <span className="text-sm text-white/80">{item.text}</span>
                   </div>
-                )
-              })}
+                  <div className="flex flex-col gap-2.5">
+                    {[
+                      { color: "bg-blue-400", label: "Software", pct: "38%" },
+                      { color: "bg-emerald-400", label: "Travel", pct: "28%" },
+                      { color: "bg-amber-400", label: "Equipment", pct: "20%" },
+                      { color: "bg-red-400", label: "Other", pct: "14%" },
+                    ].map((cat) => (
+                      <div key={cat.label} className="flex items-center gap-2">
+                        <div className={cn("w-2 h-2 rounded-full", cat.color)} />
+                        <span className="text-white/70 text-xs">{cat.label}</span>
+                        <span className="text-white/40 text-xs ml-auto">{cat.pct}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Floating card - top right */}
+              <div className="absolute -top-6 -right-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-3.5 shadow-lg">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-400/20">
+                    <TrendingUp className="w-4 h-4 text-emerald-300" />
+                  </div>
+                  <div>
+                    <p className="text-white font-heading font-bold text-sm">60%</p>
+                    <p className="text-white/50 text-[10px]">Time saved</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Floating card - bottom left */}
+              <div className="absolute -bottom-5 -left-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-3.5 shadow-lg">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-400/20">
+                    <Globe className="w-4 h-4 text-blue-300" />
+                  </div>
+                  <div>
+                    <p className="text-white font-heading font-bold text-sm">250+</p>
+                    <p className="text-white/50 text-[10px]">Teams</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
-          <p className="text-xs text-white/40">Developed by GydGen</p>
+          {/* Feature highlights */}
+          <div className="flex flex-col gap-3">
+            {[
+              { icon: Users, text: "Invite unlimited team members" },
+              { icon: BarChart3, text: "Real-time analytics and budget tracking" },
+              { icon: ShieldCheck, text: "Enterprise-grade security" },
+            ].map((item) => {
+              const Icon = item.icon
+              return (
+                <div key={item.text} className="flex items-center gap-3">
+                  <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-white/10">
+                    <Icon className="w-3.5 h-3.5 text-white/70" />
+                  </div>
+                  <span className="text-sm text-white/60">{item.text}</span>
+                </div>
+              )
+            })}
+          </div>
         </div>
-        <div className="absolute -bottom-32 -right-32 w-96 h-96 rounded-full bg-white/5 blur-3xl" />
-        <div className="absolute -top-32 -left-32 w-80 h-80 rounded-full bg-white/5 blur-3xl" />
       </div>
 
       {/* Right Panel - Form */}
       <div className="flex-1 flex items-center justify-center p-6 lg:p-12">
         <div className="w-full max-w-sm">
-          <div className="lg:hidden flex items-center justify-center gap-2.5 mb-10">
-            <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-primary shadow-sm shadow-primary/25">
-              <Wallet className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <span className="text-xl font-heading font-bold tracking-tight">SpendFlow</span>
+          <div className="lg:hidden flex items-center justify-center mb-10">
+            <Logo size="lg" />
           </div>
 
           {/* Progress Steps */}

@@ -4,7 +4,7 @@ export default function SecurityPage() {
   return (
     <LegalPage title="Security" lastUpdated="February 1, 2026">
       <h2>Our Commitment to Security</h2>
-      <p>At SpendFlow, security is not an afterthought - it is foundational to everything we build. We handle sensitive financial data and take that responsibility seriously with enterprise-grade security measures.</p>
+      <p>At SpendWell, security is not an afterthought - it is foundational to everything we build. We handle sensitive financial data and take that responsibility seriously with enterprise-grade security measures.</p>
 
       <h2>Infrastructure Security</h2>
       <ul>
@@ -31,10 +31,10 @@ export default function SecurityPage() {
       </ul>
 
       <h2>Compliance</h2>
-      <p>SpendFlow is designed to help organizations maintain compliance with financial regulations. Our platform supports complete audit trails, data retention policies, and export capabilities for regulatory reporting.</p>
+      <p>SpendWell is designed to help organizations maintain compliance with financial regulations. Our platform supports complete audit trails, data retention policies, and export capabilities for regulatory reporting.</p>
 
       <h2>Reporting Vulnerabilities</h2>
-      <p>If you discover a security vulnerability, please report it responsibly to security@spendflow.io. We commit to acknowledging reports within 24 hours and providing a resolution timeline within 72 hours.</p>
+      <p>If you discover a security vulnerability, please report it responsibly to security@spendwell.io. We commit to acknowledging reports within 24 hours and providing a resolution timeline within 72 hours.</p>
     </LegalPage>
   )
 }
