@@ -25,10 +25,10 @@ export default function PrivacyPage() {
       <p>We retain your data for as long as your account is active or as needed to provide services. You may request deletion of your data at any time by contacting our support team.</p>
 
       <h2>6. Your Rights</h2>
-      <p>You have the right to access, correct, or delete your personal data. You may also request a copy of your data in a portable format. To exercise these rights, contact us at privacy@spendwell.io.</p>
+      <p>You have the right to access, correct, or delete your personal data. You may also request a copy of your data in a portable format. To exercise these rights, contact us at privacy@monytar.com.</p>
 
       <h2>7. Contact Us</h2>
-      <p>If you have questions about this Privacy Policy, please contact us at privacy@spendwell.io or write to SpendWell, 123 Finance Street, San Francisco, CA 94105.</p>
+      <p>If you have questions about this Privacy Policy, please contact us at privacy@monytar.com or write to Monytar, Accra, Ghana.</p>
     </LegalPage>
   )
 }

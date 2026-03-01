@@ -1,15 +1,16 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { ArrowRight, Check, Minus, HelpCircle } from "lucide-react"
+import { ArrowRight, Check, Minus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Logo } from "@/components/ui/logo"
 import { cn } from "@/lib/utils"
+import { LandingHeader } from "@/components/landing/landing-header"
+import { LandingFooter } from "@/components/landing/landing-footer"
 
 export const metadata: Metadata = {
   title: "Pricing",
   description:
-    "SpendWell pricing plans: Free for small teams, Starter for growing businesses, Professional for mid-market, and Enterprise for large organizations.",
+    "Monytar pricing plans: Free for small teams, Starter for growing businesses, Professional for mid-market, and Enterprise for large organizations.",
 }
 
 const plans = [
@@ -113,7 +114,7 @@ const comparisonFeatures = [
 
 const faqs = [
   {
-    q: "Can I try SpendWell before committing?",
+    q: "Can I try Monytar before committing?",
     a: "Yes. All paid plans come with a 14-day free trial. No credit card required. You can also use our Free plan indefinitely for up to 5 users.",
   },
   {
@@ -137,30 +138,7 @@ const faqs = [
 export default function PricingPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/60">
-        <div className="max-w-6xl mx-auto flex items-center justify-between h-16 px-6">
-          <Link href="/" className="flex items-center group">
-            <Logo size="md" />
-          </Link>
-          <nav className="hidden md:flex items-center gap-8">
-            <Link href="/features" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Features</Link>
-            <Link href="/pricing" className="text-sm font-semibold text-primary">Pricing</Link>
-            <Link href="/about" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">About</Link>
-            <Link href="/contact" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Contact</Link>
-          </nav>
-          <div className="flex items-center gap-3">
-            <Link href="/login">
-              <Button variant="ghost" size="sm" className="font-semibold">Sign In</Button>
-            </Link>
-            <Link href="/signup">
-              <Button size="lg" className="font-semibold shadow-sm shadow-primary/25">
-                Start Free <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </header>
+      <LandingHeader />
 
       {/* Hero */}
       <section className="py-20 md:py-24 px-6">
@@ -277,13 +255,7 @@ export default function PricingPage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-border bg-secondary/20 py-8 px-6">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <Logo size="sm" />
-          <p className="text-sm text-muted-foreground">&copy; 2026 SpendWell. All rights reserved.</p>
-        </div>
-      </footer>
+      <LandingFooter />
     </div>
   )
 }

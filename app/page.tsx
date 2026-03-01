@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { useState, useEffect, useRef } from "react"
 import {
   ArrowRight,
@@ -10,16 +11,17 @@ import {
   BarChart3,
   Users,
   Zap,
-  Wallet,
   ChevronRight,
   Sparkles,
   ArrowUpRight,
   Clock,
   Star,
+  Check,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { Logo } from "@/components/ui/logo"
+import { LandingHeader } from "@/components/landing/landing-header"
+import { LandingFooter } from "@/components/landing/landing-footer"
 
 function AnimatedCounter({ target, prefix = "" }: { target: number; prefix?: string }) {
   const [count, setCount] = useState(0)
@@ -63,43 +65,43 @@ function AnimatedCounter({ target, prefix = "" }: { target: number; prefix?: str
 const features = [
   {
     icon: FileText,
-    title: "Smart Expense Requests",
-    description: "Submit expenses with intelligent categorization, receipt scanning, and automated compliance checks.",
+    title: "Expense Management",
+    description: "Submit, track, and manage expense requests with receipt scanning, auto-categorization, and real-time status updates.",
     gradient: "from-blue-500/10 to-cyan-500/10",
     iconColor: "text-blue-600 dark:text-blue-400",
   },
   {
     icon: CheckCircle2,
-    title: "Multi-Level Approvals",
-    description: "Configurable approval chains with automatic routing, escalation, and threshold-based auto-approval.",
+    title: "Approval Workflows",
+    description: "Configurable multi-level approval chains with automatic routing, escalation, and threshold-based auto-approval.",
     gradient: "from-emerald-500/10 to-teal-500/10",
     iconColor: "text-emerald-600 dark:text-emerald-400",
   },
   {
     icon: BarChart3,
-    title: "Real-Time Analytics",
-    description: "Interactive dashboards with spending trends, budget utilization, and department-level drill-downs.",
+    title: "Reporting & Analytics",
+    description: "Interactive dashboards with spending trends, budget utilization, department breakdowns, and exportable reports.",
     gradient: "from-violet-500/10 to-purple-500/10",
     iconColor: "text-violet-600 dark:text-violet-400",
   },
   {
     icon: Shield,
-    title: "Budget Controls",
-    description: "Department budgets with automated alerts, spending limits, and real-time threshold monitoring.",
+    title: "Budget Control",
+    description: "Department and project-level budgets with automated alerts, spending limits, and real-time threshold monitoring.",
     gradient: "from-amber-500/10 to-orange-500/10",
     iconColor: "text-amber-600 dark:text-amber-400",
   },
   {
     icon: Users,
     title: "Team Management",
-    description: "Role-based access control with organization hierarchies and department-scoped permissions.",
+    description: "Role-based access control with organization hierarchies, department-scoped permissions, and vendor management.",
     gradient: "from-rose-500/10 to-pink-500/10",
     iconColor: "text-rose-600 dark:text-rose-400",
   },
   {
     icon: Zap,
-    title: "Instant Processing",
-    description: "Auto-approve small expenses below thresholds, reducing administrative overhead by up to 60%.",
+    title: "Smart Automation",
+    description: "Auto-approve small expenses, detect duplicates, smart categorization, and bulk CSV uploads to save time.",
     gradient: "from-sky-500/10 to-blue-500/10",
     iconColor: "text-sky-600 dark:text-sky-400",
   },
@@ -107,91 +109,97 @@ const features = [
 
 const metrics = [
   { value: 60, suffix: "%", label: "Time Saved" },
-  { value: 50, suffix: "+", label: "Beta Users" },
+  { value: 500, suffix: "+", label: "Active Users" },
   { value: 30, suffix: " sec", label: "Avg Submit Time" },
-  { value: 2026, suffix: "", label: "Launching" },
+  { value: 99.9, suffix: "%", label: "Uptime" },
 ]
 
-const tiers = [
+const plans = [
   {
     name: "Free",
     price: "$0",
     period: "forever",
-    description: "For small teams getting started",
-    features: ["Up to 5 users", "50 requests/month", "Basic reporting", "Email support"],
+    description: "For small teams getting started with expense management.",
+    features: [
+      "Up to 5 users",
+      "50 expense requests/month",
+      "Basic approval workflow",
+      "Standard reporting",
+      "Email support",
+      "1 department",
+    ],
   },
   {
     name: "Starter",
     price: "$29",
-    period: "/mo",
-    description: "For growing organizations",
-    features: ["Up to 25 users", "Unlimited requests", "Advanced analytics", "Custom workflows", "Priority support"],
+    period: "/user/month",
+    description: "For growing teams that need more control and visibility.",
+    features: [
+      "Up to 25 users",
+      "Unlimited requests",
+      "Multi-level approvals",
+      "Custom categories",
+      "CSV export",
+      "5 departments",
+      "Priority email support",
+      "Vendor management",
+    ],
   },
   {
     name: "Professional",
-    price: "$79",
-    period: "/mo",
-    description: "For established businesses",
+    price: "$99",
+    period: "/user/month",
+    description: "For mid-size organizations that need advanced features.",
+    popular: true,
     features: [
       "Unlimited users",
       "Unlimited requests",
-      "Custom integrations",
-      "Advanced workflows",
-      "Budget controls",
-      "Dedicated support",
+      "Advanced approval chains",
+      "Budget management",
+      "Advanced analytics",
+      "Unlimited departments",
+      "API access",
+      "SSO integration",
+      "Custom roles",
+      "Audit trail",
+      "Phone & email support",
     ],
-    popular: true,
   },
   {
     name: "Enterprise",
     price: "Custom",
     period: "",
-    description: "For large organizations",
-    features: ["Everything in Pro", "SSO & SAML", "Custom SLA", "Dedicated CSM", "On-premise option", "Audit logs"],
+    description: "For large organizations with custom requirements.",
+    features: [
+      "Everything in Professional",
+      "Custom integrations",
+      "Dedicated account manager",
+      "SLA guarantee",
+      "On-premise option",
+      "Custom branding",
+      "Advanced security (SOC 2)",
+      "GDPR compliance tools",
+      "Bulk data import",
+      "Training & onboarding",
+      "24/7 priority support",
+    ],
   },
 ]
 
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-background">
-      {/* Navigation */}
-      <header className="sticky top-0 z-50 bg-background/60 glass border-b border-border/50">
-        <div className="max-w-7xl mx-auto flex items-center justify-between h-16 px-6">
-          <Link href="/" className="flex items-center group">
-            <Logo size="md" />
-          </Link>
-          <nav className="hidden md:flex items-center gap-8">
-            <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200">Features</a>
-            <a href="#pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200">Pricing</a>
-            <Link href="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200">About</Link>
-          </nav>
-          <div className="flex items-center gap-3">
-            <Link href="/login">
-              <Button variant="ghost" size="sm" className="text-sm font-medium">
-                Log in
-              </Button>
-            </Link>
-            <Link href="/signup">
-              <Button size="sm" className="text-sm font-medium shadow-sm shadow-primary/25 hover:shadow-md hover:shadow-primary/30 transition-all">
-                Get Started
-                <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </header>
+      <LandingHeader />
 
       {/* Hero Section */}
       <section className="relative overflow-hidden">
-        {/* Subtle grid pattern */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,hsl(var(--border)/0.3)_1px,transparent_1px),linear-gradient(to_bottom,hsl(var(--border)/0.3)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_110%)]" />
 
         <div className="relative max-w-7xl mx-auto px-6 pt-20 pb-28 md:pt-28 md:pb-36">
           <div className="max-w-3xl mx-auto text-center">
-            {/* Pill badge */}
             <div className="animate-in-up inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/5 border border-primary/10 text-sm font-medium text-primary mb-8">
               <Sparkles className="w-3.5 h-3.5" />
-              Now in early access
+              Trusted by finance teams worldwide
               <ChevronRight className="w-3.5 h-3.5" />
             </div>
 
@@ -203,13 +211,13 @@ export default function LandingPage() {
             </h1>
 
             <p className="animate-in-up-delay-2 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
-              From submission to reimbursement in minutes, not weeks. Automate approvals, enforce budgets, and gain complete visibility into your spending.
+              From submission to reimbursement in minutes, not weeks. Automate approvals, enforce budgets, and gain complete visibility into your organization{"'"}s spending.
             </p>
 
             <div className="animate-in-up-delay-3 flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link href="/signup">
                 <Button size="lg" className="h-12 px-8 text-base font-semibold shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/25 transition-all">
-                  Join Early Access
+                  Get Started Free
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </Link>
@@ -224,10 +232,9 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Dashboard Preview */}
+      {/* Dashboard Preview Image */}
       <section className="max-w-6xl mx-auto px-6 pb-24">
         <div className="relative rounded-2xl border border-border/80 bg-card shadow-2xl shadow-foreground/5 overflow-hidden">
-          {/* Window chrome */}
           <div className="flex items-center gap-2 px-5 py-3.5 border-b border-border bg-secondary/30">
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-3 rounded-full bg-red-400/80" />
@@ -236,70 +243,17 @@ export default function LandingPage() {
             </div>
             <div className="ml-3 flex items-center gap-2 px-3 py-1 rounded-md bg-background/60 border border-border/50">
               <div className="w-3 h-3 rounded-full border-2 border-primary/50" />
-              <span className="text-xs text-muted-foreground font-mono">app.spendwell.io/dashboard</span>
+              <span className="text-xs text-muted-foreground font-mono">app.monytar.com/dashboard</span>
             </div>
           </div>
-
-          {/* Dashboard stats */}
-          <div className="p-6 md:p-8">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {[
-                { label: "Total Spent", value: "$24,580", change: "+12.3%", up: true },
-                { label: "Pending", value: "8 requests", change: "3 urgent", up: false },
-                { label: "Approved", value: "$18,205", change: "+8.5%", up: true },
-                { label: "Budget Used", value: "72%", change: "On track", up: true },
-              ].map((stat) => (
-                <div
-                  key={stat.label}
-                  className="group relative p-5 rounded-xl border border-border bg-background hover:border-primary/20 transition-all duration-300 hover:shadow-sm"
-                >
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">{stat.label}</p>
-                  <p className="text-2xl font-heading font-bold">{stat.value}</p>
-                  <p
-                    className={cn(
-                      "text-xs font-medium mt-2",
-                      stat.up ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400",
-                    )}
-                  >
-                    {stat.change}
-                  </p>
-                  <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-primary/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                </div>
-              ))}
-            </div>
-
-            {/* Mini chart area placeholder */}
-            <div className="mt-6 grid md:grid-cols-3 gap-4">
-              <div className="md:col-span-2 h-40 rounded-xl border border-border bg-background flex items-end justify-between p-6 gap-2">
-                {[35, 52, 48, 65, 58, 72, 68, 82, 75, 88, 80, 95].map((h, i) => (
-                  <div key={i} className="flex-1 flex items-end">
-                    <div
-                      className="w-full rounded-t bg-primary/20 hover:bg-primary/40 transition-colors"
-                      style={{ height: `${h}%` }}
-                    />
-                  </div>
-                ))}
-              </div>
-              <div className="h-40 rounded-xl border border-border bg-background p-5 flex flex-col justify-between">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Top Category</p>
-                <div className="flex flex-col gap-2">
-                  {[
-                    { name: "Software", pct: 38 },
-                    { name: "Travel", pct: 28 },
-                    { name: "Equipment", pct: 20 },
-                  ].map((cat) => (
-                    <div key={cat.name} className="flex items-center gap-2">
-                      <div className="flex-1 h-1.5 rounded-full bg-secondary overflow-hidden">
-                        <div className="h-full rounded-full bg-primary/60" style={{ width: `${cat.pct}%` }} />
-                      </div>
-                      <span className="text-xs text-muted-foreground w-16 text-right">
-                        {cat.name}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+          <div className="relative w-full aspect-[16/9]">
+            <Image
+              src="/images/hero-dashboard.jpg"
+              alt="Monytar expense management dashboard showing real-time analytics and approval workflows"
+              fill
+              className="object-cover"
+              priority
+            />
           </div>
         </div>
       </section>
@@ -311,7 +265,7 @@ export default function LandingPage() {
             {metrics.map((metric) => (
               <div key={metric.label} className="text-center">
                 <p className="font-heading text-3xl md:text-4xl font-extrabold tracking-tight">
-                  {typeof metric.value === "number" && metric.value % 1 === 0 && metric.value < 100 ? (
+                  {typeof metric.value === "number" && metric.value < 100 ? (
                     <AnimatedCounter target={metric.value} />
                   ) : (
                     metric.value
@@ -334,7 +288,7 @@ export default function LandingPage() {
               Everything your finance team needs
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-              A complete platform built for modern teams. From expense submission to financial reporting.
+              A complete platform built for modern teams. From expense submission to financial reporting, all in one place.
             </p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -358,6 +312,13 @@ export default function LandingPage() {
                 </div>
               )
             })}
+          </div>
+          <div className="text-center mt-10">
+            <Link href="/features">
+              <Button variant="outline" size="lg" className="font-semibold bg-transparent">
+                See All Features <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </Link>
           </div>
         </div>
       </section>
@@ -419,56 +380,62 @@ export default function LandingPage() {
           <div className="text-center mb-16">
             <p className="text-sm font-semibold text-primary uppercase tracking-widest mb-3">Pricing</p>
             <h2 className="font-heading text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight mb-4 text-balance">
-              Plans that scale with you
+              Simple, transparent pricing
             </h2>
-            <p className="text-lg text-muted-foreground">Start free. Upgrade when you need more.</p>
+            <p className="text-lg text-muted-foreground">Start free and scale as you grow. No hidden fees, no surprises.</p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
-            {tiers.map((tier) => (
+            {plans.map((plan) => (
               <div
-                key={tier.name}
+                key={plan.name}
                 className={cn(
                   "relative flex flex-col p-6 rounded-2xl border transition-all duration-300 hover:-translate-y-0.5",
-                  tier.popular
+                  plan.popular
                     ? "border-primary bg-card shadow-xl shadow-primary/10 ring-1 ring-primary"
                     : "border-border bg-card hover:border-primary/20 hover:shadow-lg hover:shadow-foreground/[0.03]",
                 )}
               >
-                {tier.popular && (
+                {plan.popular && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-primary text-primary-foreground text-xs font-bold tracking-wide shadow-sm">
                     Most Popular
                   </div>
                 )}
                 <div className="mb-6">
-                  <h3 className="font-heading font-bold text-lg mb-1">{tier.name}</h3>
+                  <h3 className="font-heading font-bold text-lg mb-1">{plan.name}</h3>
                   <div className="flex items-baseline gap-1 mb-2">
-                    <span className="font-heading text-4xl font-extrabold tracking-tight">{tier.price}</span>
-                    {tier.period && <span className="text-muted-foreground text-sm">{tier.period}</span>}
+                    <span className="font-heading text-4xl font-extrabold tracking-tight">{plan.price}</span>
+                    {plan.period && <span className="text-muted-foreground text-sm">{plan.period}</span>}
                   </div>
-                  <p className="text-sm text-muted-foreground">{tier.description}</p>
+                  <p className="text-sm text-muted-foreground">{plan.description}</p>
                 </div>
-                <ul className="flex-1 flex flex-col gap-3 mb-6">
-                  {tier.features.map((feature) => (
+                <ul className="flex-1 flex flex-col gap-2.5 mb-6">
+                  {plan.features.map((feature) => (
                     <li key={feature} className="flex items-start gap-2.5 text-sm">
-                      <CheckCircle2 className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                      <span>{feature}</span>
+                      <Check className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                      <span className="text-muted-foreground">{feature}</span>
                     </li>
                   ))}
                 </ul>
-                <Link href="/signup">
+                <Link href={plan.name === "Enterprise" ? "/contact" : plan.name === "Free" ? "/signup" : `/checkout?plan=${plan.name.toLowerCase()}-monthly`}>
                   <Button
-                    variant={tier.popular ? "default" : "outline"}
+                    variant={plan.popular ? "default" : "outline"}
                     className={cn(
                       "w-full font-semibold",
-                      tier.popular && "shadow-sm shadow-primary/25",
-                      !tier.popular && "bg-transparent",
+                      plan.popular && "shadow-sm shadow-primary/25",
+                      !plan.popular && "bg-transparent",
                     )}
                   >
-                    {tier.name === "Enterprise" ? "Contact Sales" : "Get Started"}
+                    {plan.name === "Enterprise" ? "Contact Sales" : plan.name === "Free" ? "Get Started" : "Start Free Trial"}
+                    {plan.name !== "Enterprise" && <ArrowRight className="w-3.5 h-3.5 ml-1.5" />}
                   </Button>
                 </Link>
               </div>
             ))}
+          </div>
+          <div className="text-center mt-8">
+            <Link href="/pricing" className="text-sm text-primary font-medium hover:underline">
+              View full feature comparison <ArrowRight className="w-3 h-3 inline ml-1" />
+            </Link>
           </div>
         </div>
       </section>
@@ -480,81 +447,28 @@ export default function LandingPage() {
             <Star className="w-7 h-7 text-primary" />
           </div>
           <h2 className="font-heading text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight mb-5 text-balance">
-            Ready to take control?
+            Ready to take control of your expenses?
           </h2>
           <p className="text-lg text-muted-foreground mb-8 max-w-xl mx-auto leading-relaxed">
-            Be among the first to experience the future of expense management. Join our early access program today.
+            Join hundreds of teams already using Monytar to streamline their expense management and gain financial clarity.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link href="/signup">
               <Button size="lg" className="h-12 px-8 text-base font-semibold shadow-lg shadow-primary/20">
-                Join Early Access
+                Get Started Free
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </Link>
-            <Link href="/login">
+            <Link href="/contact">
               <Button variant="outline" size="lg" className="h-12 px-8 text-base font-semibold bg-transparent">
-                View Demo
+                Talk to Sales
               </Button>
             </Link>
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-16 bg-card border-t border-border">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid md:grid-cols-4 gap-10 mb-12">
-            <div className="md:col-span-1">
-              <div className="mb-4">
-                <Logo size="md" />
-              </div>
-              <p className="text-sm text-muted-foreground leading-relaxed">Modern expense management for teams that move fast.</p>
-            </div>
-            <div>
-              <h4 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-4">Product</h4>
-              <ul className="flex flex-col gap-2.5">
-                {[
-                  { label: "Features", href: "#features" },
-                  { label: "Pricing", href: "#pricing" },
-                  { label: "Integrations", href: "#integrations" },
-                  { label: "Changelog", href: "#changelog" },
-                ].map((item) => (
-                  <li key={item.label}><a href={item.href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">{item.label}</a></li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-4">Company</h4>
-              <ul className="flex flex-col gap-2.5">
-                {[
-                  { label: "About", href: "/about" },
-                  { label: "Contact", href: "/contact" },
-                ].map((item) => (
-                  <li key={item.label}><Link href={item.href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">{item.label}</Link></li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-4">Legal</h4>
-              <ul className="flex flex-col gap-2.5">
-                {[
-                  { label: "Privacy", href: "/privacy" },
-                  { label: "Terms", href: "/terms" },
-                  { label: "Security", href: "/security" },
-                  { label: "GDPR", href: "/gdpr" },
-                ].map((item) => (
-                  <li key={item.label}><Link href={item.href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">{item.label}</Link></li>
-                ))}
-              </ul>
-            </div>
-          </div>
-          <div className="pt-8 border-t border-border flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-muted-foreground">&copy; 2026 SpendWell. All rights reserved.</p>
-            <p className="text-sm text-muted-foreground">Developed by <a href="https://www.gydgen.com" target="_blank" rel="noopener noreferrer" className="font-semibold text-foreground hover:text-primary transition-colors">GydGen</a></p>
-          </div>
-        </div>
-      </footer>
+      <LandingFooter />
     </div>
   )
 }

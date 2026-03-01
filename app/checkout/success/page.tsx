@@ -55,8 +55,8 @@ function SuccessContent() {
           <h1 className="font-heading text-2xl font-extrabold mb-2">Subscription Activated</h1>
           <p className="text-muted-foreground text-sm mb-6">
             {email
-              ? `A confirmation email has been sent to ${email}. Your SpendWell account is now active.`
-              : "Your SpendWell subscription is now active. You can start managing expenses immediately."
+              ? `A confirmation email has been sent to ${email}. Your Monytar account is now active.`
+              : "Your Monytar subscription is now active. You can start managing expenses immediately."
             }
           </p>
 
@@ -69,8 +69,8 @@ function SuccessContent() {
 
         <p className="text-xs text-muted-foreground mt-6">
           Need help? Contact us at{" "}
-          <a href="mailto:support@spendwell.io" className="text-primary hover:underline">
-            support@spendwell.io
+          <a href="mailto:support@monytar.com" className="text-primary hover:underline">
+            support@monytar.com
           </a>
         </p>
       </div>

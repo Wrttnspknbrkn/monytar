@@ -337,7 +337,7 @@ export default function SettingsPage() {
           <Card className="border-border/60">
             <CardHeader className="pb-4">
               <CardTitle className="font-heading text-base font-bold">Theme</CardTitle>
-              <CardDescription className="text-xs">Customize the look and feel of SpendWell</CardDescription>
+              <CardDescription className="text-xs">Customize the look and feel of Monytar</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-3 gap-4 max-w-md">

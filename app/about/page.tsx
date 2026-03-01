@@ -1,18 +1,19 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import {
-  Wallet,
   ArrowRight,
   Shield,
   Zap,
   Users,
+  Heart,
   Target,
   Globe,
-  Heart,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Logo } from "@/components/ui/logo"
+import { LandingHeader } from "@/components/landing/landing-header"
+import { LandingFooter } from "@/components/landing/landing-footer"
 
 const values = [
   {
@@ -28,7 +29,7 @@ const values = [
   {
     icon: Users,
     title: "Built for Teams",
-    description: "From solo founders to enterprise finance departments, SpendWell adapts to how your organization actually works.",
+    description: "From solo founders to enterprise finance departments, Monytar adapts to how your organization actually works.",
   },
   {
     icon: Heart,
@@ -38,46 +39,31 @@ const values = [
 ]
 
 const stats = [
-  { label: "Founded", value: "2026" },
-  { label: "Team Members", value: "12" },
-  { label: "Launch Status", value: "Beta" },
+  { label: "Founded", value: "2025" },
+  { label: "Headquarters", value: "Accra" },
+  { label: "Platform Status", value: "Live" },
   { label: "Vision", value: "Global" },
 ]
 
 const team = [
-  { name: "Amara Osei", role: "CEO & Co-Founder", description: "Former CFO at a Series C fintech. Experienced the expense pain firsthand." },
-  { name: "Liam Nakamura", role: "CTO & Co-Founder", description: "Previously infrastructure lead at a top payments company. Systems thinker." },
-  { name: "Sofia Reyes", role: "VP of Product", description: "10+ years designing financial tools. Passionate about making complex things simple." },
-  { name: "Raj Patel", role: "VP of Engineering", description: "Scaled engineering teams from 5 to 100. Believes in shipping fast and iterating." },
+  {
+    name: "Richmond Asare",
+    role: "Team Lead",
+    description: "Leads strategy and product vision with deep expertise in fintech and enterprise solutions. Passionate about building tools that empower finance teams.",
+    image: "/images/team/richmond.png",
+  },
+  {
+    name: "Kelvin Fameyeh",
+    role: "Software Developer",
+    description: "Full-stack engineer driving Monytar's technical architecture and development. Focused on building scalable, performant, and user-friendly software.",
+    image: "/images/team/kelvin.png",
+  },
 ]
 
 export default function AboutPage() {
   return (
     <div className="min-h-screen bg-background">
-      {/* Navigation */}
-      <header className="sticky top-0 z-50 bg-background/60 backdrop-blur-xl border-b border-border/50">
-        <div className="max-w-7xl mx-auto flex items-center justify-between h-16 px-6">
-          <Link href="/" className="flex items-center group">
-            <Logo size="md" />
-          </Link>
-          <nav className="hidden md:flex items-center gap-8">
-            <Link href="/#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200">Features</Link>
-            <Link href="/#pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200">Pricing</Link>
-            <Link href="/about" className="text-sm text-foreground font-medium transition-colors duration-200">About</Link>
-          </nav>
-          <div className="flex items-center gap-3">
-            <Link href="/login">
-              <Button variant="ghost" size="sm" className="text-sm font-medium">Log in</Button>
-            </Link>
-            <Link href="/signup">
-              <Button size="sm" className="text-sm font-medium shadow-sm shadow-primary/25 hover:shadow-md hover:shadow-primary/30 transition-all">
-                Get Started
-                <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </header>
+      <LandingHeader />
 
       {/* Hero */}
       <section className="relative overflow-hidden">
@@ -92,9 +78,22 @@ export default function AboutPage() {
             <span className="bg-gradient-to-r from-primary via-blue-600 to-cyan-500 bg-clip-text text-transparent">effortless</span>
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            SpendWell was born from a simple frustration: managing business expenses was unnecessarily painful.
-            We set out to change that.
+            Monytar was built from real-world frustration with outdated expense tools. We set out to create something better -- and we did.
           </p>
+        </div>
+      </section>
+
+      {/* About Image */}
+      <section className="max-w-5xl mx-auto px-6 pb-20">
+        <div className="relative rounded-2xl overflow-hidden border border-border shadow-xl shadow-foreground/5">
+          <Image
+            src="/images/about-hero.jpg"
+            alt="Team collaboration and financial planning"
+            width={1200}
+            height={600}
+            className="w-full h-64 md:h-96 object-cover"
+            priority
+          />
         </div>
       </section>
 
@@ -108,18 +107,13 @@ export default function AboutPage() {
             </h2>
             <div className="flex flex-col gap-4 text-muted-foreground leading-relaxed">
               <p>
-                Our founders spent years running growing companies and realized they were spending more time
-                chasing expense receipts and approval signatures than actually growing their businesses.
+                Managing business expenses has traditionally been a slow, manual, and error-prone process. Teams waste hours chasing receipts, navigating confusing approval chains, and reconciling spreadsheets at month-end.
               </p>
               <p>
-                Existing tools were either too complex for small teams or too simple for scaling organizations.
-                SpendWell fills that gap - powerful enough for enterprise finance teams,
-                intuitive enough that any employee can submit an expense in under 30 seconds.
+                Monytar solves this. We built a platform that is powerful enough for enterprise finance teams yet intuitive enough that any employee can submit an expense in under 30 seconds. Our configurable workflows, real-time budget tracking, and comprehensive reporting give organizations the visibility they need to make smarter financial decisions.
               </p>
               <p>
-                We're launching in 2026 with a vision to become the expense management platform that teams
-                actually love to use. Our beta is already showing promising results, and we're excited to
-                grow alongside the organizations we serve.
+                Based in Accra, Ghana, we are on a mission to bring world-class expense management to organizations of every size -- from startups to large enterprises across Africa and beyond.
               </p>
             </div>
           </div>
@@ -166,23 +160,28 @@ export default function AboutPage() {
           <div className="text-center mb-16">
             <p className="text-sm font-semibold text-primary uppercase tracking-widest mb-3">Leadership</p>
             <h2 className="font-heading text-3xl md:text-4xl font-extrabold tracking-tight mb-4 text-balance">
-              Meet the team behind SpendWell
+              Meet our team
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              A diverse group of builders, operators, and finance professionals united by a mission to make expense management better.
+              The people behind Monytar -- driven by a shared mission to make expense management better for everyone.
             </p>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
             {team.map((member) => (
-              <div key={member.name} className="group p-6 rounded-2xl border border-border bg-card hover:border-primary/20 transition-all duration-300 hover:shadow-lg hover:shadow-foreground/[0.03] hover:-translate-y-0.5 text-center">
-                <div className="flex items-center justify-center w-16 h-16 rounded-full bg-primary/5 border border-primary/10 mx-auto mb-4">
-                  <span className="text-xl font-bold text-primary">
-                    {member.name.split(" ").map((n) => n[0]).join("")}
-                  </span>
+              <div key={member.name} className="group rounded-2xl border border-border bg-card hover:border-primary/20 transition-all duration-300 hover:shadow-lg hover:shadow-foreground/[0.03] hover:-translate-y-0.5 overflow-hidden">
+                <div className="relative w-full aspect-[4/5] overflow-hidden">
+                  <Image
+                    src={member.image}
+                    alt={`${member.name} - ${member.role}`}
+                    fill
+                    className="object-cover object-top group-hover:scale-[1.02] transition-transform duration-500"
+                  />
                 </div>
-                <h3 className="font-heading font-bold text-base">{member.name}</h3>
-                <p className="text-sm text-primary font-medium mt-0.5">{member.role}</p>
-                <p className="text-sm text-muted-foreground mt-3 leading-relaxed">{member.description}</p>
+                <div className="p-6 text-center">
+                  <h3 className="font-heading font-bold text-lg">{member.name}</h3>
+                  <p className="text-sm text-primary font-semibold mt-0.5">{member.role}</p>
+                  <p className="text-sm text-muted-foreground mt-3 leading-relaxed">{member.description}</p>
+                </div>
               </div>
             ))}
           </div>
@@ -199,12 +198,12 @@ export default function AboutPage() {
             Ready to simplify your expenses?
           </h2>
           <p className="text-lg text-muted-foreground mb-8 max-w-xl mx-auto leading-relaxed">
-            Be among the first teams to experience the future of expense management with SpendWell.
+            Join organizations already using Monytar to streamline expense management and gain complete financial visibility.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link href="/signup">
               <Button size="lg" className="h-12 px-8 text-base font-semibold shadow-lg shadow-primary/20">
-                Start Free Trial
+                Get Started Free
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </Link>
@@ -217,60 +216,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-16 bg-card border-t border-border">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid md:grid-cols-4 gap-10 mb-12">
-            <div className="md:col-span-1">
-              <div className="mb-4">
-                <Logo size="md" />
-              </div>
-              <p className="text-sm text-muted-foreground leading-relaxed">Modern expense management for teams that move fast.</p>
-            </div>
-            <div>
-              <h4 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-4">Product</h4>
-              <ul className="flex flex-col gap-2.5">
-                {[
-                  { label: "Features", href: "#features" },
-                  { label: "Pricing", href: "#pricing" },
-                  { label: "Integrations", href: "#integrations" },
-                  { label: "Changelog", href: "#changelog" },
-                ].map((item) => (
-                  <li key={item.label}><a href={item.href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">{item.label}</a></li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-4">Company</h4>
-              <ul className="flex flex-col gap-2.5">
-                {[
-                  { label: "About", href: "/about" },
-                  { label: "Contact", href: "/contact" },
-                ].map((item) => (
-                  <li key={item.label}><Link href={item.href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">{item.label}</Link></li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-4">Legal</h4>
-              <ul className="flex flex-col gap-2.5">
-                {[
-                  { label: "Privacy", href: "/privacy" },
-                  { label: "Terms", href: "/terms" },
-                  { label: "Security", href: "/security" },
-                  { label: "GDPR", href: "/gdpr" },
-                ].map((item) => (
-                  <li key={item.label}><Link href={item.href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">{item.label}</Link></li>
-                ))}
-              </ul>
-            </div>
-          </div>
-          <div className="pt-8 border-t border-border flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-muted-foreground">&copy; 2026 SpendWell. All rights reserved.</p>
-            <p className="text-sm text-muted-foreground">Developed by <a href="https://www.gydgen.com" target="_blank" rel="noopener noreferrer" className="font-semibold text-foreground hover:text-primary transition-colors">GydGen</a></p>
-          </div>
-        </div>
-      </footer>
+      <LandingFooter />
     </div>
   )
 }

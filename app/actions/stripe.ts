@@ -14,7 +14,7 @@ export async function createCheckoutSession(productId: string) {
   }
 
   if (product.priceInCents === 0) {
-    return { error: "Enterprise plans require contacting sales. Please reach out to sales@spendwell.io" }
+    return { error: "Enterprise plans require contacting sales. Please reach out to sales@monytar.com" }
   }
 
   // Dynamic import to avoid errors when stripe is not configured
@@ -28,7 +28,7 @@ export async function createCheckoutSession(productId: string) {
           price_data: {
             currency: "usd",
             product_data: {
-              name: `SpendWell ${product.name}`,
+              name: `Monytar ${product.name}`,
               description: product.description,
             },
             unit_amount: product.priceInCents,
@@ -62,7 +62,7 @@ export async function getCheckoutSessionStatus(sessionId: string) {
     return {
       status: session.status,
       customerEmail: session.customer_details?.email,
-      planName: session.line_items?.data[0]?.description || "SpendWell Plan",
+      planName: session.line_items?.data[0]?.description || "Monytar Plan",
     }
   } catch (err) {
     console.error("Error retrieving session:", err)

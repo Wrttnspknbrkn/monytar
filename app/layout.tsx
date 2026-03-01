@@ -21,11 +21,11 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "SpendWell - Modern Expense Management Platform",
-    template: "%s | SpendWell",
+    default: "Monytar - Modern Expense Management Platform",
+    template: "%s | Monytar",
   },
   description:
-    "SpendWell is the modern way to manage business expenses. Streamline requests, automate approvals, track budgets, and gain real-time financial insights for your organization.",
+    "Monytar is the modern way to manage business expenses. Streamline requests, automate approvals, track budgets, and gain real-time financial insights for your organization.",
   keywords: [
     "expense management",
     "approval workflow",
@@ -34,21 +34,22 @@ export const metadata: Metadata = {
     "financial reporting",
     "business expenses",
     "spend management",
+    "monytar",
   ],
   authors: [{ name: "GydGen" }],
   creator: "GydGen",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://spendwell.io"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://monytar.com"),
   openGraph: {
     type: "website",
     locale: "en_US",
-    siteName: "SpendWell",
-    title: "SpendWell - Modern Expense Management Platform",
+    siteName: "Monytar",
+    title: "Monytar - Modern Expense Management Platform",
     description:
       "Streamline expense requests, automate approvals, and gain real-time financial insights for your organization.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "SpendWell - Modern Expense Management Platform",
+    title: "Monytar - Modern Expense Management Platform",
     description:
       "Streamline expense requests, automate approvals, and gain real-time financial insights.",
   },

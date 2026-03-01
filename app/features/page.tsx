@@ -4,28 +4,23 @@ import {
   FileText,
   CheckSquare,
   Store,
-  PieChart,
+  DollarSign,
   BarChart3,
   Smartphone,
   Bell,
   ShieldCheck,
   ArrowRight,
-  Wallet,
   Zap,
-  Lock,
-  Globe,
-  Users,
-  DollarSign,
-  TrendingUp,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Logo } from "@/components/ui/logo"
+import { LandingHeader } from "@/components/landing/landing-header"
+import { LandingFooter } from "@/components/landing/landing-footer"
 
 export const metadata: Metadata = {
   title: "Features",
   description:
-    "Explore SpendWell features: expense management, approval workflows, vendor management, budget control, reporting, mobile experience, notifications, and enterprise security.",
+    "Explore Monytar features: expense management, approval workflows, vendor management, budget control, reporting, mobile experience, notifications, and enterprise security.",
 }
 
 const features = [
@@ -130,30 +125,7 @@ const features = [
 export default function FeaturesPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/60">
-        <div className="max-w-6xl mx-auto flex items-center justify-between h-16 px-6">
-          <Link href="/" className="flex items-center group">
-            <Logo size="md" />
-          </Link>
-          <nav className="hidden md:flex items-center gap-8">
-            <Link href="/features" className="text-sm font-semibold text-primary">Features</Link>
-            <Link href="/pricing" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Pricing</Link>
-            <Link href="/about" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">About</Link>
-            <Link href="/contact" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Contact</Link>
-          </nav>
-          <div className="flex items-center gap-3">
-            <Link href="/login">
-              <Button variant="ghost" size="sm" className="font-semibold">Sign In</Button>
-            </Link>
-            <Link href="/signup">
-              <Button size="sm" className="font-semibold shadow-sm shadow-primary/25">
-                Get Started <ArrowRight className="w-3.5 h-3.5 ml-1" />
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </header>
+      <LandingHeader />
 
       {/* Hero */}
       <section className="py-20 md:py-28 px-6">
@@ -166,7 +138,7 @@ export default function FeaturesPage() {
             Powerful features for modern expense management
           </h1>
           <p className="text-muted-foreground text-lg leading-relaxed mt-4 max-w-2xl mx-auto text-pretty">
-            From submission to reimbursement, SpendWell gives your team the tools they need to control spending, streamline approvals, and gain complete financial visibility.
+            From submission to reimbursement, Monytar gives your team the tools they need to control spending, streamline approvals, and gain complete financial visibility.
           </p>
         </div>
       </section>
@@ -208,30 +180,24 @@ export default function FeaturesPage() {
       </section>
 
       {/* CTA */}
-      <section className="py-20 px-6">
+      <section className="py-20 px-6 bg-secondary/30 border-y border-border">
         <div className="max-w-3xl mx-auto text-center">
           <h2 className="font-heading text-3xl font-extrabold tracking-tight mb-4">Ready to take control of your spending?</h2>
           <p className="text-muted-foreground text-lg mb-8">Start for free. No credit card required.</p>
           <div className="flex items-center justify-center gap-4">
             <Link href="/signup">
               <Button size="lg" className="font-semibold shadow-sm shadow-primary/25">
-                Start Free Trial <ArrowRight className="w-4 h-4 ml-2" />
+                Get Started Free <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
             </Link>
             <Link href="/contact">
-              <Button variant="outline" size="lg" className="font-semibold">Contact Sales</Button>
+              <Button variant="outline" size="lg" className="font-semibold bg-transparent">Contact Sales</Button>
             </Link>
           </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-border bg-secondary/20 py-8 px-6">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <Logo size="sm" />
-          <p className="text-sm text-muted-foreground">&copy; 2026 SpendWell. All rights reserved.</p>
-        </div>
-      </footer>
+      <LandingFooter />
     </div>
   )
 }

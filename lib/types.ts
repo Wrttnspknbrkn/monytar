@@ -1,4 +1,4 @@
-// SpendWell Type Definitions
+// Monytar Type Definitions
 
 export type UserRole = "employee" | "manager" | "finance" | "admin"
 export type RequestStatus = "draft" | "pending" | "approved" | "rejected" | "paid" | "cancelled"
