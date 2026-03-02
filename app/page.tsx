@@ -248,10 +248,10 @@ export default function LandingPage() {
           </div>
           <div className="relative w-full aspect-[16/9]">
             <Image
-              src="/images/hero-dashboard.jpg"
-              alt="Monytar expense management dashboard showing real-time analytics and approval workflows"
+              src="/images/dashboard-preview.png"
+              alt="Monytar expense management dashboard showing real-time analytics, spending trends, and approval workflows"
               fill
-              className="object-cover"
+              className="object-cover object-left-top"
               priority
             />
           </div>

@@ -50,6 +50,26 @@ export async function createCheckoutSession(productId: string) {
   }
 }
 
+export async function createCustomerPortalSession(customerId: string) {
+  if (!isStripeConfigured()) {
+    return { error: "Stripe is not configured. Please add your Stripe environment variables." }
+  }
+
+  const { stripe } = await import("@/lib/stripe/server")
+
+  try {
+    const session = await stripe.billingPortal.sessions.create({
+      customer: customerId,
+      return_url: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/settings`,
+    })
+
+    return { url: session.url }
+  } catch (err) {
+    console.error("Stripe portal error:", err)
+    return { error: "Failed to open billing portal. Please try again." }
+  }
+}
+
 export async function getCheckoutSessionStatus(sessionId: string) {
   if (!isStripeConfigured()) {
     return { error: "Stripe is not configured" }

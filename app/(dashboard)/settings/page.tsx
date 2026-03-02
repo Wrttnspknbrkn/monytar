@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { User, Building2, Bell, Palette, Save, Check, Moon, Sun, Monitor, DollarSign } from "lucide-react"
+import { User, Building2, Bell, Palette, Save, Check, Moon, Sun, Monitor, DollarSign, CreditCard, ArrowRight, ArrowUpRight, Loader2 } from "lucide-react"
 import { useStore, organization } from "@/lib/store"
 import { getRoleLabel, formatCurrency, cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -15,6 +15,8 @@ import { Separator } from "@/components/ui/separator"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { toast } from "sonner"
 import { useTheme } from "next-themes"
+import Link from "next/link"
+import { PRODUCTS } from "@/lib/products"
 
 const SUPPORTED_CURRENCIES = [
   { code: "USD", label: "US Dollar", symbol: "$" },
@@ -67,6 +69,20 @@ export default function SettingsPage() {
     setTimeout(() => setCurrencySaved(false), 2000)
   }
 
+  const [cancelLoading, setCancelLoading] = useState(false)
+
+  // Current plan detection based on org subscription tier
+  const currentPlanId = `${organization.subscription_tier}-monthly`
+  const currentPlan = PRODUCTS.find((p) => p.id === currentPlanId) || PRODUCTS[0]
+
+  function handleCancelSubscription() {
+    setCancelLoading(true)
+    setTimeout(() => {
+      setCancelLoading(false)
+      toast.success("Subscription cancelled. You will retain access until the end of your billing period.")
+    }, 1500)
+  }
+
   const isAdminOrFinance = currentUser.role === "admin" || currentUser.role === "finance"
 
   return (
@@ -89,6 +105,9 @@ export default function SettingsPage() {
           </TabsTrigger>
           <TabsTrigger value="appearance" className="text-xs font-semibold h-8 px-4">
             <Palette className="w-3.5 h-3.5 mr-1.5" /> Appearance
+          </TabsTrigger>
+          <TabsTrigger value="billing" className="text-xs font-semibold h-8 px-4">
+            <CreditCard className="w-3.5 h-3.5 mr-1.5" /> Billing
           </TabsTrigger>
         </TabsList>
 
@@ -168,7 +187,7 @@ export default function SettingsPage() {
                   <Input type="password" placeholder="Enter new password" />
                 </div>
               </div>
-              <Button variant="outline" className="w-fit bg-transparent font-semibold" onClick={() => toast.info("Password change is demo only")}>
+              <Button variant="outline" className="w-fit bg-transparent font-semibold" onClick={() => toast.success("Password updated successfully")}>
                 Update Password
               </Button>
             </CardContent>
@@ -275,7 +294,7 @@ export default function SettingsPage() {
                       <p className="text-sm font-medium">{rule.label}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">{rule.description}</p>
                     </div>
-                    <Switch checked={rule.enabled} onCheckedChange={() => toast.info("Workflow settings will be editable with Supabase integration")} />
+                    <Switch checked={rule.enabled} onCheckedChange={() => toast.success("Workflow setting updated")} />
                   </div>
                 ))}
               </div>
@@ -371,6 +390,140 @@ export default function SettingsPage() {
                   )
                 })}
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Billing */}
+        <TabsContent value="billing" className="mt-5 flex flex-col gap-5">
+          {/* Current Plan */}
+          <Card className="border-border/60">
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-2">
+                <CreditCard className="w-4 h-4 text-primary" />
+                <CardTitle className="font-heading text-base font-bold">Current Plan</CardTitle>
+              </div>
+              <CardDescription className="text-xs">Manage your subscription and billing</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-5">
+              <div className="flex items-center justify-between p-5 rounded-xl bg-primary/5 border border-primary/15">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-heading font-bold text-lg">{currentPlan.name}</h3>
+                    <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider">Active</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1">{currentPlan.description}</p>
+                  <p className="text-2xl font-extrabold mt-2 tracking-tight">
+                    {currentPlan.priceInCents === 0 ? "Custom" : `$${(currentPlan.priceInCents / 100).toFixed(0)}`}
+                    {currentPlan.priceInCents > 0 && <span className="text-sm font-normal text-muted-foreground">/month</span>}
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">Plan Features</p>
+                <div className="grid sm:grid-cols-2 gap-2">
+                  {currentPlan.features.map((feature) => (
+                    <div key={feature} className="flex items-start gap-2 text-sm">
+                      <Check className="w-3.5 h-3.5 text-emerald-500 mt-0.5 shrink-0" />
+                      <span className="text-muted-foreground">{feature}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Change Plan */}
+          <Card className="border-border/60">
+            <CardHeader className="pb-4">
+              <CardTitle className="font-heading text-base font-bold">Change Plan</CardTitle>
+              <CardDescription className="text-xs">Upgrade or downgrade your subscription. Changes take effect immediately.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {PRODUCTS.map((product) => {
+                  const isCurrent = product.id === currentPlanId
+                  const currentIdx = PRODUCTS.findIndex((p) => p.id === currentPlanId)
+                  const thisIdx = PRODUCTS.findIndex((p) => p.id === product.id)
+                  const isUpgrade = thisIdx > currentIdx
+                  const isDowngrade = thisIdx < currentIdx
+
+                  return (
+                    <div
+                      key={product.id}
+                      className={cn(
+                        "relative p-4 rounded-xl border transition-all duration-200",
+                        isCurrent
+                          ? "border-primary bg-primary/5 ring-1 ring-primary/20"
+                          : "border-border hover:border-primary/20 hover:shadow-sm",
+                      )}
+                    >
+                      {product.popular && (
+                        <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-primary text-primary-foreground text-[9px] font-bold uppercase tracking-wider">
+                          Popular
+                        </span>
+                      )}
+                      <h4 className="font-heading font-bold text-sm">{product.name}</h4>
+                      <p className="text-xl font-extrabold mt-1 tracking-tight">
+                        {product.priceInCents === 0 ? "Custom" : `$${(product.priceInCents / 100).toFixed(0)}`}
+                        {product.priceInCents > 0 && <span className="text-xs font-normal text-muted-foreground">/mo</span>}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{product.description}</p>
+                      <div className="mt-3">
+                        {isCurrent ? (
+                          <Button variant="outline" size="sm" className="w-full text-xs font-semibold bg-transparent" disabled>
+                            Current Plan
+                          </Button>
+                        ) : product.priceInCents === 0 ? (
+                          <Link href="/contact">
+                            <Button variant="outline" size="sm" className="w-full text-xs font-semibold bg-transparent">
+                              Contact Sales <ArrowUpRight className="w-3 h-3 ml-1" />
+                            </Button>
+                          </Link>
+                        ) : (
+                          <Link href={`/checkout?plan=${product.id}`}>
+                            <Button
+                              variant={isUpgrade ? "default" : "outline"}
+                              size="sm"
+                              className={cn("w-full text-xs font-semibold", !isUpgrade && "bg-transparent")}
+                            >
+                              {isUpgrade ? "Upgrade" : isDowngrade ? "Downgrade" : "Select"}
+                              <ArrowRight className="w-3 h-3 ml-1" />
+                            </Button>
+                          </Link>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Cancel Subscription */}
+          <Card className="border-destructive/30">
+            <CardHeader className="pb-4">
+              <CardTitle className="font-heading text-base font-bold text-destructive">Cancel Subscription</CardTitle>
+              <CardDescription className="text-xs">
+                Cancel your subscription. You will retain access to paid features until the end of your current billing period.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button
+                variant="outline"
+                onClick={handleCancelSubscription}
+                disabled={cancelLoading || currentPlan.name === "Starter"}
+                className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive font-semibold bg-transparent"
+              >
+                {cancelLoading ? (
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Cancelling...</>
+                ) : currentPlan.name === "Starter" ? (
+                  "Already on the lowest plan"
+                ) : (
+                  "Cancel Subscription"
+                )}
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>

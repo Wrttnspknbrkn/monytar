@@ -129,15 +129,23 @@ export function Sidebar() {
 
         {/* Collapse + footer */}
         <div className="p-2.5 border-t border-sidebar-border flex flex-col gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setCollapsed(!collapsed)}
-            className="w-full flex items-center justify-center text-sidebar-foreground hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/60 h-9"
-          >
-            {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-            {!collapsed && <span className="ml-2 text-xs font-medium">Collapse</span>}
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={() => setCollapsed(!collapsed)}
+                className={cn(
+                  "flex items-center justify-center rounded-xl border border-sidebar-border/60 text-sidebar-foreground/70 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/60 hover:border-sidebar-accent/40 active:scale-95 transition-all duration-200",
+                  collapsed ? "w-10 h-10 mx-auto" : "w-full h-10",
+                )}
+              >
+                {collapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side={collapsed ? "right" : "top"} className="font-medium">
+              {collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            </TooltipContent>
+          </Tooltip>
           {!collapsed && (
             <p className="text-[10px] text-sidebar-foreground/40 text-center pb-1">
               Developed by <a href="https://www.gydgen.com" target="_blank" rel="noopener noreferrer" className="font-medium text-sidebar-foreground/60 hover:text-sidebar-primary transition-colors">GydGen</a>

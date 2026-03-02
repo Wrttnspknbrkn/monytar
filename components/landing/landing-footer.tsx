@@ -4,7 +4,6 @@ import { Logo } from "@/components/ui/logo"
 const productLinks = [
   { label: "Features", href: "/features" },
   { label: "Pricing", href: "/pricing" },
-  { label: "Integrations", href: "/integrations" },
   { label: "Changelog", href: "/changelog" },
 ]
 
