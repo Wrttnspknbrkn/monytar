@@ -54,6 +54,8 @@ export function Logo({ size = "md", className, showIcon = true, variant = "defau
         height={s.imgH}
         className="object-contain"
         priority
+        loading="eager"
+        quality={85}
       />
     </span>
   )

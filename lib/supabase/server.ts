@@ -1,6 +1,8 @@
-import { createServerClient } from "@supabase/ssr"
+import { createServerClient, type CookieOptions } from "@supabase/ssr"
 import { cookies } from "next/headers"
 import { getSupabaseUrl, getSupabaseAnonKey, isSupabaseConfigured } from "./config"
+
+type CookieToSet = { name: string; value: string; options?: CookieOptions }
 
 /**
  * Creates a Supabase server client using cookie-based auth.
@@ -18,7 +20,7 @@ export async function getSupabaseServerClient() {
       getAll() {
         return cookieStore.getAll()
       },
-      setAll(cookiesToSet) {
+      setAll(cookiesToSet: CookieToSet[]) {
         try {
           cookiesToSet.forEach(({ name, value, options }) =>
             cookieStore.set(name, value, options)

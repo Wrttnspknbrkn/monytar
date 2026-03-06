@@ -11,8 +11,8 @@ export async function PATCH(
   }
 
   try {
-    const { createServerClient } = await import("@/lib/supabase/server")
-    const supabase = await createServerClient()
+    const { getSupabaseServerClient } = await import("@/lib/supabase/server")
+    const supabase = await getSupabaseServerClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
