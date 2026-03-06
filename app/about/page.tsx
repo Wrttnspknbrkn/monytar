@@ -93,7 +93,7 @@ export default function AboutPage() {
             height={600}
             className="w-full h-64 md:h-96 object-cover"
             priority
-            unoptimized
+            loading="eager"
           />
         </div>
       </section>

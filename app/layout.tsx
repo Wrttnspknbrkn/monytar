@@ -46,12 +46,21 @@ export const metadata: Metadata = {
     title: "Monytar - Modern Expense Management Platform",
     description:
       "Streamline expense requests, automate approvals, and gain real-time financial insights for your organization.",
+    images: [
+      {
+        url: "/images/dashboard-preview.png",
+        width: 1200,
+        height: 630,
+        alt: "Monytar Dashboard Preview",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Monytar - Modern Expense Management Platform",
     description:
       "Streamline expense requests, automate approvals, and gain real-time financial insights.",
+    images: ["/images/dashboard-preview.png"],
   },
   robots: {
     index: true,
