@@ -3,9 +3,9 @@ import { Wallet } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const sizes = {
-  sm: { wrapper: "gap-1", imgH: 22, iconBox: "w-6 h-6", iconInner: "w-3 h-3" },
-  md: { wrapper: "gap-1.5", imgH: 30, iconBox: "w-8 h-8", iconInner: "w-4 h-4" },
-  lg: { wrapper: "gap-2", imgH: 36, iconBox: "w-10 h-10", iconInner: "w-5 h-5" },
+  sm: { wrapper: "gap-0.5", imgH: 22, iconBox: "w-6 h-6", iconInner: "w-3 h-3" },
+  md: { wrapper: "gap-1", imgH: 30, iconBox: "w-8 h-8", iconInner: "w-4 h-4" },
+  lg: { wrapper: "gap-1.5", imgH: 36, iconBox: "w-10 h-10", iconInner: "w-5 h-5" },
 }
 
 interface LogoProps {

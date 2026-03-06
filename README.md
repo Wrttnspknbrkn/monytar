@@ -112,6 +112,14 @@ Run the SQL migrations in your Supabase project in order:
 
 1. `supabase/migrations/001_initial_schema.sql` -- Creates all tables, indexes, and triggers
 2. `supabase/migrations/002_rls_policies.sql` -- Enables Row Level Security policies
+3. `supabase/migrations/003_subscription_columns.sql` -- Adds Stripe subscription tracking
+
+## Documentation
+
+Additional documentation is available in the `/docs` folder:
+
+- **[SECURITY.md](docs/SECURITY.md)** -- Security best practices, RLS policies, input validation, and production hardening checklist
+- **[ENTERPRISE_DEPLOYMENT.md](docs/ENTERPRISE_DEPLOYMENT.md)** -- Guide for on-premise deployments, enterprise sales flow, and dedicated infrastructure setup
 
 ## Subscription Plans
 

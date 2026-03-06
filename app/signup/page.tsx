@@ -270,7 +270,7 @@ export default function SignupPage() {
                 <Label htmlFor="orgName" className="text-[13px] font-medium">Organization Name</Label>
                 <Input
                   id="orgName"
-                  placeholder="Acme Corporation"
+                  placeholder="Your Company Name"
                   value={formData.orgName}
                   onChange={(e) => { setFormData({ ...formData, orgName: e.target.value }); setErrors({}) }}
                   className={cn("h-10", errors.orgName && "border-red-500")}

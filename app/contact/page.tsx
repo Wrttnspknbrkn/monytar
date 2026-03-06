@@ -98,7 +98,7 @@ export default function ContactPage() {
                 </div>
                 <div className="flex flex-col gap-2">
                   <Label className="text-[13px] font-medium">Company</Label>
-                  <Input placeholder="Acme Corp" />
+                  <Input placeholder="Your Company" />
                 </div>
                 <div className="flex flex-col gap-2">
                   <Label className="text-[13px] font-medium">How can we help?</Label>

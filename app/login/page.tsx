@@ -263,10 +263,10 @@ export default function LoginPage() {
             </p>
             <div className="grid grid-cols-2 gap-2">
               {[
-                { label: "Employee", email: "alex.johnson@acme.com", color: "hover:border-blue-300 dark:hover:border-blue-700" },
-                { label: "Manager", email: "maria.garcia@acme.com", color: "hover:border-emerald-300 dark:hover:border-emerald-700" },
-                { label: "Finance", email: "james.wilson@acme.com", color: "hover:border-amber-300 dark:hover:border-amber-700" },
-                { label: "Admin", email: "sarah.chen@acme.com", color: "hover:border-rose-300 dark:hover:border-rose-700" },
+                { label: "Employee", email: "kofi.adjei@goldcoast.com", color: "hover:border-blue-300 dark:hover:border-blue-700" },
+                { label: "Manager", email: "abena.osei@goldcoast.com", color: "hover:border-emerald-300 dark:hover:border-emerald-700" },
+                { label: "Finance", email: "kwame.asante@goldcoast.com", color: "hover:border-amber-300 dark:hover:border-amber-700" },
+                { label: "Admin", email: "akosua.mensah@goldcoast.com", color: "hover:border-rose-300 dark:hover:border-rose-700" },
               ].map((demo) => (
                 <Button
                   key={demo.label}
