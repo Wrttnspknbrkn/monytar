@@ -35,7 +35,7 @@ export async function createCheckoutSession(productId: string, userEmail?: strin
   const { stripe } = await import("@/lib/stripe/server")
 
   try {
-    const sessionParams: Parameters<typeof stripe.checkout.sessions.create>[0] = {
+    const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       line_items: [
         {
@@ -49,7 +49,7 @@ export async function createCheckoutSession(productId: string, userEmail?: strin
                 max_users: String(product.maxUsers || 'unlimited'),
               },
             },
-            unit_amount: product.priceInCents, // Server-defined price only
+            unit_amount: product.priceInCents,
             recurring: {
               interval: product.interval,
             },
@@ -59,21 +59,14 @@ export async function createCheckoutSession(productId: string, userEmail?: strin
       ],
       ui_mode: "embedded",
       return_url: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-      // Allow subscription updates
       subscription_data: {
         metadata: {
           product_id: product.id,
           tier: product.name.toLowerCase(),
         },
       },
-    }
-
-    // Pre-fill email if provided (for logged-in users)
-    if (userEmail) {
-      sessionParams.customer_email = userEmail
-    }
-
-    const session = await stripe.checkout.sessions.create(sessionParams)
+      ...(userEmail && { customer_email: userEmail }),
+    })
 
     return { clientSecret: session.client_secret }
   } catch (err) {
