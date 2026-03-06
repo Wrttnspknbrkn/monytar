@@ -1,5 +1,6 @@
 "use server"
 
+import type Stripe from "stripe"
 import { isStripeConfigured } from "@/lib/stripe/config"
 import { getProductById, PRODUCTS } from "@/lib/products"
 
@@ -35,7 +36,7 @@ export async function createCheckoutSession(productId: string, userEmail?: strin
   const { stripe } = await import("@/lib/stripe/server")
 
   try {
-    const sessionParams: Parameters<typeof stripe.checkout.sessions.create>[0] = {
+    const sessionParams: Stripe.Checkout.SessionCreateParams = {
       mode: "subscription",
       line_items: [
         {
