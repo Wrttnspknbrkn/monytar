@@ -1,9 +1,10 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo, useState, useEffect } from "react"
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import { Plus, Search, FileText, SlidersHorizontal } from "lucide-react"
-import { useStore } from "@/lib/store"
+import { useData, useAuth } from "@/lib/providers"
 import { formatCurrency, formatDate, getCategoryLabel } from "@/lib/utils"
 import { RequestStatusBadge } from "@/components/requests/request-status-badge"
 import { Button } from "@/components/ui/button"
@@ -15,12 +16,24 @@ import { Card, CardContent } from "@/components/ui/card"
 import type { ExpenseCategory } from "@/lib/types"
 
 export default function RequestsPage() {
-  const { currentUser, expenseRequests, getMyRequests, getUserById, getVendorById } = useStore()
+  const { dbUser } = useAuth()
+  const { currentUser, expenseRequests, getMyRequests, getUserById, getVendorById } = useData()
+  const searchParams = useSearchParams()
+  
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [categoryFilter, setCategoryFilter] = useState<string>("all")
 
-  const isEmployee = currentUser.role === "employee"
+  // Initialize filters from URL params
+  useEffect(() => {
+    const status = searchParams.get("status")
+    if (status && ["draft", "pending", "approved", "rejected", "paid", "cancelled"].includes(status)) {
+      setStatusFilter(status)
+    }
+  }, [searchParams])
+
+  const user = dbUser || currentUser
+  const isEmployee = user?.role === "employee"
   const requests = isEmployee ? getMyRequests() : expenseRequests
 
   const filtered = useMemo(() => {

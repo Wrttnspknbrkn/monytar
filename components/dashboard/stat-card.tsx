@@ -1,9 +1,10 @@
 "use client"
 
+import Link from "next/link"
 import type { LucideIcon } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
-import { TrendingUp, TrendingDown } from "lucide-react"
+import { TrendingUp, TrendingDown, ArrowRight } from "lucide-react"
 
 interface StatCardProps {
   title: string
@@ -12,11 +13,16 @@ interface StatCardProps {
   trend?: { value: string; positive: boolean }
   className?: string
   iconClassName?: string
+  href?: string
 }
 
-export function StatCard({ title, value, icon: Icon, trend, className, iconClassName }: StatCardProps) {
+export function StatCard({ title, value, icon: Icon, trend, className, iconClassName, href }: StatCardProps) {
+  const CardWrapper = href ? Link : "div"
+  const cardProps = href ? { href } : {}
+  
   return (
-    <Card
+    <CardWrapper {...cardProps} className={href ? "block" : undefined}>
+      <Card
       className={cn(
         "group relative overflow-hidden border-border/60 hover:border-primary/20 transition-all duration-300 hover:shadow-md hover:shadow-foreground/[0.03]",
         className,
@@ -58,6 +64,14 @@ export function StatCard({ title, value, icon: Icon, trend, className, iconClass
       </CardContent>
       {/* Subtle hover gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.01] to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+      
+      {/* Clickable indicator */}
+      {href && (
+        <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+          <ArrowRight className="w-4 h-4 text-primary" />
+        </div>
+      )}
     </Card>
+    </CardWrapper>
   )
 }

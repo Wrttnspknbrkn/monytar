@@ -19,6 +19,8 @@ export type NotificationType =
 export type AlertType = "low_budget" | "over_budget" | "approaching_limit"
 export type ApprovalStatus = "pending" | "approved" | "rejected" | "skipped"
 
+export type SubscriptionStatus = "active" | "inactive" | "trialing" | "past_due" | "canceled" | "unpaid"
+
 export interface Organization {
   id: string
   name: string
@@ -28,7 +30,14 @@ export interface Organization {
   timezone: string
   settings: Record<string, unknown>
   subscription_tier: SubscriptionTier
-  subscription_status: "active" | "inactive" | "trial" | "cancelled"
+  subscription_status: SubscriptionStatus
+  stripe_customer_id?: string
+  stripe_subscription_id?: string
+  max_users: number
+  current_period_start?: string
+  current_period_end?: string
+  cancel_at_period_end?: boolean
+  trial_end?: string
   created_at: string
   updated_at: string
 }
@@ -188,6 +197,37 @@ export interface OrganizationSettings {
   fiscal_year_start: string
   email_notifications_enabled: boolean
   expense_categories: string[]
+}
+
+export type InvitationStatus = "pending" | "accepted" | "expired" | "revoked"
+
+export interface UserInvitation {
+  id: string
+  organization_id: string
+  email: string
+  role: UserRole
+  department_id?: string
+  invited_by?: string
+  token: string
+  expires_at: string
+  accepted_at?: string
+  status: InvitationStatus
+  created_at: string
+}
+
+export interface SubscriptionHistory {
+  id: string
+  organization_id: string
+  stripe_subscription_id?: string
+  event_type: string
+  previous_tier?: SubscriptionTier
+  new_tier?: SubscriptionTier
+  previous_status?: SubscriptionStatus
+  new_status?: SubscriptionStatus
+  amount_cents?: number
+  currency: string
+  metadata?: Record<string, unknown>
+  created_at: string
 }
 
 // Helper types for UI
