@@ -33,8 +33,8 @@ const plans = [
   },
   {
     name: "Starter",
-    price: "$29",
-    period: "/user/month",
+    price: "$49",
+    period: "/month",
     description: "For growing teams that need more control and visibility.",
     cta: "Start Free Trial",
     ctaVariant: "outline" as const,
@@ -52,14 +52,14 @@ const plans = [
   },
   {
     name: "Professional",
-    price: "$99",
-    period: "/user/month",
+    price: "$149",
+    period: "/month",
     description: "For mid-size organizations that need advanced features.",
     cta: "Start Free Trial",
     ctaVariant: "default" as const,
     popular: true,
     features: [
-      "Unlimited users",
+      "Up to 100 users",
       "Unlimited requests",
       "Advanced approval chains",
       "Budget management",
@@ -82,24 +82,23 @@ const plans = [
     popular: false,
     features: [
       "Everything in Professional",
+      "Unlimited users",
       "Custom integrations",
       "Dedicated account manager",
       "SLA guarantee",
       "On-premise option",
       "Custom branding",
       "Advanced security (SOC 2)",
-      "GDPR compliance tools",
-      "Bulk data import",
-      "Training & onboarding",
       "24/7 priority support",
     ],
   },
 ]
 
 const comparisonFeatures = [
-  { name: "Users", free: "5", starter: "25", pro: "Unlimited", enterprise: "Unlimited" },
+  { name: "Users", free: "5", starter: "25", pro: "100", enterprise: "Unlimited" },
   { name: "Expense Requests", free: "50/mo", starter: "Unlimited", pro: "Unlimited", enterprise: "Unlimited" },
   { name: "Departments", free: "1", starter: "5", pro: "Unlimited", enterprise: "Unlimited" },
+  { name: "Pricing", free: "$0", starter: "$49/mo", pro: "$149/mo", enterprise: "Custom" },
   { name: "Approval Workflows", free: "Basic", starter: "Multi-level", pro: "Advanced", enterprise: "Custom" },
   { name: "Budget Management", free: false, starter: false, pro: true, enterprise: true },
   { name: "Vendor Management", free: false, starter: true, pro: true, enterprise: true },
@@ -118,20 +117,24 @@ const faqs = [
     a: "Yes. All paid plans come with a 14-day free trial. No credit card required. You can also use our Free plan indefinitely for up to 5 users.",
   },
   {
-    q: "How does the demo mode work?",
-    a: "When you sign up, you can explore the full platform with sample data. Switch between roles (employee, manager, finance, admin) to see how different users interact with the system. When ready, connect your database to go live.",
+    q: "How does the interactive demo work?",
+    a: "Click 'Try Interactive Demo' to explore the full platform with sample data. You can switch between roles (Employee, Manager, Finance, Admin) to see how each user type interacts with the system - submit expenses, approve requests, manage budgets, and more. No signup required.",
+  },
+  {
+    q: "How is billing structured?",
+    a: "Monytar uses organization-based pricing, not per-user pricing. Each plan includes a set number of users (5, 25, or 100+) for a flat monthly fee. This makes costs predictable as your team grows within your plan limits.",
   },
   {
     q: "Can I upgrade or downgrade at any time?",
-    a: "Absolutely. You can change your plan at any time. Upgrades take effect immediately, and downgrades apply at the end of your current billing period.",
+    a: "Absolutely. You can change your plan at any time. Upgrades take effect immediately with prorated billing, and downgrades apply at the end of your current billing period.",
   },
   {
     q: "What about enterprise deployment?",
-    a: "Enterprise customers can choose between our cloud-hosted solution or an on-premise deployment. We provide full support for custom integrations, SSO, and dedicated infrastructure.",
+    a: "Enterprise customers can choose between our cloud-hosted solution or an on-premise deployment. We provide full support for custom integrations, SSO/SAML, dedicated infrastructure, and SLA guarantees.",
   },
   {
     q: "Is my data secure?",
-    a: "Security is our top priority. We use end-to-end encryption, role-based access control, and maintain SOC 2 Type II compliance. All data is encrypted at rest and in transit.",
+    a: "Security is our top priority. We use end-to-end encryption, role-based access control with Row Level Security (RLS), and maintain SOC 2 Type II compliance. All data is encrypted at rest and in transit.",
   },
 ]
 

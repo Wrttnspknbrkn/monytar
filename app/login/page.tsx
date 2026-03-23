@@ -230,29 +230,35 @@ export default function LoginPage() {
 
           {/* Demo quick login */}
           <div className="mt-8 pt-6 border-t border-border">
-            <p className="text-xs text-muted-foreground text-center mb-3 font-medium uppercase tracking-wider">
-              Try the demo
-            </p>
+            <div className="text-center mb-4">
+              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1">
+                Interactive Demo
+              </p>
+              <p className="text-[11px] text-muted-foreground/70">
+                Explore the full platform with sample data. No signup required.
+              </p>
+            </div>
             <div className="grid grid-cols-2 gap-2">
               {[
-                { label: "Employee", role: "employee" as const, color: "hover:border-blue-300 dark:hover:border-blue-700" },
-                { label: "Manager", role: "manager" as const, color: "hover:border-emerald-300 dark:hover:border-emerald-700" },
-                { label: "Finance", role: "finance" as const, color: "hover:border-amber-300 dark:hover:border-amber-700" },
-                { label: "Admin", role: "admin" as const, color: "hover:border-rose-300 dark:hover:border-rose-700" },
+                { label: "Employee", role: "employee" as const, desc: "Submit expenses", color: "hover:border-blue-300 dark:hover:border-blue-700" },
+                { label: "Manager", role: "manager" as const, desc: "Approve requests", color: "hover:border-emerald-300 dark:hover:border-emerald-700" },
+                { label: "Finance", role: "finance" as const, desc: "Process payments", color: "hover:border-amber-300 dark:hover:border-amber-700" },
+                { label: "Admin", role: "admin" as const, desc: "Full access", color: "hover:border-rose-300 dark:hover:border-rose-700" },
               ].map((demo) => (
                 <Button
                   key={demo.label}
                   variant="outline"
                   size="sm"
-                  className={cn("text-xs font-medium bg-transparent transition-colors", demo.color)}
+                  className={cn("h-auto py-2 flex flex-col items-center text-xs font-medium bg-transparent transition-colors", demo.color)}
                   onClick={() => handleDemoLogin(demo.role)}
                 >
-                  {demo.label}
+                  <span>{demo.label}</span>
+                  <span className="text-[10px] text-muted-foreground font-normal">{demo.desc}</span>
                 </Button>
               ))}
             </div>
-            <p className="text-[11px] text-muted-foreground/60 text-center mt-2">
-              Demo data resets on page reload
+            <p className="text-[10px] text-muted-foreground/50 text-center mt-3">
+              Switch roles anytime from the user menu
             </p>
           </div>
 

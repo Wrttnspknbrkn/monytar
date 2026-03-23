@@ -171,9 +171,9 @@ export default function SignupPage() {
 
           <div className="flex flex-col gap-3">
             {[
-              { icon: Users, text: "Invite unlimited team members" },
-              { icon: BarChart3, text: "Real-time analytics and budget tracking" },
-              { icon: ShieldCheck, text: "Enterprise-grade security" },
+              { icon: Users, text: "Free plan includes up to 5 users" },
+              { icon: BarChart3, text: "Flat monthly pricing per organization" },
+              { icon: ShieldCheck, text: "Enterprise-grade security included" },
             ].map((item) => {
               const Icon = item.icon
               return (
@@ -296,9 +296,13 @@ export default function SignupPage() {
                 <Check className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
               </div>
               <h3 className="font-heading font-bold text-lg mb-2">Your account is ready!</h3>
-              <p className="text-sm text-muted-foreground">
-                Click below to access your dashboard and start managing expenses.
+              <p className="text-sm text-muted-foreground mb-4">
+                {"You're on the Free plan with up to 5 users. Upgrade anytime from Settings."}
               </p>
+              <div className="bg-secondary/50 rounded-lg p-3 text-xs text-muted-foreground">
+                <p className="font-medium text-foreground mb-1">Free Plan Includes:</p>
+                <p>5 users, 50 requests/month, 1 department, basic approvals</p>
+              </div>
             </div>
           )}
 

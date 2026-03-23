@@ -131,8 +131,8 @@ const plans = [
   },
   {
     name: "Starter",
-    price: "$29",
-    period: "/user/month",
+    price: "$49",
+    period: "/month",
     description: "For growing teams that need more control and visibility.",
     features: [
       "Up to 25 users",
@@ -147,12 +147,12 @@ const plans = [
   },
   {
     name: "Professional",
-    price: "$99",
-    period: "/user/month",
+    price: "$149",
+    period: "/month",
     description: "For mid-size organizations that need advanced features.",
     popular: true,
     features: [
-      "Unlimited users",
+      "Up to 100 users",
       "Unlimited requests",
       "Advanced approval chains",
       "Budget management",
@@ -172,15 +172,13 @@ const plans = [
     description: "For large organizations with custom requirements.",
     features: [
       "Everything in Professional",
+      "Unlimited users",
       "Custom integrations",
       "Dedicated account manager",
       "SLA guarantee",
       "On-premise option",
       "Custom branding",
       "Advanced security (SOC 2)",
-      "GDPR compliance tools",
-      "Bulk data import",
-      "Training & onboarding",
       "24/7 priority support",
     ],
   },
@@ -221,9 +219,9 @@ export default function LandingPage() {
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </Link>
-              <Link href="/dashboard">
+              <Link href="/login">
                 <Button variant="outline" size="lg" className="h-12 px-8 text-base font-semibold bg-transparent hover:bg-secondary">
-                  View Live Demo
+                  Try Interactive Demo
                   <ArrowUpRight className="w-4 h-4 ml-2" />
                 </Button>
               </Link>
