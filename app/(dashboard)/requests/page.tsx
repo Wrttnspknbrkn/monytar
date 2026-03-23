@@ -7,6 +7,7 @@ import { Plus, Search, FileText, SlidersHorizontal } from "lucide-react"
 import { useData, useAuth } from "@/lib/providers"
 import { formatCurrency, formatDate, getCategoryLabel } from "@/lib/utils"
 import { RequestStatusBadge } from "@/components/requests/request-status-badge"
+import { RequestCard } from "@/components/requests/request-card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -122,22 +123,41 @@ export default function RequestsPage() {
         </Select>
       </div>
 
-      {/* Table */}
-      <Card className="border-border/60 overflow-hidden">
-        <CardContent className="p-0">
-          {filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-center">
-              <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-secondary mb-4">
-                <FileText className="w-7 h-7 text-muted-foreground/40" />
-              </div>
-              <h3 className="font-heading font-bold mb-1">No requests found</h3>
-              <p className="text-sm text-muted-foreground max-w-xs">
-                {search || statusFilter !== "all" ? "Try adjusting your filters" : "Create your first expense request to get started"}
-              </p>
+      {/* Empty State */}
+      {filtered.length === 0 ? (
+        <Card className="border-border/60">
+          <CardContent className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-secondary mb-4">
+              <FileText className="w-7 h-7 text-muted-foreground/40" />
             </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
+            <h3 className="font-heading font-bold mb-1">No requests found</h3>
+            <p className="text-sm text-muted-foreground max-w-xs">
+              {search || statusFilter !== "all" ? "Try adjusting your filters" : "Create your first expense request to get started"}
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          {/* Mobile Card View */}
+          <div className="flex flex-col gap-3 md:hidden">
+            {filtered.map((req) => {
+              const emp = getUserById(req.employee_id)
+              return (
+                <RequestCard 
+                  key={req.id} 
+                  request={req} 
+                  employeeName={emp?.full_name}
+                  showEmployee={!isEmployee}
+                />
+              )
+            })}
+          </div>
+
+          {/* Desktop Table View */}
+          <Card className="border-border/60 overflow-hidden hidden md:block">
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <Table>
                 <TableHeader>
                   <TableRow className="hover:bg-transparent border-border/60">
                     <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Request #</TableHead>
@@ -181,10 +201,11 @@ export default function RequestsPage() {
                   })}
                 </TableBody>
               </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+              </div>
+            </CardContent>
+          </Card>
+        </>
+      )}
     </div>
   )
 }

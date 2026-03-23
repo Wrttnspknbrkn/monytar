@@ -13,7 +13,7 @@ import {
   CheckCheck,
   Filter,
 } from "lucide-react"
-import { useStore } from "@/lib/store"
+import { useData, useAuth } from "@/lib/providers"
 import { formatRelativeTime, cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -43,12 +43,14 @@ const typeColors: Record<NotificationType, string> = {
 
 export default function NotificationsPage() {
   const router = useRouter()
-  const { currentUser, notifications, markNotificationRead, markAllNotificationsRead } = useStore()
+  const { dbUser } = useAuth()
+  const { currentUser, notifications, markNotificationRead } = useData()
   const [filter, setFilter] = useState<string>("all")
 
+  const user = dbUser || currentUser
   const myNotifs = useMemo(
-    () => notifications.filter((n) => n.user_id === currentUser.id),
-    [notifications, currentUser],
+    () => user ? notifications.filter((n) => n.user_id === user.id) : [],
+    [notifications, user],
   )
 
   const filtered = useMemo(() => {
@@ -69,7 +71,11 @@ export default function NotificationsPage() {
           </p>
         </div>
         {unreadCount > 0 && (
-          <Button variant="outline" size="sm" className="font-semibold" onClick={markAllNotificationsRead}>
+          <Button variant="outline" size="sm" className="font-semibold" onClick={async () => {
+            for (const n of myNotifs.filter(n => !n.is_read)) {
+              await markNotificationRead(n.id)
+            }
+          }}>
             <CheckCheck className="w-3.5 h-3.5 mr-2" /> Mark all read
           </Button>
         )}

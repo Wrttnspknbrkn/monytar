@@ -4,7 +4,7 @@ import { useCallback, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { FileText, Store, Users, Building2, LayoutDashboard, BarChart3, Settings } from "lucide-react"
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
-import { useStore } from "@/lib/store"
+import { useData } from "@/lib/providers"
 import { formatCurrency } from "@/lib/utils"
 
 interface CommandSearchProps {
@@ -14,7 +14,7 @@ interface CommandSearchProps {
 
 export function CommandSearch({ open, onOpenChange }: CommandSearchProps) {
   const router = useRouter()
-  const { expenseRequests, vendors, users, departments } = useStore()
+  const { expenseRequests, vendors, users, departments } = useData()
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
