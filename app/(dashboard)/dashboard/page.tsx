@@ -56,6 +56,7 @@ export default function DashboardPage() {
     getDepartmentSpend, 
     getPendingApprovals,
     dashboardStats,
+    budgetAlerts,
     isLoading,
   } = useData()
 

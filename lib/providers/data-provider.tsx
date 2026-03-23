@@ -45,7 +45,9 @@ import {
   notifications as mockNotifications,
   organization as mockOrganization,
   organizationSettings as mockSettings,
+  budgetAlerts as mockBudgetAlerts,
 } from "@/lib/mock-data"
+import type { BudgetAlert } from "@/lib/types"
 
 interface DataContextValue {
   // State
@@ -59,6 +61,7 @@ interface DataContextValue {
   vendors: Vendor[]
   departments: Department[]
   notifications: Notification[]
+  budgetAlerts: BudgetAlert[]
   dashboardStats: {
     pending: number
     approved: number
@@ -129,6 +132,7 @@ export function DataProvider({ children }: DataProviderProps) {
   const vendors = isDemo ? mockVendors : supabaseVendors
   const departments = isDemo ? mockDepartments : supabaseDepts
   const notifications = isDemo ? mockNotifications : supabaseNotifs
+  const budgetAlerts = isDemo ? mockBudgetAlerts : [] // TODO: Fetch from Supabase when implemented
   
   const dashboardStats = useMemo(() => {
     if (!isDemo && supabaseStats) return supabaseStats
@@ -312,6 +316,7 @@ export function DataProvider({ children }: DataProviderProps) {
     vendors,
     departments,
     notifications,
+    budgetAlerts,
     dashboardStats,
     approveRequest: handleApproveRequest,
     rejectRequest: handleRejectRequest,
