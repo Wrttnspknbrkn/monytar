@@ -45,7 +45,7 @@ export const PRODUCTS: Product[] = [
     name: "Starter",
     tier: "starter",
     description: "For growing teams that need more control and visibility",
-    priceInCents: 4900, // $49/month per organization
+    priceInCents: 1900, // $19/month per organization
     interval: "month",
     maxUsers: 25,
     maxDepartments: 5,
@@ -66,7 +66,7 @@ export const PRODUCTS: Product[] = [
     name: "Starter",
     tier: "starter",
     description: "For growing teams that need more control and visibility",
-    priceInCents: 47000, // $470/year (2 months free)
+    priceInCents: 19000, // $190/year (2 months free)
     interval: "year",
     maxUsers: 25,
     maxDepartments: 5,
@@ -87,7 +87,7 @@ export const PRODUCTS: Product[] = [
     name: "Professional",
     tier: "professional",
     description: "For mid-size organizations that need advanced features",
-    priceInCents: 14900, // $149/month per organization
+    priceInCents: 4900, // $49/month per organization
     interval: "month",
     popular: true,
     maxUsers: 100,
@@ -112,7 +112,7 @@ export const PRODUCTS: Product[] = [
     name: "Professional",
     tier: "professional",
     description: "For mid-size organizations that need advanced features",
-    priceInCents: 143000, // $1,430/year (2 months free)
+    priceInCents: 49000, // $490/year (2 months free)
     interval: "year",
     popular: true,
     maxUsers: 100,

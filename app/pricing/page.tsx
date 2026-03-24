@@ -33,7 +33,7 @@ const plans = [
   },
   {
     name: "Starter",
-    price: "$49",
+    price: "$19",
     period: "/month",
     description: "For growing teams that need more control and visibility.",
     cta: "Start Free Trial",
@@ -52,7 +52,7 @@ const plans = [
   },
   {
     name: "Professional",
-    price: "$149",
+    price: "$49",
     period: "/month",
     description: "For mid-size organizations that need advanced features.",
     cta: "Start Free Trial",
@@ -98,7 +98,7 @@ const comparisonFeatures = [
   { name: "Users", free: "5", starter: "25", pro: "100", enterprise: "Unlimited" },
   { name: "Expense Requests", free: "50/mo", starter: "Unlimited", pro: "Unlimited", enterprise: "Unlimited" },
   { name: "Departments", free: "1", starter: "5", pro: "Unlimited", enterprise: "Unlimited" },
-  { name: "Pricing", free: "$0", starter: "$49/mo", pro: "$149/mo", enterprise: "Custom" },
+  { name: "Pricing", free: "$0", starter: "$19/mo", pro: "$49/mo", enterprise: "Custom" },
   { name: "Approval Workflows", free: "Basic", starter: "Multi-level", pro: "Advanced", enterprise: "Custom" },
   { name: "Budget Management", free: false, starter: false, pro: true, enterprise: true },
   { name: "Vendor Management", free: false, starter: true, pro: true, enterprise: true },

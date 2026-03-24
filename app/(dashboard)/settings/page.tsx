@@ -210,9 +210,9 @@ export default function SettingsPage() {
             <CardContent>
               <div className="grid sm:grid-cols-2 gap-y-5 gap-x-8">
                 {[
-                  { label: "Organization", value: organization.name },
-                  { label: "Slug", value: organization.slug },
-                  { label: "Plan", value: organization.subscription_tier.charAt(0).toUpperCase() + organization.subscription_tier.slice(1) },
+                  { label: "Organization", value: organization?.name || "N/A" },
+                  { label: "Slug", value: organization?.slug || "N/A" },
+                  { label: "Plan", value: organization?.subscription_tier ? organization.subscription_tier.charAt(0).toUpperCase() + organization.subscription_tier.slice(1) : "Free" },
                   { label: "Auto Approve Threshold", value: formatCurrency(orgSettings.auto_approve_under_amount || 0, orgSettings.default_currency) },
                   { label: "Require Receipts Above", value: formatCurrency(orgSettings.receipt_required_above_amount, orgSettings.default_currency) },
                   { label: "Fiscal Year Start", value: orgSettings.fiscal_year_start },

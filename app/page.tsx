@@ -131,7 +131,7 @@ const plans = [
   },
   {
     name: "Starter",
-    price: "$49",
+    price: "$19",
     period: "/month",
     description: "For growing teams that need more control and visibility.",
     features: [
@@ -147,7 +147,7 @@ const plans = [
   },
   {
     name: "Professional",
-    price: "$149",
+    price: "$49",
     period: "/month",
     description: "For mid-size organizations that need advanced features.",
     popular: true,
