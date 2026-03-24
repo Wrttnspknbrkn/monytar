@@ -76,7 +76,7 @@ export default function SettingsPage() {
   const [cancelLoading, setCancelLoading] = useState(false)
 
   // Current plan detection based on org subscription tier
-  const currentPlanId = `${organization.subscription_tier}-monthly`
+  const currentPlanId = `${organization?.subscription_tier || "free"}-monthly`
   const currentPlan = PRODUCTS.find((p) => p.id === currentPlanId) || PRODUCTS[0]
 
   function handleCancelSubscription() {
