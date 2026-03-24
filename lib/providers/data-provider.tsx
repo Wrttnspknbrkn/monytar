@@ -80,6 +80,14 @@ interface DataContextValue {
   markNotificationRead: (id: string) => Promise<void>
   createRequest: (data: Partial<ExpenseRequest>) => Promise<ExpenseRequest>
   updateRequest: (id: string, updates: Partial<ExpenseRequest>) => Promise<ExpenseRequest>
+  addExpenseRequest: (data: ExpenseRequest) => void
+  addDepartment: (data: Department) => void
+  updateDepartment: (id: string, updates: Partial<Department>) => void
+  addVendor: (data: Vendor) => void
+  updateVendor: (id: string, updates: Partial<Vendor>) => void
+  addUser: (data: User) => void
+  updateUser: (id: string, updates: Partial<User>) => void
+  updateOrgSettings: (updates: Partial<OrganizationSettings>) => void
   
   // Helpers
   getUserById: (id: string) => User | undefined
@@ -305,6 +313,72 @@ export function DataProvider({ children }: DataProviderProps) {
     return false
   }, [currentUser, users])
   
+  // Stub implementations for demo mode - in production these would call Supabase
+  const addExpenseRequest = useCallback((data: ExpenseRequest) => {
+    if (isDemo) {
+      mockRequests.push(data)
+    }
+    // In production, this would be handled by createRequest
+  }, [isDemo])
+  
+  const addDepartment = useCallback((data: Department) => {
+    if (isDemo) {
+      mockDepartments.push(data)
+    }
+    // TODO: Add Supabase insert
+  }, [isDemo])
+  
+  const updateDepartment = useCallback((id: string, updates: Partial<Department>) => {
+    if (isDemo) {
+      const idx = mockDepartments.findIndex(d => d.id === id)
+      if (idx !== -1) {
+        mockDepartments[idx] = { ...mockDepartments[idx], ...updates }
+      }
+    }
+    // TODO: Add Supabase update
+  }, [isDemo])
+  
+  const addVendor = useCallback((data: Vendor) => {
+    if (isDemo) {
+      mockVendors.push(data)
+    }
+    // TODO: Add Supabase insert
+  }, [isDemo])
+  
+  const updateVendor = useCallback((id: string, updates: Partial<Vendor>) => {
+    if (isDemo) {
+      const idx = mockVendors.findIndex(v => v.id === id)
+      if (idx !== -1) {
+        mockVendors[idx] = { ...mockVendors[idx], ...updates }
+      }
+    }
+    // TODO: Add Supabase update
+  }, [isDemo])
+  
+  const addUser = useCallback((data: User) => {
+    if (isDemo) {
+      mockUsers.push(data)
+    }
+    // TODO: Add Supabase insert
+  }, [isDemo])
+  
+  const updateUser = useCallback((id: string, updates: Partial<User>) => {
+    if (isDemo) {
+      const idx = mockUsers.findIndex(u => u.id === id)
+      if (idx !== -1) {
+        mockUsers[idx] = { ...mockUsers[idx], ...updates }
+      }
+    }
+    // TODO: Add Supabase update
+  }, [isDemo])
+  
+  const updateOrgSettings = useCallback((updates: Partial<OrganizationSettings>) => {
+    if (isDemo && mockSettings) {
+      Object.assign(mockSettings, updates)
+    }
+    // TODO: Add Supabase update
+  }, [isDemo])
+  
   const value: DataContextValue = {
     isLoading: !isDemo && userLoading,
     isDemo,
@@ -324,6 +398,14 @@ export function DataProvider({ children }: DataProviderProps) {
     markNotificationRead: handleMarkNotificationRead,
     createRequest: handleCreateRequest,
     updateRequest: handleUpdateRequest,
+    addExpenseRequest,
+    addDepartment,
+    updateDepartment,
+    addVendor,
+    updateVendor,
+    addUser,
+    updateUser,
+    updateOrgSettings,
     getUserById,
     getVendorById,
     getDepartmentById,
