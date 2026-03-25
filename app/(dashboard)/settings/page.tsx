@@ -213,9 +213,9 @@ export default function SettingsPage() {
                   { label: "Organization", value: organization?.name || "N/A" },
                   { label: "Slug", value: organization?.slug || "N/A" },
                   { label: "Plan", value: organization?.subscription_tier ? organization.subscription_tier.charAt(0).toUpperCase() + organization.subscription_tier.slice(1) : "Free" },
-                  { label: "Auto Approve Threshold", value: formatCurrency(orgSettings.auto_approve_under_amount || 0, orgSettings.default_currency) },
-                  { label: "Require Receipts Above", value: formatCurrency(orgSettings.receipt_required_above_amount, orgSettings.default_currency) },
-                  { label: "Fiscal Year Start", value: orgSettings.fiscal_year_start },
+                  { label: "Auto Approve Threshold", value: formatCurrency(orgSettings?.auto_approve_under_amount || 0, orgSettings?.default_currency || "USD") },
+                  { label: "Require Receipts Above", value: formatCurrency(orgSettings?.receipt_required_above_amount || 0, orgSettings?.default_currency || "USD") },
+                  { label: "Fiscal Year Start", value: orgSettings?.fiscal_year_start || "January" },
                 ].map((item) => (
                   <div key={item.label}>
                     <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">{item.label}</p>
