@@ -3,11 +3,22 @@ import { headers } from "next/headers"
 import Stripe from "stripe"
 import { createClient } from "@supabase/supabase-js"
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  typescript: true,
-})
+// Lazy initialization to avoid build-time errors
+function getStripe() {
+  const apiKey = process.env.STRIPE_SECRET_KEY
+  if (!apiKey) {
+    throw new Error("STRIPE_SECRET_KEY is not configured")
+  }
+  return new Stripe(apiKey, { typescript: true })
+}
 
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!
+function getWebhookSecret() {
+  const secret = process.env.STRIPE_WEBHOOK_SECRET
+  if (!secret) {
+    throw new Error("STRIPE_WEBHOOK_SECRET is not configured")
+  }
+  return secret
+}
 
 // Use service role for database updates
 function getAdminClient() {
@@ -36,6 +47,10 @@ const PRICE_TO_TIER: Record<string, { tier: string; maxUsers: number }> = {
 
 export async function POST(request: Request) {
   try {
+    // Get Stripe instance lazily
+    const stripe = getStripe()
+    const webhookSecret = getWebhookSecret()
+    
     const body = await request.text()
     const headersList = await headers()
     const signature = headersList.get("stripe-signature")
