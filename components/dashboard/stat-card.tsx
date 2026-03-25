@@ -17,12 +17,8 @@ interface StatCardProps {
 }
 
 export function StatCard({ title, value, icon: Icon, trend, className, iconClassName, href }: StatCardProps) {
-  const CardWrapper = href ? Link : "div"
-  const cardProps = href ? { href } : {}
-  
-  return (
-    <CardWrapper {...cardProps} className={href ? "block" : undefined}>
-      <Card
+  const cardContent = (
+    <Card
       className={cn(
         "group relative overflow-hidden border-border/60 hover:border-primary/20 transition-all duration-300 hover:shadow-md hover:shadow-foreground/[0.03]",
         className,
@@ -72,6 +68,11 @@ export function StatCard({ title, value, icon: Icon, trend, className, iconClass
         </div>
       )}
     </Card>
-    </CardWrapper>
   )
+  
+  if (href) {
+    return <Link href={href} className="block">{cardContent}</Link>
+  }
+  
+  return cardContent
 }
