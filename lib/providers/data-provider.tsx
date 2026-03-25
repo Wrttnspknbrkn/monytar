@@ -132,9 +132,9 @@ export function DataProvider({ children }: DataProviderProps) {
   useOrganizationRealtime(supabaseUser?.organization_id)
   
   // Resolved data (demo or real)
-  const currentUser = isDemo ? mockUsers[3] : supabaseUser // Default to employee in demo
-  const organization = isDemo ? mockOrganization as unknown as Organization : supabaseOrg
-  const orgSettings = isDemo ? mockSettings as unknown as OrganizationSettings : supabaseSettings
+  const currentUser: User | null = isDemo ? mockUsers[3] : (supabaseUser ?? null) // Default to employee in demo
+  const organization: Organization | null = isDemo ? (mockOrganization as unknown as Organization) : (supabaseOrg ?? null)
+  const orgSettings: OrganizationSettings | null = isDemo ? (mockSettings as unknown as OrganizationSettings) : (supabaseSettings ?? null)
   const users = isDemo ? mockUsers : supabaseUsers
   const expenseRequests = isDemo ? mockRequests : supabaseRequests
   const vendors = isDemo ? mockVendors : supabaseVendors
