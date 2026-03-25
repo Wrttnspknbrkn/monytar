@@ -34,7 +34,7 @@ export default function LoginPage() {
     try {
       const result = await signIn(email, password)
       
-      if (result.success) {
+      if (!result.error) {
         toast.success("Welcome back!")
         router.push("/dashboard")
       } else {
