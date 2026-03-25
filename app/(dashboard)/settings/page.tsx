@@ -244,7 +244,7 @@ export default function SettingsPage() {
                 <div className="flex flex-col gap-2 flex-1 max-w-xs">
                   <Label className="text-[13px] font-medium">Default Currency</Label>
                   <Select
-                    value={orgSettings.default_currency}
+                    value={orgSettings?.default_currency || "USD"}
                     onValueChange={handleCurrencyChange}
                     disabled={!isAdminOrFinance}
                   >
@@ -276,7 +276,7 @@ export default function SettingsPage() {
               <div className="p-4 rounded-xl bg-secondary/40 border border-border/40">
                 <p className="text-xs text-muted-foreground">
                   <span className="font-semibold text-foreground">Preview:</span> Amounts will display as{" "}
-                  <span className="font-mono font-semibold">{formatCurrency(1234.56, orgSettings.default_currency)}</span>
+                  <span className="font-mono font-semibold">{formatCurrency(1234.56, orgSettings?.default_currency || "USD")}</span>
                 </p>
               </div>
             </CardContent>
@@ -290,10 +290,10 @@ export default function SettingsPage() {
             <CardContent className="flex flex-col gap-4">
               <div className="flex flex-col gap-3">
                 {[
-                  { label: "Auto-approve expenses under threshold", description: `Requests under ${formatCurrency(orgSettings.auto_approve_under_amount || 0, orgSettings.default_currency)} are approved automatically`, enabled: true },
-                  { label: "Manager approval required", description: "All requests require direct manager approval", enabled: orgSettings.require_manager_approval },
-                  { label: "Finance review for large amounts", description: "Finance team reviews requests above department thresholds", enabled: orgSettings.require_finance_approval },
-                  { label: "Receipt requirement", description: `Receipts required for expenses over ${formatCurrency(orgSettings.receipt_required_above_amount, orgSettings.default_currency)}`, enabled: orgSettings.require_receipts },
+                  { label: "Auto-approve expenses under threshold", description: `Requests under ${formatCurrency(orgSettings?.auto_approve_under_amount || 0, orgSettings?.default_currency || "USD")} are approved automatically`, enabled: true },
+                  { label: "Manager approval required", description: "All requests require direct manager approval", enabled: orgSettings?.require_manager_approval ?? true },
+                  { label: "Finance review for large amounts", description: "Finance team reviews requests above department thresholds", enabled: orgSettings?.require_finance_approval ?? true },
+                  { label: "Receipt requirement", description: `Receipts required for expenses over ${formatCurrency(orgSettings?.receipt_required_above_amount || 0, orgSettings?.default_currency || "USD")}`, enabled: orgSettings?.require_receipts ?? true },
                 ].map((rule) => (
                   <div key={rule.label} className="flex items-start justify-between p-4 rounded-xl bg-secondary/40 border border-border/40">
                     <div className="flex-1 mr-4">
