@@ -34,4 +34,7 @@ export const stripe = {
   get billingPortal() {
     return getStripe().billingPortal
   },
+  get webhooks() {
+    return getStripe().webhooks
+  },
 }
