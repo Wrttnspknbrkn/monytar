@@ -31,4 +31,7 @@ export const stripe = {
   get products() {
     return getStripe().products
   },
+  get billingPortal() {
+    return getStripe().billingPortal
+  },
 }
