@@ -10,7 +10,7 @@ import {
   ArrowUpRight,
   PieChart as PieChartIcon,
 } from "lucide-react"
-import { useStore } from "@/lib/store"
+import { useData, useAuth } from "@/lib/providers"
 import { formatCurrency, cn, getCategoryLabel } from "@/lib/utils"
 import { StatCard } from "@/components/dashboard/stat-card"
 import { Button } from "@/components/ui/button"
@@ -46,9 +46,11 @@ const CHART_COLORS = [
 ]
 
 export default function ReportsPage() {
-  const { currentUser, expenseRequests, departments, vendors, users, getDepartmentSpend } = useStore()
+  const { dbUser } = useAuth()
+  const { currentUser, expenseRequests, departments, vendors, users, getDepartmentSpend } = useData()
 
-  const isRestricted = currentUser.role === "employee" || currentUser.role === "manager"
+  const user = dbUser || currentUser
+  const isRestricted = user?.role === "employee" || user?.role === "manager"
 
   const totalExpenses = expenseRequests.filter((r) => r.status !== "draft" && r.status !== "cancelled")
   const totalAmount = totalExpenses.reduce((s, r) => s + r.amount, 0)

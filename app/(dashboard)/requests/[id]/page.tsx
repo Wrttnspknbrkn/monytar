@@ -4,7 +4,7 @@ import { use, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, Clock, CheckCircle2, XCircle, FileText, DollarSign, User, Building2, MessageSquare, CreditCard } from "lucide-react"
-import { useStore } from "@/lib/store"
+import { useData, useAuth } from "@/lib/providers"
 import { formatCurrency, formatDateTime, formatRelativeTime, getCategoryLabel, getRoleLabel, cn } from "@/lib/utils"
 import { RequestStatusBadge } from "@/components/requests/request-status-badge"
 import { Button } from "@/components/ui/button"
@@ -20,12 +20,15 @@ import { toast } from "sonner"
 export default function RequestDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const router = useRouter()
-  const { currentUser, getRequestWithRelations, approveRequest, rejectRequest, markRequestPaid } = useStore()
+  const { dbUser } = useAuth()
+  const { currentUser, getRequestWithRelations, approveRequest, rejectRequest, markPaid, canUserApprove } = useData()
   const [comment, setComment] = useState("")
   const [rejectComment, setRejectComment] = useState("")
   const [payRef, setPayRef] = useState("")
   const [payMethod, setPayMethod] = useState("bank_transfer")
+  const [isProcessing, setIsProcessing] = useState(false)
 
+  const user = dbUser || currentUser
   const request = getRequestWithRelations(id)
   if (!request) {
     return (
@@ -44,32 +47,56 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
     )
   }
 
-  const canApprove = currentUser.role !== "employee" && request.status === "pending"
-  const canPay = (currentUser.role === "finance" || currentUser.role === "admin") && request.status === "approved"
+  const canApprove = user && canUserApprove(request)
+  const canPay = user && (user.role === "finance" || user.role === "admin") && request.status === "approved"
 
-  function handleApprove() {
-    approveRequest(id, comment || undefined)
-    toast.success("Request approved successfully")
-    setComment("")
+  async function handleApprove() {
+    if (isProcessing) return
+    setIsProcessing(true)
+    try {
+      await approveRequest(id, comment || undefined)
+      toast.success("Request approved successfully")
+      setComment("")
+    } catch {
+      toast.error("Failed to approve request")
+    } finally {
+      setIsProcessing(false)
+    }
   }
 
-  function handleReject() {
+  async function handleReject() {
     if (!rejectComment.trim()) {
       toast.error("Please provide a reason for rejection")
       return
     }
-    rejectRequest(id, rejectComment)
-    toast.success("Request rejected")
-    setRejectComment("")
+    if (isProcessing) return
+    setIsProcessing(true)
+    try {
+      await rejectRequest(id, rejectComment)
+      toast.success("Request rejected")
+      setRejectComment("")
+    } catch {
+      toast.error("Failed to reject request")
+    } finally {
+      setIsProcessing(false)
+    }
   }
 
-  function handlePay() {
+  async function handlePay() {
     if (!payRef.trim()) {
       toast.error("Please enter a payment reference")
       return
     }
-    markRequestPaid(id, payRef, payMethod)
-    toast.success("Payment processed successfully")
+    if (isProcessing) return
+    setIsProcessing(true)
+    try {
+      await markPaid(id, payRef, payMethod)
+      toast.success("Payment processed successfully")
+    } catch {
+      toast.error("Failed to process payment")
+    } finally {
+      setIsProcessing(false)
+    }
   }
 
   const timeline = [

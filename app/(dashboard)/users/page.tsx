@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react"
 import { Plus, Search, Users, Shield, Mail } from "lucide-react"
-import { useStore } from "@/lib/store"
+import { useData, useAuth } from "@/lib/providers"
 import { generateId, getRoleLabel, getInitials, formatDate, cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -23,13 +23,15 @@ const roleColors: Record<UserRole, string> = {
 }
 
 export default function UsersPage() {
-  const { currentUser, users, departments, addUser, updateUser } = useStore()
+  const { dbUser } = useAuth()
+  const { currentUser, users, departments, addUser, updateUser } = useData()
+  const user = dbUser || currentUser
   const [search, setSearch] = useState("")
   const [roleFilter, setRoleFilter] = useState<string>("all")
   const [dialogOpen, setDialogOpen] = useState(false)
   const [form, setForm] = useState({ full_name: "", email: "", role: "employee" as UserRole, department_id: "" })
 
-  const isAdmin = currentUser.role === "admin"
+  const isAdmin = user?.role === "admin"
 
   const filtered = useMemo(() => {
     let result = users

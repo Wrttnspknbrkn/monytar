@@ -14,7 +14,8 @@ import {
   ArrowRight,
   CreditCard,
 } from "lucide-react"
-import { useStore } from "@/lib/store"
+import { useData } from "@/lib/providers"
+import { useAuth } from "@/lib/providers"
 import { formatCurrency, formatRelativeTime, cn } from "@/lib/utils"
 import { StatCard } from "@/components/dashboard/stat-card"
 import { RequestStatusBadge } from "@/components/requests/request-status-badge"
@@ -45,14 +46,35 @@ const CHART_COLORS = [
 ]
 
 export default function DashboardPage() {
-  const { currentUser, expenseRequests, departments, users, vendors, getDepartmentSpend, getPendingApprovals, budgetAlerts } =
-    useStore()
+  const { dbUser } = useAuth()
+  const { 
+    currentUser,
+    expenseRequests, 
+    departments, 
+    users, 
+    vendors, 
+    getDepartmentSpend, 
+    getPendingApprovals,
+    dashboardStats,
+    budgetAlerts,
+    isLoading,
+  } = useData()
 
-  const role = currentUser.role
+  // Use auth user or data user
+  const user = dbUser || currentUser
+  const role = user?.role || "employee"
+  
+  if (isLoading || !user) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    )
+  }
 
   const myRequests = useMemo(
-    () => expenseRequests.filter((r) => r.employee_id === currentUser.id),
-    [expenseRequests, currentUser],
+    () => expenseRequests.filter((r) => r.employee_id === user.id),
+    [expenseRequests, user],
   )
   const myPending = myRequests.filter((r) => r.status === "pending").length
   const myApproved = myRequests.filter((r) => r.status === "approved" || r.status === "paid")
@@ -104,7 +126,7 @@ export default function DashboardPage() {
         <div>
           <h1 className="font-heading text-2xl font-extrabold tracking-tight">Dashboard</h1>
           <p className="text-muted-foreground text-sm mt-0.5">
-            Welcome back, {currentUser.full_name.split(" ")[0]}. {"Here's your overview."}
+            Welcome back, {user.full_name.split(" ")[0]}. {"Here's your overview."}
           </p>
         </div>
         {role === "employee" && (
@@ -119,13 +141,14 @@ export default function DashboardPage() {
       {/* Stats */}
       {role === "employee" ? (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard title="Pending" value={String(myPending)} icon={Clock} />
-          <StatCard title="Approved" value={formatCurrency(myTotalApproved)} icon={CheckCircle2} trend={{ value: "+12%", positive: true }} />
-          <StatCard title="Rejected" value={String(myRejected)} icon={XCircle} />
+          <StatCard title="Pending" value={String(myPending)} icon={Clock} href="/requests?status=pending" />
+          <StatCard title="Approved" value={formatCurrency(myTotalApproved)} icon={CheckCircle2} trend={{ value: "+12%", positive: true }} href="/requests?status=approved" />
+          <StatCard title="Rejected" value={String(myRejected)} icon={XCircle} href="/requests?status=rejected" />
           <StatCard
             title="This Month"
             value={formatCurrency(myRequests.filter((r) => r.status !== "draft").reduce((s, r) => s + r.amount, 0))}
             icon={DollarSign}
+            href="/requests"
           />
         </div>
       ) : (
@@ -135,18 +158,20 @@ export default function DashboardPage() {
             value={String(pendingApprovals.length)}
             icon={Clock}
             trend={pendingApprovals.length > 0 ? { value: formatCurrency(pendingTotal), positive: false } : undefined}
+            href="/approvals"
           />
-          <StatCard title="Approved" value={formatCurrency(totalApprovedAmount)} icon={CheckCircle2} trend={{ value: "+8.5%", positive: true }} />
-          <StatCard title="Paid" value={formatCurrency(totalPaidAmount)} icon={CreditCard} />
+          <StatCard title="Approved" value={formatCurrency(totalApprovedAmount)} icon={CheckCircle2} trend={{ value: "+8.5%", positive: true }} href="/requests?status=approved" />
+          <StatCard title="Paid" value={formatCurrency(totalPaidAmount)} icon={CreditCard} href="/requests?status=paid" />
           {role === "admin" ? (
-            <StatCard title="Users" value={String(users.filter((u) => u.status === "active").length)} icon={Users} />
+            <StatCard title="Users" value={String(users.filter((u) => u.status === "active").length)} icon={Users} href="/settings/team" />
           ) : role === "finance" ? (
-            <StatCard title="Awaiting Pay" value={String(awaitingPayment.length)} icon={DollarSign} />
+            <StatCard title="Awaiting Pay" value={String(awaitingPayment.length)} icon={DollarSign} href="/requests?status=approved&payment=unpaid" />
           ) : (
             <StatCard
               title="Team"
-              value={String(users.filter((u) => u.department_id === currentUser.department_id).length)}
+              value={String(users.filter((u) => u.department_id === user.department_id).length)}
               icon={Users}
+              href="/settings/team"
             />
           )}
         </div>

@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { User, Building2, Bell, Palette, Save, Check, Moon, Sun, Monitor, DollarSign, CreditCard, ArrowRight, ArrowUpRight, Loader2 } from "lucide-react"
-import { useStore, organization } from "@/lib/store"
+import { useData, useAuth } from "@/lib/providers"
 import { getRoleLabel, formatCurrency, cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -38,12 +38,15 @@ const SUPPORTED_CURRENCIES = [
 ]
 
 export default function SettingsPage() {
-  const { currentUser, departments, updateUser, orgSettings, updateOrgSettings } = useStore()
+  const { dbUser } = useAuth()
+  const { currentUser, departments, updateUser, orgSettings, updateOrgSettings, organization } = useData()
   const { theme, setTheme } = useTheme()
-  const dept = departments.find((d) => d.id === currentUser.department_id)
+  
+  const user = dbUser || currentUser
+  const dept = user ? departments.find((d) => d.id === user.department_id) : undefined
   const [profileForm, setProfileForm] = useState({
-    full_name: currentUser.full_name,
-    email: currentUser.email,
+    full_name: user?.full_name || "",
+    email: user?.email || "",
   })
   const [saved, setSaved] = useState(false)
   const [currencySaved, setCurrencySaved] = useState(false)
@@ -56,7 +59,8 @@ export default function SettingsPage() {
   })
 
   function handleSaveProfile() {
-    updateUser(currentUser.id, { full_name: profileForm.full_name, email: profileForm.email })
+    if (!user) return
+    updateUser(user.id, { full_name: profileForm.full_name, email: profileForm.email })
     setSaved(true)
     toast.success("Profile updated successfully")
     setTimeout(() => setSaved(false), 2000)
@@ -72,7 +76,7 @@ export default function SettingsPage() {
   const [cancelLoading, setCancelLoading] = useState(false)
 
   // Current plan detection based on org subscription tier
-  const currentPlanId = `${organization.subscription_tier}-monthly`
+  const currentPlanId = `${organization?.subscription_tier || "free"}-monthly`
   const currentPlan = PRODUCTS.find((p) => p.id === currentPlanId) || PRODUCTS[0]
 
   function handleCancelSubscription() {
@@ -83,7 +87,9 @@ export default function SettingsPage() {
     }, 1500)
   }
 
-  const isAdminOrFinance = currentUser.role === "admin" || currentUser.role === "finance"
+  const isAdminOrFinance = user?.role === "admin" || user?.role === "finance"
+  
+  if (!user) return null
 
   return (
     <div className="flex flex-col gap-6 max-w-4xl">
@@ -122,21 +128,21 @@ export default function SettingsPage() {
               <div className="flex items-center gap-5">
                 <Avatar className="w-16 h-16">
                   <AvatarFallback className="bg-primary/10 text-primary text-lg font-bold">
-                    {currentUser.full_name.split(" ").map((n) => n[0]).join("").toUpperCase()}
+                    {user.full_name.split(" ").map((n) => n[0]).join("").toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <h3 className="font-heading font-bold">{currentUser.full_name}</h3>
-                  <p className="text-sm text-muted-foreground">{currentUser.email}</p>
+                  <h3 className="font-heading font-bold">{user.full_name}</h3>
+                  <p className="text-sm text-muted-foreground">{user.email}</p>
                   <div className="flex items-center gap-2 mt-1">
                     <span className={cn(
                       "inline-flex items-center px-2 py-0.5 rounded-md border text-[10px] font-semibold uppercase tracking-wider",
-                      currentUser.role === "admin" ? "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800" :
-                      currentUser.role === "finance" ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800" :
-                      currentUser.role === "manager" ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800" :
+                      user.role === "admin" ? "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800" :
+                      user.role === "finance" ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800" :
+                      user.role === "manager" ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800" :
                       "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800"
                     )}>
-                      {getRoleLabel(currentUser.role)}
+                      {getRoleLabel(user.role)}
                     </span>
                     {dept && <span className="text-xs text-muted-foreground">{dept.name}</span>}
                   </div>
@@ -204,12 +210,12 @@ export default function SettingsPage() {
             <CardContent>
               <div className="grid sm:grid-cols-2 gap-y-5 gap-x-8">
                 {[
-                  { label: "Organization", value: organization.name },
-                  { label: "Slug", value: organization.slug },
-                  { label: "Plan", value: organization.subscription_tier.charAt(0).toUpperCase() + organization.subscription_tier.slice(1) },
-                  { label: "Auto Approve Threshold", value: formatCurrency(orgSettings.auto_approve_under_amount || 0, orgSettings.default_currency) },
-                  { label: "Require Receipts Above", value: formatCurrency(orgSettings.receipt_required_above_amount, orgSettings.default_currency) },
-                  { label: "Fiscal Year Start", value: orgSettings.fiscal_year_start },
+                  { label: "Organization", value: organization?.name || "N/A" },
+                  { label: "Slug", value: organization?.slug || "N/A" },
+                  { label: "Plan", value: organization?.subscription_tier ? organization.subscription_tier.charAt(0).toUpperCase() + organization.subscription_tier.slice(1) : "Free" },
+                  { label: "Auto Approve Threshold", value: formatCurrency(orgSettings?.auto_approve_under_amount || 0, orgSettings?.default_currency || "USD") },
+                  { label: "Require Receipts Above", value: formatCurrency(orgSettings?.receipt_required_above_amount || 0, orgSettings?.default_currency || "USD") },
+                  { label: "Fiscal Year Start", value: orgSettings?.fiscal_year_start || "January" },
                 ].map((item) => (
                   <div key={item.label}>
                     <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">{item.label}</p>
@@ -238,7 +244,7 @@ export default function SettingsPage() {
                 <div className="flex flex-col gap-2 flex-1 max-w-xs">
                   <Label className="text-[13px] font-medium">Default Currency</Label>
                   <Select
-                    value={orgSettings.default_currency}
+                    value={orgSettings?.default_currency || "USD"}
                     onValueChange={handleCurrencyChange}
                     disabled={!isAdminOrFinance}
                   >
@@ -270,7 +276,7 @@ export default function SettingsPage() {
               <div className="p-4 rounded-xl bg-secondary/40 border border-border/40">
                 <p className="text-xs text-muted-foreground">
                   <span className="font-semibold text-foreground">Preview:</span> Amounts will display as{" "}
-                  <span className="font-mono font-semibold">{formatCurrency(1234.56, orgSettings.default_currency)}</span>
+                  <span className="font-mono font-semibold">{formatCurrency(1234.56, orgSettings?.default_currency || "USD")}</span>
                 </p>
               </div>
             </CardContent>
@@ -284,10 +290,10 @@ export default function SettingsPage() {
             <CardContent className="flex flex-col gap-4">
               <div className="flex flex-col gap-3">
                 {[
-                  { label: "Auto-approve expenses under threshold", description: `Requests under ${formatCurrency(orgSettings.auto_approve_under_amount || 0, orgSettings.default_currency)} are approved automatically`, enabled: true },
-                  { label: "Manager approval required", description: "All requests require direct manager approval", enabled: orgSettings.require_manager_approval },
-                  { label: "Finance review for large amounts", description: "Finance team reviews requests above department thresholds", enabled: orgSettings.require_finance_approval },
-                  { label: "Receipt requirement", description: `Receipts required for expenses over ${formatCurrency(orgSettings.receipt_required_above_amount, orgSettings.default_currency)}`, enabled: orgSettings.require_receipts },
+                  { label: "Auto-approve expenses under threshold", description: `Requests under ${formatCurrency(orgSettings?.auto_approve_under_amount || 0, orgSettings?.default_currency || "USD")} are approved automatically`, enabled: true },
+                  { label: "Manager approval required", description: "All requests require direct manager approval", enabled: orgSettings?.require_manager_approval ?? true },
+                  { label: "Finance review for large amounts", description: "Finance team reviews requests above department thresholds", enabled: orgSettings?.require_finance_approval ?? true },
+                  { label: "Receipt requirement", description: `Receipts required for expenses over ${formatCurrency(orgSettings?.receipt_required_above_amount || 0, orgSettings?.default_currency || "USD")}`, enabled: orgSettings?.require_receipts ?? true },
                 ].map((rule) => (
                   <div key={rule.label} className="flex items-start justify-between p-4 rounded-xl bg-secondary/40 border border-border/40">
                     <div className="flex-1 mr-4">

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react"
 import { Plus, Search, Store, CheckCircle2, XCircle, Mail, Phone, MapPin } from "lucide-react"
-import { useStore } from "@/lib/store"
+import { useData } from "@/lib/providers"
 import { generateId, cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,7 +14,7 @@ import { Switch } from "@/components/ui/switch"
 import { toast } from "sonner"
 
 export default function VendorsPage() {
-  const { vendors, addVendor, updateVendor } = useStore()
+  const { vendors, addVendor, updateVendor } = useData()
   const [search, setSearch] = useState("")
   const [dialogOpen, setDialogOpen] = useState(false)
   const [form, setForm] = useState({ name: "", category: "", contact_email: "", contact_phone: "", address: "", payment_terms: "", notes: "" })

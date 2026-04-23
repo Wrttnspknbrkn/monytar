@@ -1,11 +1,13 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { Suspense, useMemo, useState, useEffect } from "react"
 import Link from "next/link"
-import { Plus, Search, FileText, SlidersHorizontal } from "lucide-react"
-import { useStore } from "@/lib/store"
+import { useSearchParams } from "next/navigation"
+import { Plus, Search, FileText, SlidersHorizontal, Loader2 } from "lucide-react"
+import { useData, useAuth } from "@/lib/providers"
 import { formatCurrency, formatDate, getCategoryLabel } from "@/lib/utils"
 import { RequestStatusBadge } from "@/components/requests/request-status-badge"
+import { RequestCard } from "@/components/requests/request-card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -14,13 +16,25 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent } from "@/components/ui/card"
 import type { ExpenseCategory } from "@/lib/types"
 
-export default function RequestsPage() {
-  const { currentUser, expenseRequests, getMyRequests, getUserById, getVendorById } = useStore()
+function RequestsPageContent() {
+  const { dbUser } = useAuth()
+  const { currentUser, expenseRequests, getMyRequests, getUserById, getVendorById } = useData()
+  const searchParams = useSearchParams()
+  
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [categoryFilter, setCategoryFilter] = useState<string>("all")
 
-  const isEmployee = currentUser.role === "employee"
+  // Initialize filters from URL params
+  useEffect(() => {
+    const status = searchParams.get("status")
+    if (status && ["draft", "pending", "approved", "rejected", "paid", "cancelled"].includes(status)) {
+      setStatusFilter(status)
+    }
+  }, [searchParams])
+
+  const user = dbUser || currentUser
+  const isEmployee = user?.role === "employee"
   const requests = isEmployee ? getMyRequests() : expenseRequests
 
   const filtered = useMemo(() => {
@@ -109,22 +123,41 @@ export default function RequestsPage() {
         </Select>
       </div>
 
-      {/* Table */}
-      <Card className="border-border/60 overflow-hidden">
-        <CardContent className="p-0">
-          {filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-center">
-              <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-secondary mb-4">
-                <FileText className="w-7 h-7 text-muted-foreground/40" />
-              </div>
-              <h3 className="font-heading font-bold mb-1">No requests found</h3>
-              <p className="text-sm text-muted-foreground max-w-xs">
-                {search || statusFilter !== "all" ? "Try adjusting your filters" : "Create your first expense request to get started"}
-              </p>
+      {/* Empty State */}
+      {filtered.length === 0 ? (
+        <Card className="border-border/60">
+          <CardContent className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-secondary mb-4">
+              <FileText className="w-7 h-7 text-muted-foreground/40" />
             </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
+            <h3 className="font-heading font-bold mb-1">No requests found</h3>
+            <p className="text-sm text-muted-foreground max-w-xs">
+              {search || statusFilter !== "all" ? "Try adjusting your filters" : "Create your first expense request to get started"}
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          {/* Mobile Card View */}
+          <div className="flex flex-col gap-3 md:hidden">
+            {filtered.map((req) => {
+              const emp = getUserById(req.employee_id)
+              return (
+                <RequestCard 
+                  key={req.id} 
+                  request={req} 
+                  employeeName={emp?.full_name}
+                  showEmployee={!isEmployee}
+                />
+              )
+            })}
+          </div>
+
+          {/* Desktop Table View */}
+          <Card className="border-border/60 overflow-hidden hidden md:block">
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <Table>
                 <TableHeader>
                   <TableRow className="hover:bg-transparent border-border/60">
                     <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Request #</TableHead>
@@ -168,10 +201,35 @@ export default function RequestsPage() {
                   })}
                 </TableBody>
               </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+              </div>
+            </CardContent>
+          </Card>
+        </>
+      )}
     </div>
+  )
+}
+
+function RequestsPageFallback() {
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="font-heading text-2xl font-extrabold tracking-tight">Requests</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">Loading...</p>
+        </div>
+      </div>
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    </div>
+  )
+}
+
+export default function RequestsPage() {
+  return (
+    <Suspense fallback={<RequestsPageFallback />}>
+      <RequestsPageContent />
+    </Suspense>
   )
 }

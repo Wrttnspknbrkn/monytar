@@ -17,7 +17,7 @@ import {
 } from "lucide-react"
 import { Logo } from "@/components/ui/logo"
 import { cn } from "@/lib/utils"
-import { useStore } from "@/lib/store"
+import { useData, useAuth } from "@/lib/providers"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useState } from "react"
@@ -35,13 +35,15 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname()
-  const { currentUser, getMyRequests, getPendingApprovals } = useStore()
+  const { dbUser } = useAuth()
+  const { currentUser, getMyRequests, getPendingApprovals } = useData()
   const [collapsed, setCollapsed] = useState(false)
 
+  const user = dbUser || currentUser
   const myPendingCount = getMyRequests().filter((r) => r.status === "pending").length
   const approvalsCount = getPendingApprovals().length
 
-  const filteredItems = navItems.filter((item) => item.roles.includes(currentUser.role))
+  const filteredItems = navItems.filter((item) => user && item.roles.includes(user.role))
 
   function getBadgeCount(href: string): number | undefined {
     if (href === "/requests" && myPendingCount > 0) return myPendingCount

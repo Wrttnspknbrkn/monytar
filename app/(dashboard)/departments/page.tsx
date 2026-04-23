@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Plus, Building2, Users, AlertTriangle } from "lucide-react"
-import { useStore } from "@/lib/store"
+import { useData, useAuth } from "@/lib/providers"
 import { formatCurrency, generateId, cn, getInitials } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,18 +16,20 @@ import { toast } from "sonner"
 import type { BudgetPeriod } from "@/lib/types"
 
 export default function DepartmentsPage() {
-  const { currentUser, departments, users, getDepartmentSpend, addDepartment, updateDepartment } = useStore()
+  const { dbUser } = useAuth()
+  const { currentUser, departments, users, getDepartmentSpend, addDepartment, updateDepartment, organization } = useData()
+  const user = dbUser || currentUser
   const [dialogOpen, setDialogOpen] = useState(false)
   const [form, setForm] = useState({ name: "", budget_amount: "", budget_period: "monthly" as BudgetPeriod, description: "", manager_id: "" })
 
-  const canEdit = currentUser.role === "manager" || currentUser.role === "finance" || currentUser.role === "admin"
+  const canEdit = user?.role === "manager" || user?.role === "finance" || user?.role === "admin"
   const managers = users.filter((u) => u.role === "manager" || u.role === "admin")
 
   function handleAdd() {
     if (!form.name.trim() || !form.budget_amount) { toast.error("Name and budget are required"); return }
     const now = new Date().toISOString()
     addDepartment({
-      id: generateId(), organization_id: "org-1", name: form.name, description: form.description || undefined,
+      id: generateId(), organization_id: organization?.id || user?.organization_id || "", name: form.name, description: form.description || undefined,
       manager_id: form.manager_id || undefined, budget_amount: Number.parseFloat(form.budget_amount), budget_period: form.budget_period,
       created_at: now, updated_at: now,
     })

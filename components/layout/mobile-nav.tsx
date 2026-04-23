@@ -4,13 +4,15 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { LayoutDashboard, FileText, CheckSquare, Store, Settings } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useStore } from "@/lib/store"
+import { useData, useAuth } from "@/lib/providers"
 
 export function MobileNav() {
   const pathname = usePathname()
-  const { currentUser, getPendingApprovals } = useStore()
+  const { dbUser } = useAuth()
+  const { currentUser, getPendingApprovals } = useData()
+  const user = dbUser || currentUser
   const approvalsCount = getPendingApprovals().length
-  const showApprovals = currentUser.role !== "employee"
+  const showApprovals = user?.role && user.role !== "employee"
 
   const items = [
     { href: "/dashboard", label: "Home", icon: LayoutDashboard },

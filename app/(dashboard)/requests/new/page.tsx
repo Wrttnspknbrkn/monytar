@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, Upload, X, DollarSign, FileText, Tag, Building2, Calendar, AlertCircle } from "lucide-react"
-import { useStore } from "@/lib/store"
+import { useData, useAuth } from "@/lib/providers"
 import { generateId } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -18,7 +18,9 @@ import Link from "next/link"
 
 export default function NewRequestPage() {
   const router = useRouter()
-  const { currentUser, vendors, addExpenseRequest, getNextRequestNumber } = useStore()
+  const { dbUser } = useAuth()
+  const { currentUser, vendors, addExpenseRequest, getNextRequestNumber, organization } = useData()
+  const user = dbUser || currentUser
   const [amount, setAmount] = useState("")
   const [purpose, setPurpose] = useState("")
   const [category, setCategory] = useState<ExpenseCategory>("software")
@@ -30,6 +32,7 @@ export default function NewRequestPage() {
   const [files, setFiles] = useState<string[]>([])
 
   function handleSubmit(asDraft: boolean) {
+    if (!user) return
     if (!amount || !purpose) {
       toast.error("Please fill in amount and purpose")
       return
@@ -38,10 +41,10 @@ export default function NewRequestPage() {
     const id = generateId()
     addExpenseRequest({
       id,
-      organization_id: "org-1",
+      organization_id: organization?.id || user.organization_id,
       request_number: getNextRequestNumber(),
-      employee_id: currentUser.id,
-      department_id: currentUser.department_id,
+      employee_id: user.id,
+      department_id: user.department_id,
       vendor_id: vendorId || undefined,
       amount: Number.parseFloat(amount),
       currency: "USD",

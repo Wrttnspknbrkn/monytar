@@ -1,7 +1,7 @@
 "use client"
 
 import { Bell, Search, ChevronDown, LogOut, User, Settings, Shield } from "lucide-react"
-import { useStore } from "@/lib/store"
+import { useData, useAuth } from "@/lib/providers"
 import { cn, getInitials, getRoleLabel, formatRelativeTime } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -40,17 +40,26 @@ const roleAvatarColors: Record<UserRole, string> = {
 
 export function Header() {
   const router = useRouter()
+  const { dbUser, switchDemoRole, signOut, isDemo } = useAuth()
   const {
     currentUser,
     notifications,
-    switchRole,
     getUnreadNotificationCount,
     markNotificationRead,
-    markAllNotificationsRead,
-  } = useStore()
+  } = useData()
+  
+  const user = dbUser || currentUser
   const unreadCount = getUnreadNotificationCount()
-  const userNotifs = notifications.filter((n) => n.user_id === currentUser.id).slice(0, 10)
+  const userNotifs = user ? notifications.filter((n) => n.user_id === user.id).slice(0, 10) : []
   const [searchOpen, setSearchOpen] = useState(false)
+  
+  const markAllRead = async () => {
+    for (const notif of userNotifs.filter(n => !n.is_read)) {
+      await markNotificationRead(notif.id)
+    }
+  }
+  
+  if (!user) return null
 
   return (
     <>
@@ -77,10 +86,10 @@ export function Header() {
         <span
           className={cn(
             "hidden sm:inline-flex items-center px-2.5 py-1 rounded-md border text-[11px] font-semibold uppercase tracking-wider",
-            roleColors[currentUser.role],
+            roleColors[user.role],
           )}
         >
-          {getRoleLabel(currentUser.role)}
+          {getRoleLabel(user.role)}
         </span>
 
         {/* Notifications */}
@@ -104,7 +113,7 @@ export function Header() {
                   variant="ghost"
                   size="sm"
                   className="text-xs h-auto py-1 text-primary hover:text-primary"
-                  onClick={markAllNotificationsRead}
+                  onClick={markAllRead}
                 >
                   Mark all read
                 </Button>
@@ -157,20 +166,20 @@ export function Header() {
             <Button variant="ghost" className="flex items-center gap-2.5 px-2 h-9 hover:bg-secondary/80">
               <Avatar className="w-7 h-7">
                 <AvatarFallback
-                  className={cn("text-[11px] font-bold", roleAvatarColors[currentUser.role])}
+                  className={cn("text-[11px] font-bold", roleAvatarColors[user.role])}
                 >
-                  {getInitials(currentUser.full_name)}
+                  {getInitials(user.full_name)}
                 </AvatarFallback>
               </Avatar>
-              <span className="hidden md:block text-[13px] font-medium">{currentUser.full_name}</span>
+              <span className="hidden md:block text-[13px] font-medium">{user.full_name}</span>
               <ChevronDown className="w-3.5 h-3.5 text-muted-foreground hidden md:block" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56 rounded-xl shadow-xl shadow-foreground/5">
             <DropdownMenuLabel>
               <div className="flex flex-col gap-0.5">
-                <span className="font-heading font-semibold">{currentUser.full_name}</span>
-                <span className="text-xs text-muted-foreground font-normal">{currentUser.email}</span>
+                <span className="font-heading font-semibold">{user.full_name}</span>
+                <span className="text-xs text-muted-foreground font-normal">{user.email}</span>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
@@ -185,33 +194,35 @@ export function Header() {
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuSub>
-              <DropdownMenuSubTrigger>
-                <Shield className="w-4 h-4 mr-2" /> Switch Role (Demo)
-              </DropdownMenuSubTrigger>
-              <DropdownMenuSubContent>
-                {(["employee", "manager", "finance", "admin"] as UserRole[]).map((role) => (
-                  <DropdownMenuItem
-                    key={role}
-                    onClick={() => switchRole(role)}
-                    className={cn(currentUser.role === role && "bg-accent")}
-                  >
-                    <span
-                      className={cn(
-                        "w-2 h-2 rounded-full mr-2",
-                        role === "employee" && "bg-blue-500",
-                        role === "manager" && "bg-emerald-500",
-                        role === "finance" && "bg-amber-500",
-                        role === "admin" && "bg-rose-500",
-                      )}
-                    />
-                    {getRoleLabel(role)}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuSubContent>
-            </DropdownMenuSub>
+            {isDemo && (
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  <Shield className="w-4 h-4 mr-2" /> Switch Role (Demo)
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  {(["employee", "manager", "finance", "admin"] as UserRole[]).map((role) => (
+                    <DropdownMenuItem
+                      key={role}
+                      onClick={() => switchDemoRole(role)}
+                      className={cn(user.role === role && "bg-accent")}
+                    >
+                      <span
+                        className={cn(
+                          "w-2 h-2 rounded-full mr-2",
+                          role === "employee" && "bg-blue-500",
+                          role === "manager" && "bg-emerald-500",
+                          role === "finance" && "bg-amber-500",
+                          role === "admin" && "bg-rose-500",
+                        )}
+                      />
+                      {getRoleLabel(role)}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+            )}
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.push("/")}>
+            <DropdownMenuItem onClick={() => signOut()}>
               <LogOut className="w-4 h-4 mr-2" /> Log out
             </DropdownMenuItem>
           </DropdownMenuContent>
