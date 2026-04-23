@@ -1,17 +1,27 @@
 -- Migration: Organization-Based Billing with Stripe Integration
--- Adds Stripe subscription fields and user limits for organization-based billing
+-- Adds user limits and subscription period tracking for organization-based billing
+-- Note: Some Stripe columns were added in 003_subscription_columns.sql
 
--- Add Stripe-related columns to organizations
+-- Add user limit and period tracking columns (not in 003)
 ALTER TABLE organizations 
-ADD COLUMN IF NOT EXISTS stripe_customer_id TEXT UNIQUE,
-ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT UNIQUE,
-ADD COLUMN IF NOT EXISTS subscription_status TEXT DEFAULT 'inactive' 
-  CHECK (subscription_status IN ('active', 'inactive', 'trialing', 'past_due', 'canceled', 'unpaid')),
 ADD COLUMN IF NOT EXISTS max_users INTEGER DEFAULT 5,
 ADD COLUMN IF NOT EXISTS current_period_start TIMESTAMPTZ,
 ADD COLUMN IF NOT EXISTS current_period_end TIMESTAMPTZ,
 ADD COLUMN IF NOT EXISTS cancel_at_period_end BOOLEAN DEFAULT false,
 ADD COLUMN IF NOT EXISTS trial_end TIMESTAMPTZ;
+
+-- Update subscription_status constraint to include all valid values if needed
+-- This is a no-op if constraint already exists with correct values
+DO $$
+BEGIN
+  -- Drop existing constraint if it exists with wrong values
+  ALTER TABLE organizations DROP CONSTRAINT IF EXISTS organizations_subscription_status_check;
+  -- Add constraint with all valid values
+  ALTER TABLE organizations ADD CONSTRAINT organizations_subscription_status_check 
+    CHECK (subscription_status IN ('active', 'inactive', 'trialing', 'past_due', 'canceled', 'unpaid', 'cancelled', 'suspended'));
+EXCEPTION WHEN OTHERS THEN
+  NULL;
+END $$;
 
 -- Create subscription history table for audit trail
 CREATE TABLE IF NOT EXISTS subscription_history (
@@ -100,15 +110,15 @@ CREATE TRIGGER enforce_user_limit
   FOR EACH ROW
   EXECUTE FUNCTION check_user_limit();
 
--- Update max_users based on subscription tier
+-- Update max_users based on subscription tier (matches lib/products.ts)
 CREATE OR REPLACE FUNCTION update_max_users_on_tier_change()
 RETURNS TRIGGER AS $$
 BEGIN
   IF NEW.subscription_tier != OLD.subscription_tier THEN
     NEW.max_users := CASE NEW.subscription_tier
       WHEN 'free' THEN 5
-      WHEN 'starter' THEN 10
-      WHEN 'professional' THEN 50
+      WHEN 'starter' THEN 25
+      WHEN 'professional' THEN 100
       WHEN 'enterprise' THEN 999999
       ELSE 5
     END;
@@ -123,12 +133,12 @@ CREATE TRIGGER set_max_users_on_tier_change
   FOR EACH ROW
   EXECUTE FUNCTION update_max_users_on_tier_change();
 
--- Set default max_users for existing organizations
+-- Set default max_users for existing organizations (matches lib/products.ts)
 UPDATE organizations
 SET max_users = CASE subscription_tier
   WHEN 'free' THEN 5
-  WHEN 'starter' THEN 10
-  WHEN 'professional' THEN 50
+  WHEN 'starter' THEN 25
+  WHEN 'professional' THEN 100
   WHEN 'enterprise' THEN 999999
   ELSE 5
 END

@@ -1,9 +1,9 @@
 "use client"
 
-import { useMemo, useState, useEffect } from "react"
+import { Suspense, useMemo, useState, useEffect } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
-import { Plus, Search, FileText, SlidersHorizontal } from "lucide-react"
+import { Plus, Search, FileText, SlidersHorizontal, Loader2 } from "lucide-react"
 import { useData, useAuth } from "@/lib/providers"
 import { formatCurrency, formatDate, getCategoryLabel } from "@/lib/utils"
 import { RequestStatusBadge } from "@/components/requests/request-status-badge"
@@ -16,7 +16,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent } from "@/components/ui/card"
 import type { ExpenseCategory } from "@/lib/types"
 
-export default function RequestsPage() {
+function RequestsPageContent() {
   const { dbUser } = useAuth()
   const { currentUser, expenseRequests, getMyRequests, getUserById, getVendorById } = useData()
   const searchParams = useSearchParams()
@@ -207,5 +207,29 @@ export default function RequestsPage() {
         </>
       )}
     </div>
+  )
+}
+
+function RequestsPageFallback() {
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="font-heading text-2xl font-extrabold tracking-tight">Requests</h1>
+          <p className="text-muted-foreground text-sm mt-0.5">Loading...</p>
+        </div>
+      </div>
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    </div>
+  )
+}
+
+export default function RequestsPage() {
+  return (
+    <Suspense fallback={<RequestsPageFallback />}>
+      <RequestsPageContent />
+    </Suspense>
   )
 }
