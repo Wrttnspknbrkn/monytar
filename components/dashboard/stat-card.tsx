@@ -24,19 +24,19 @@ export function StatCard({ title, value, icon: Icon, trend, className, iconClass
         className,
       )}
     >
-      <CardContent className="p-5">
-        <div className="flex items-start justify-between">
-          <div className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{title}</span>
-            <span className="text-2xl font-heading font-extrabold tracking-tight animate-count-up">{value}</span>
+      <CardContent className="p-4 md:p-5">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex flex-col gap-1 min-w-0">
+            <span className="text-[10px] md:text-xs font-medium text-muted-foreground uppercase tracking-wider truncate">{title}</span>
+            <span className="text-xl md:text-2xl font-heading font-extrabold tracking-tight animate-count-up tabular-nums">{value}</span>
           </div>
           <div
             className={cn(
-              "flex items-center justify-center w-10 h-10 rounded-xl bg-primary/[0.08] transition-colors duration-300 group-hover:bg-primary/[0.12]",
+              "flex items-center justify-center w-9 h-9 md:w-10 md:h-10 rounded-lg md:rounded-xl bg-primary/[0.08] transition-colors duration-300 group-hover:bg-primary/[0.12] flex-shrink-0",
               iconClassName,
             )}
           >
-            <Icon className="w-5 h-5 text-primary" />
+            <Icon className="w-4 h-4 md:w-5 md:h-5 text-primary" />
           </div>
         </div>
         {trend && (

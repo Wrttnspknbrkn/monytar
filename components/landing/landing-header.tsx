@@ -4,56 +4,90 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { ArrowRight, Menu, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Logo } from "@/components/ui/logo"
 import { cn } from "@/lib/utils"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 const navLinks = [
-  { label: "Features", href: "/features" },
-  { label: "Pricing", href: "/pricing" },
-  { label: "Demo", href: "/login" },
-  { label: "About", href: "/about" },
-  { label: "Contact", href: "/contact" },
+  { label: "Features", href: "#features" },
+  { label: "Pricing", href: "#pricing" },
+  { label: "Demo", href: "/demo" },
 ]
 
 export function LandingHeader() {
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
+
+  useEffect(() => {
+    const handleScroll = () => {
+      // Check if we've scrolled past the hero (roughly 100vh or the hero text)
+      setScrolled(window.scrollY > 80)
+    }
+    handleScroll()
+    window.addEventListener("scroll", handleScroll, { passive: true })
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
 
   return (
-    <header className="sticky top-0 z-50 bg-background/60 backdrop-blur-xl border-b border-border/50">
-      <div className="max-w-7xl mx-auto flex items-center justify-between h-16 px-6">
-        <Link href="/" className="flex items-center group">
-          <Logo size="md" />
+    <header
+      className={cn(
+        "fixed top-0 inset-x-0 z-50 transition-all duration-300",
+        scrolled
+          ? "bg-white/90 backdrop-blur-md border-b border-slate-100 shadow-sm"
+          : "bg-transparent"
+      )}
+    >
+      <div className="max-w-7xl mx-auto flex items-center justify-between h-16 md:h-16 px-4 sm:px-6">
+        {/* Logo / Wordmark */}
+        <Link href="/" className="flex items-center">
+          <span
+            className={cn(
+              "font-display font-semibold text-xl transition-colors duration-200",
+              scrolled ? "text-slate-900" : "text-white"
+            )}
+          >
+            Monytar
+          </span>
         </Link>
+
+        {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-8">
           {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
               className={cn(
-                "text-sm transition-colors duration-200",
-                pathname === link.href
-                  ? "text-foreground font-semibold"
-                  : "text-muted-foreground hover:text-foreground font-medium",
+                "text-sm font-medium transition-colors duration-200",
+                scrolled
+                  ? "text-slate-600 hover:text-slate-900"
+                  : "text-white/80 hover:text-white"
               )}
             >
               {link.label}
             </Link>
           ))}
         </nav>
+
+        {/* Desktop CTA */}
         <div className="hidden md:flex items-center gap-3">
           <Link href="/login">
-            <Button variant="ghost" size="sm" className="text-sm font-medium">
+            <span
+              className={cn(
+                "text-sm font-medium transition-colors duration-200",
+                scrolled
+                  ? "text-slate-600 hover:text-slate-900"
+                  : "text-white/80 hover:text-white"
+              )}
+            >
               Log in
-            </Button>
+            </span>
           </Link>
           <Link href="/signup">
             <Button
               size="sm"
-              className="text-sm font-medium shadow-sm shadow-primary/25 hover:shadow-md hover:shadow-primary/30 transition-all"
+              className="rounded-full bg-primary text-white px-5 py-2 text-sm font-semibold hover:bg-primary/90 transition-colors shadow-sm"
             >
-              Get Started
+              Start free
               <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
             </Button>
           </Link>
@@ -61,41 +95,47 @@ export function LandingHeader() {
 
         {/* Mobile menu button */}
         <button
-          className="md:hidden flex items-center justify-center w-9 h-9 rounded-lg hover:bg-secondary transition-colors"
+          className={cn(
+            "md:hidden flex items-center justify-center w-11 h-11 rounded-lg transition-colors",
+            scrolled ? "hover:bg-slate-100" : "hover:bg-white/10"
+          )}
           onClick={() => setMobileOpen(!mobileOpen)}
           aria-label={mobileOpen ? "Close menu" : "Open menu"}
         >
-          {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          {mobileOpen ? (
+            <X className={cn("w-5 h-5", scrolled ? "text-slate-900" : "text-white")} />
+          ) : (
+            <Menu className={cn("w-5 h-5", scrolled ? "text-slate-900" : "text-white")} />
+          )}
         </button>
       </div>
 
-      {/* Mobile menu */}
+      {/* Mobile menu overlay */}
       {mobileOpen && (
-        <div className="md:hidden border-t border-border bg-background px-6 py-4 flex flex-col gap-3">
-          {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              onClick={() => setMobileOpen(false)}
-              className={cn(
-                "text-sm py-2 transition-colors",
-                pathname === link.href
-                  ? "text-foreground font-semibold"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {link.label}
-            </Link>
-          ))}
-          <div className="flex flex-col gap-2 pt-3 border-t border-border">
-            <Link href="/login" onClick={() => setMobileOpen(false)}>
-              <Button variant="outline" className="w-full">Log in</Button>
-            </Link>
-            <Link href="/signup" onClick={() => setMobileOpen(false)}>
-              <Button className="w-full">
-                Get Started <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
-              </Button>
-            </Link>
+        <div className="md:hidden fixed inset-0 top-14 bg-white z-[100]">
+          <div className="flex flex-col p-6">
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setMobileOpen(false)}
+                className="text-2xl font-semibold text-slate-900 py-3 border-b border-slate-100"
+              >
+                {link.label}
+              </Link>
+            ))}
+            <div className="flex flex-col gap-3 pt-6">
+              <Link href="/login" onClick={() => setMobileOpen(false)}>
+                <Button variant="outline" className="w-full h-12 text-base">
+                  Log in
+                </Button>
+              </Link>
+              <Link href="/signup" onClick={() => setMobileOpen(false)}>
+                <Button className="w-full h-12 text-base rounded-full">
+                  Start free <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       )}

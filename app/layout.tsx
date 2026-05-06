@@ -1,11 +1,20 @@
 import React from "react"
 import type { Metadata, Viewport } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
+import localFont from "next/font/local"
 import { ThemeProvider } from "next-themes"
 import { Toaster } from "sonner"
 import { Providers } from "@/lib/providers"
 
 import "./globals.css"
+
+// Cal Sans display font for premium headings
+const calSans = localFont({
+  src: "../public/fonts/CalSans-SemiBold.woff2",
+  variable: "--font-display",
+  display: "swap",
+  preload: true,
+})
 
 const geistSans = Geist({
   subsets: ["latin"],
@@ -84,7 +93,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} ${calSans.variable} font-sans antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
           <Providers>
             {children}

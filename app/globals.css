@@ -44,6 +44,12 @@
   :root {
     --background: 0 0% 99%;
     --foreground: 224 32% 12%;
+    /* Premium shadow system */
+    --shadow-card: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.06);
+    --shadow-float: 0 8px 32px rgba(0,0,0,0.12);
+    --shadow-glow: 0 0 24px rgba(99,102,241,0.4);
+    /* Brand RGB for gradient usage */
+    --brand-500-rgb: 99, 102, 241;
     --card: 0 0% 100%;
     --card-foreground: 224 32% 12%;
     --popover: 0 0% 100%;
@@ -126,5 +132,38 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  /* CRITICAL — prevents ALL horizontal scroll */
+  html, body {
+    overflow-x: hidden;
+  }
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+  table {
+    width: 100%;
+    table-layout: auto;
+  }
+  .dashboard-main {
+    min-width: 0;
+    overflow-x: hidden;
+  }
+}
+
+/* Scrollbar hide utility for testimonials */
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+  .shadow-float {
+    box-shadow: var(--shadow-float);
   }
 }

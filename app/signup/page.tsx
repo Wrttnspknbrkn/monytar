@@ -90,7 +90,8 @@ export default function SignupPage() {
         setStep(step + 1)
       }
     } else {
-      router.push("/dashboard")
+      // After signup completion, redirect to onboarding for real accounts
+      router.push("/onboarding")
     }
   }
 

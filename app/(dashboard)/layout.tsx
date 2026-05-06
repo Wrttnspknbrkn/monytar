@@ -9,13 +9,13 @@ import { DemoBanner } from "@/components/layout/demo-banner"
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="dashboard-layout flex min-h-screen overflow-x-hidden bg-background">
       <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="dashboard-main flex-1 flex flex-col min-w-0 overflow-x-hidden">
         <DemoBanner />
         <Header />
-        <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
-          <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto w-full animate-fade-in">{children}</div>
+        <main className="flex-1 overflow-y-auto overflow-x-hidden pb-20 md:pb-0">
+          <div className="dashboard-page p-4 md:p-6 lg:p-8 max-w-7xl mx-auto w-full animate-fade-in">{children}</div>
         </main>
       </div>
       <MobileNav />
