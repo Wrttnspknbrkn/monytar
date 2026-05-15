@@ -1,23 +1,21 @@
 "use client"
 
 import React from "react"
-
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import Image from "next/image"
 import { Eye, EyeOff, ArrowRight, TrendingUp, Receipt, ShieldCheck } from "lucide-react"
-import { Logo } from "@/components/ui/logo"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useAuth } from "@/lib/providers"
 import { toast } from "sonner"
-import { cn } from "@/lib/utils"
 
 export default function LoginPage() {
   const router = useRouter()
-  const { signIn, switchDemoRole, isDemo } = useAuth()
+  const { signIn } = useAuth()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
@@ -33,7 +31,7 @@ export default function LoginPage() {
 
     try {
       const result = await signIn(email, password)
-      
+
       if (!result.error) {
         toast.success("Welcome back!")
         router.push("/dashboard")
@@ -47,15 +45,9 @@ export default function LoginPage() {
     }
   }
 
-  function handleDemoLogin(role: "employee" | "manager" | "finance" | "admin") {
-    switchDemoRole(role)
-    toast.success(`Switched to ${role} demo`)
-    router.push("/dashboard")
-  }
-
   return (
     <div className="min-h-screen flex">
-      {/* Left Panel - Abstract Financial Visuals */}
+      {/* Left Panel - Brand Visual */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary via-blue-600 to-cyan-600 relative overflow-hidden">
         {/* Grid pattern */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:3rem_3rem]" />
@@ -63,20 +55,24 @@ export default function LoginPage() {
         {/* Animated gradient orbs */}
         <div className="absolute top-20 -right-20 w-72 h-72 rounded-full bg-white/10 blur-3xl animate-pulse" />
         <div className="absolute -bottom-20 -left-20 w-80 h-80 rounded-full bg-cyan-400/15 blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-blue-300/5 blur-3xl" />
 
         <div className="relative flex flex-col justify-between p-12 z-10 w-full">
-          <Logo size="lg" variant="white" />
+          {/* Logo */}
+          <Link href="/" className="font-display font-bold text-2xl text-white">
+            Monytar
+          </Link>
 
-          {/* Abstract Financial Dashboard Illustration */}
+          {/* Dashboard preview */}
           <div className="flex-1 flex flex-col items-center justify-center py-8">
             <div className="relative w-full max-w-sm">
               {/* Main card */}
               <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-6 shadow-2xl">
                 <div className="flex items-center justify-between mb-5">
                   <div>
-                    <p className="text-white/60 text-xs font-medium uppercase tracking-wider">Monthly Spend</p>
-                    <p className="text-white font-heading text-3xl font-extrabold mt-1">$24,580</p>
+                    <p className="text-white/60 text-xs font-medium uppercase tracking-wider">
+                      Monthly Spend
+                    </p>
+                    <p className="text-white font-display text-3xl font-bold mt-1">$24,580</p>
                   </div>
                   <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-400/20 text-emerald-300 text-xs font-semibold">
                     <TrendingUp className="w-3 h-3" />
@@ -96,81 +92,77 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              {/* Floating card - top right */}
+              {/* Floating cards */}
               <div className="absolute -top-8 -right-6 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4 shadow-lg">
                 <div className="flex items-center gap-3">
                   <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-emerald-400/20">
                     <ShieldCheck className="w-4 h-4 text-emerald-300" />
                   </div>
                   <div>
-                    <p className="text-white/60 text-[10px] font-medium uppercase tracking-wider">Approved</p>
-                    <p className="text-white font-heading font-bold text-sm">$18,205</p>
+                    <p className="text-white/60 text-[10px] font-medium uppercase tracking-wider">
+                      Approved
+                    </p>
+                    <p className="text-white font-display font-bold text-sm">$18,205</p>
                   </div>
                 </div>
               </div>
 
-              {/* Floating card - bottom left */}
               <div className="absolute -bottom-6 -left-6 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-4 shadow-lg">
                 <div className="flex items-center gap-3">
                   <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-amber-400/20">
                     <Receipt className="w-4 h-4 text-amber-300" />
                   </div>
                   <div>
-                    <p className="text-white/60 text-[10px] font-medium uppercase tracking-wider">Pending</p>
-                    <p className="text-white font-heading font-bold text-sm">8 requests</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Donut chart indicator */}
-              <div className="absolute -bottom-10 -right-4 bg-white/10 backdrop-blur-md border border-white/20 rounded-xl p-3.5 shadow-lg">
-                <div className="flex items-center gap-2.5">
-                  <div className="relative w-10 h-10">
-                    <svg viewBox="0 0 36 36" className="w-10 h-10 -rotate-90">
-                      <circle cx="18" cy="18" r="15.5" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="3" />
-                      <circle cx="18" cy="18" r="15.5" fill="none" stroke="rgba(255,255,255,0.7)" strokeWidth="3" strokeDasharray="72 28" strokeLinecap="round" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-white font-heading font-bold text-sm">72%</p>
-                    <p className="text-white/50 text-[10px]">Budget</p>
+                    <p className="text-white/60 text-[10px] font-medium uppercase tracking-wider">
+                      Pending
+                    </p>
+                    <p className="text-white font-display font-bold text-sm">8 requests</p>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Bottom stats */}
-          <div className="flex items-center gap-8">
-            {[
-              { metric: "98%", label: "Faster approvals" },
-              { metric: "$2.1M", label: "Savings generated" },
-              { metric: "4.9/5", label: "User satisfaction" },
-            ].map((stat) => (
-              <div key={stat.label}>
-                <p className="font-heading text-xl font-extrabold text-white">{stat.metric}</p>
-                <p className="text-xs text-white/50 mt-0.5">{stat.label}</p>
+          {/* Testimonial */}
+          <div className="mt-auto">
+            <p className="text-white/80 text-sm leading-relaxed italic mb-4">
+              &ldquo;We cut our month-end close by 3 days. The approval workflows just work.&rdquo;
+            </p>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white font-semibold text-sm">
+                SC
               </div>
-            ))}
+              <div>
+                <p className="text-white text-sm font-semibold">Sarah Chen</p>
+                <p className="text-white/50 text-xs">CFO, Tempo Labs</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Right Panel - Form */}
-      <div className="flex-1 flex items-center justify-center p-6 lg:p-12">
+      <div className="flex-1 flex items-center justify-center p-6 lg:p-12 bg-white">
         <div className="w-full max-w-sm">
+          {/* Mobile logo */}
           <div className="lg:hidden flex items-center justify-center mb-10">
-            <Logo size="lg" />
+            <Link href="/" className="font-display font-bold text-2xl text-slate-900">
+              Monytar
+            </Link>
           </div>
 
+          {/* Header */}
           <div className="mb-8">
-            <h2 className="font-heading text-2xl font-extrabold tracking-tight mb-1.5">Welcome back</h2>
-            <p className="text-sm text-muted-foreground">Sign in to your account to continue</p>
+            <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 mb-1.5">
+              Welcome back
+            </h1>
+            <p className="text-sm text-slate-500">Sign in to your account to continue</p>
           </div>
 
+          {/* Form */}
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             <div className="flex flex-col gap-2">
-              <Label htmlFor="email" className="text-[13px] font-medium">
+              <Label htmlFor="email" className="text-[13px] font-medium text-slate-700">
                 Email
               </Label>
               <Input
@@ -180,16 +172,20 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="h-10"
+                className="h-10 focus:border-primary focus:ring-2 focus:ring-primary/10"
               />
             </div>
+
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password" className="text-[13px] font-medium">
+                <Label htmlFor="password" className="text-[13px] font-medium text-slate-700">
                   Password
                 </Label>
-                <Link href="/login" className="text-xs text-primary hover:underline font-medium">
-                  Forgot password?
+                <Link
+                  href="/forgot-password"
+                  className="text-xs text-primary hover:underline font-medium"
+                >
+                  Forgot?
                 </Link>
               </div>
               <div className="relative">
@@ -199,7 +195,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="h-10 pr-10"
+                  className="h-10 pr-10 focus:border-primary focus:ring-2 focus:ring-primary/10"
                 />
                 <Button
                   type="button"
@@ -208,19 +204,28 @@ export default function LoginPage() {
                   className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
                   onClick={() => setShowPassword(!showPassword)}
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4 text-muted-foreground" /> : <Eye className="w-4 h-4 text-muted-foreground" />}
+                  {showPassword ? (
+                    <EyeOff className="w-4 h-4 text-slate-400" />
+                  ) : (
+                    <Eye className="w-4 h-4 text-slate-400" />
+                  )}
                 </Button>
               </div>
             </div>
+
             <div className="flex items-center gap-2">
               <Checkbox id="remember" />
-              <Label htmlFor="remember" className="text-sm font-normal cursor-pointer text-muted-foreground">
+              <Label
+                htmlFor="remember"
+                className="text-sm font-normal cursor-pointer text-slate-500"
+              >
                 Remember me for 30 days
               </Label>
             </div>
+
             <Button
               type="submit"
-              className="w-full h-10 font-semibold shadow-sm shadow-primary/25 hover:shadow-md hover:shadow-primary/30 transition-all"
+              className="w-full h-10 rounded-lg bg-primary text-white font-semibold"
               disabled={loading}
             >
               {loading ? "Signing in..." : "Sign in"}
@@ -228,44 +233,56 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          {/* Demo quick login */}
-          <div className="mt-8 pt-6 border-t border-border">
-            <div className="text-center mb-4">
-              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1">
-                Interactive Demo
-              </p>
-              <p className="text-[11px] text-muted-foreground/70">
-                Explore the full platform with sample data. No signup required.
-              </p>
+          {/* Divider */}
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-200" />
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { label: "Employee", role: "employee" as const, desc: "Submit expenses", color: "hover:border-blue-300 dark:hover:border-blue-700" },
-                { label: "Manager", role: "manager" as const, desc: "Approve requests", color: "hover:border-emerald-300 dark:hover:border-emerald-700" },
-                { label: "Finance", role: "finance" as const, desc: "Process payments", color: "hover:border-amber-300 dark:hover:border-amber-700" },
-                { label: "Admin", role: "admin" as const, desc: "Full access", color: "hover:border-rose-300 dark:hover:border-rose-700" },
-              ].map((demo) => (
-                <Button
-                  key={demo.label}
-                  variant="outline"
-                  size="sm"
-                  className={cn("h-auto py-2 flex flex-col items-center text-xs font-medium bg-transparent transition-colors", demo.color)}
-                  onClick={() => handleDemoLogin(demo.role)}
-                >
-                  <span>{demo.label}</span>
-                  <span className="text-[10px] text-muted-foreground font-normal">{demo.desc}</span>
-                </Button>
-              ))}
+            <div className="relative flex justify-center text-xs">
+              <span className="px-2 bg-white text-slate-400">or</span>
             </div>
-            <p className="text-[10px] text-muted-foreground/50 text-center mt-3">
-              Switch roles anytime from the user menu
-            </p>
           </div>
 
-          <p className="text-sm text-center text-muted-foreground mt-8">
-            {"Don't have an account? "}
+          {/* Google OAuth (placeholder) */}
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full h-10 font-medium bg-white border-slate-200 hover:bg-slate-50"
+            disabled
+          >
+            <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
+              <path
+                fill="currentColor"
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+              />
+              <path
+                fill="currentColor"
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+              />
+              <path
+                fill="currentColor"
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+              />
+              <path
+                fill="currentColor"
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+              />
+            </svg>
+            Continue with Google
+          </Button>
+
+          {/* Signup link */}
+          <p className="text-sm text-center text-slate-500 mt-6">
+            No account?{" "}
             <Link href="/signup" className="text-primary hover:underline font-semibold">
               Sign up
+            </Link>
+          </p>
+
+          {/* Demo link - subtle at bottom */}
+          <p className="text-xs text-center text-slate-400 mt-4">
+            <Link href="/demo" className="hover:text-slate-600 transition-colors">
+              Try the demo &rarr;
             </Link>
           </p>
         </div>

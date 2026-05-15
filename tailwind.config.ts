@@ -14,6 +14,7 @@ const config: Config = {
         sans: ["var(--font-sans)", "Geist", "system-ui", "sans-serif"],
         heading: ["var(--font-sans)", "Geist", "system-ui", "sans-serif"],
         mono: ["var(--font-mono)", "Geist Mono", "monospace"],
+        display: ["var(--font-display)", "Cal Sans", "var(--font-sans)", "Geist", "system-ui", "sans-serif"],
       },
       colors: {
         background: "hsl(var(--background))",
@@ -93,6 +94,10 @@ const config: Config = {
           from: { opacity: "0", transform: "translateY(4px)" },
           to: { opacity: "1", transform: "translateY(0)" },
         },
+        marquee: {
+          from: { transform: "translateX(0)" },
+          to: { transform: "translateX(-50%)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -100,6 +105,7 @@ const config: Config = {
         "fade-in": "fade-in 0.4s ease-out",
         "slide-up": "slide-in-from-bottom 0.4s ease-out",
         "count-up": "count-up 0.3s ease-out",
+        marquee: "marquee 30s linear infinite",
       },
     },
   },
