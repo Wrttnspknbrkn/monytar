@@ -41,20 +41,30 @@ export async function updateSession(request: NextRequest) {
   const protectedPaths = ["/dashboard", "/requests", "/approvals", "/vendors", "/departments", "/users", "/reports", "/settings", "/notifications"]
   const isProtected = protectedPaths.some((p) => request.nextUrl.pathname.startsWith(p))
 
-  if (isProtected && !user) {
+  // Demo mode is always accessible without auth
+  const isDemo = request.nextUrl.pathname === "/demo" || request.cookies.get("demo_mode")?.value === "true"
+
+  if (isProtected && !user && !isDemo) {
     const url = request.nextUrl.clone()
     url.pathname = "/login"
     url.searchParams.set("redirect", request.nextUrl.pathname)
     return NextResponse.redirect(url)
   }
 
-  // Redirect authenticated users away from login/signup
+  // Redirect authenticated users away from login/signup (but allow demo page)
   const authPaths = ["/login", "/signup"]
   const isAuthPage = authPaths.some((p) => request.nextUrl.pathname === p)
 
   if (isAuthPage && user) {
     const url = request.nextUrl.clone()
     url.pathname = "/dashboard"
+    return NextResponse.redirect(url)
+  }
+
+  // Onboarding page requires authentication but not completed onboarding
+  if (request.nextUrl.pathname === "/onboarding" && !user && !isDemo) {
+    const url = request.nextUrl.clone()
+    url.pathname = "/signup"
     return NextResponse.redirect(url)
   }
 

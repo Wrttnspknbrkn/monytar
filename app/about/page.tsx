@@ -87,7 +87,7 @@ export default function AboutPage() {
       <section className="max-w-5xl mx-auto px-6 pb-20">
         <div className="relative rounded-2xl overflow-hidden border border-border shadow-xl shadow-foreground/5">
           <Image
-            src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1200&h=600&fit=crop&q=80"
+            src="/images/about-hero.jpg"
             alt="Abstract visualization of financial growth and data organization"
             width={1200}
             height={600}

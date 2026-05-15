@@ -354,11 +354,11 @@ export default function LandingPage() {
             <div className="absolute inset-0 bg-indigo-50 rounded-3xl rotate-2 scale-95 -z-10" />
             <div className="relative rounded-2xl overflow-hidden shadow-float ring-1 ring-slate-200">
               <Image
-                src="/images/dashboard-preview.png"
-                alt="Approval workflow screen"
+                src="/images/hero-dashboard.jpg"
+                alt="Manager approval workflow"
                 width={600}
                 height={400}
-                className="w-full"
+                className="object-cover object-left-top"
               />
             </div>
           </div>
