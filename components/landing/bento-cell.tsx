@@ -23,21 +23,16 @@ export function BentoCell({ cols, size, label, Icon, title, body, image }: Bento
       className={cn(
         cols,
         "group relative rounded-2xl bg-white border border-slate-100 overflow-hidden",
-        "hover:border-primary/20 hover:shadow-[0_4px_24px_rgba(0,0,0,0.08)]",
-        "transition-all duration-300",
-        "flex flex-col"
+        "hover:border-primary/20 hover:shadow-[0_8px_32px_rgba(0,0,0,0.08)]",
+        "transition-all duration-300 flex flex-col"
       )}
     >
-      {/* Text content area */}
+      {/* Text content */}
       <div className={cn("p-6 flex-shrink-0", isLarge && "md:p-8")}>
-        {/* Icon pill */}
         <div className="inline-flex items-center gap-2 rounded-full bg-primary/5 border border-primary/10 px-3 py-1 mb-4">
           <Icon className="w-3.5 h-3.5 text-primary" strokeWidth={2} />
-          <span className="text-xs font-bold uppercase tracking-widest text-primary">
-            {label}
-          </span>
+          <span className="text-xs font-bold uppercase tracking-widest text-primary">{label}</span>
         </div>
-
         <h3
           className={cn(
             "font-semibold text-slate-900 mb-2 leading-snug",
@@ -49,35 +44,28 @@ export function BentoCell({ cols, size, label, Icon, title, body, image }: Bento
         <p className="text-slate-500 text-sm leading-relaxed">{body}</p>
       </div>
 
-      {/* Mockup image area — fills remaining height */}
-      {image ? (
-        <div className="px-6 pb-0 mt-auto overflow-hidden flex-1 flex items-end">
-          <div
-            className={cn(
-              "relative w-full rounded-t-xl",
-              "shadow-[0_-2px_16px_rgba(0,0,0,0.06)]",
-              "border-t border-x border-slate-100",
-              "group-hover:translate-y-[-4px] transition-transform duration-300",
-              isLarge ? "h-72" : isMedium ? "h-52" : "h-40"
-            )}
-          >
-            <Image
-              src={image}
-              alt={title}
-              fill
-              className="object-cover object-top rounded-t-xl"
-            />
-          </div>
-        </div>
-      ) : (
-        <div className="px-6 pb-0 mt-auto overflow-hidden flex-1 flex items-end">
-          <div
-            className={cn(
-              "w-full rounded-t-xl bg-slate-100",
-              isLarge ? "h-64" : isMedium ? "h-48" : "h-40"
-            )}
+      {/* Image area */}
+      {image && (
+        <div
+          className={cn(
+            "mx-6 mb-0 mt-auto rounded-t-xl overflow-hidden",
+            "border-t border-x border-slate-100 bg-slate-50",
+            "group-hover:-translate-y-1 transition-transform duration-300",
+            isLarge ? "mx-8" : ""
+          )}
+        >
+          <Image
+            src={image}
+            alt={title}
+            width={isLarge ? 900 : isMedium ? 600 : 400}
+            height={isLarge ? 480 : isMedium ? 320 : 260}
+            className="w-full h-auto object-contain object-bottom"
           />
         </div>
+      )}
+
+      {!image && (
+        <div className="mx-6 mb-0 mt-auto rounded-t-xl bg-slate-100 h-40" />
       )}
     </div>
   )
