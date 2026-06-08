@@ -263,6 +263,8 @@ export default function LandingPage() {
               title="Multi-step approvals that route themselves"
               body="Set rules once. Expenses automatically route to the right manager based on amount, category, or department."
               image="/images/workflow.jpg"
+              imagePosition="center center"
+              imageFit="cover"
             />
             <BentoCell
               cols="md:col-span-5"
@@ -272,6 +274,9 @@ export default function LandingPage() {
               title="Budget tracking and real-time alerts"
               body="Department budgets with spend-to-date and automatic overage warnings before it is too late."
               image="/images/dashboard1-dark.png"
+              imagePosition="center top"
+              imageFit="cover"
+              imageBg="bg-slate-900"
             />
             <BentoCell
               cols="md:col-span-4"
@@ -280,7 +285,9 @@ export default function LandingPage() {
               Icon={ScanLine}
               title="Receipt capture"
               body="Upload from phone or desktop. Attach to any expense in one tap."
-              image="https://images.unsplash.com/photo-1634733988138-bf2c3a2a13fa?w=600&q=80"
+              image="https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600&q=80"
+              imagePosition="center center"
+              imageFit="cover"
             />
             <BentoCell
               cols="md:col-span-4"
@@ -290,6 +297,9 @@ export default function LandingPage() {
               title="Spend analytics"
               body="Slice spend by team, vendor, category, or time period."
               image="/images/dashboard2-dark.png"
+              imagePosition="center top"
+              imageFit="cover"
+              imageBg="bg-slate-900"
             />
             <BentoCell
               cols="md:col-span-4"
@@ -299,6 +309,9 @@ export default function LandingPage() {
               title="Roles and permissions"
               body="Employee, Manager, Finance, Admin. Each sees exactly what they need."
               image="/images/vendors.png"
+              imagePosition="center top"
+              imageFit="cover"
+              imageBg="bg-slate-900"
             />
           </div>
         </div>
