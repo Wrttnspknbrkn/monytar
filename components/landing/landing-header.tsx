@@ -8,8 +8,10 @@ import { cn } from "@/lib/utils"
 import { useState, useEffect } from "react"
 
 const navLinks = [
-  { label: "Features", href: "#features" },
-  { label: "Pricing", href: "#pricing" },
+  { label: "Features", href: "/features" },
+  { label: "Pricing", href: "/pricing" },
+  { label: "Blog", href: "/blog" },
+  { label: "Resources", href: "/resources" },
   { label: "Demo", href: "/demo" },
 ]
 
@@ -17,6 +19,14 @@ export function LandingHeader() {
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+
+  // Only the homepage has a full-bleed dark hero behind the header.
+  // Every other marketing/content page has a light background at the top,
+  // so the header must render solid with dark text immediately.
+  const hasDarkHero = pathname === "/"
+
+  // "dark" here means dark text on a light/solid header.
+  const useDark = scrolled || !hasDarkHero
 
   useEffect(() => {
     const handleScroll = () => {
@@ -32,7 +42,7 @@ export function LandingHeader() {
     <header
       className={cn(
         "fixed top-0 inset-x-0 z-50 transition-all duration-300",
-        scrolled
+        useDark
           ? "bg-white/90 backdrop-blur-md border-b border-slate-100 shadow-sm"
           : "bg-transparent"
       )}
@@ -43,7 +53,7 @@ export function LandingHeader() {
           <span
             className={cn(
               "font-display font-semibold text-xl transition-colors duration-200",
-              scrolled ? "text-slate-900" : "text-white"
+              useDark ? "text-slate-900" : "text-white"
             )}
           >
             Monytar
@@ -58,7 +68,7 @@ export function LandingHeader() {
               href={link.href}
               className={cn(
                 "text-sm font-medium transition-colors duration-200",
-                scrolled
+                useDark
                   ? "text-slate-600 hover:text-slate-900"
                   : "text-white/80 hover:text-white"
               )}
@@ -74,7 +84,7 @@ export function LandingHeader() {
             <span
               className={cn(
                 "text-sm font-medium transition-colors duration-200",
-                scrolled
+                useDark
                   ? "text-slate-600 hover:text-slate-900"
                   : "text-white/80 hover:text-white"
               )}
@@ -97,15 +107,15 @@ export function LandingHeader() {
         <button
           className={cn(
             "md:hidden flex items-center justify-center w-11 h-11 rounded-lg transition-colors",
-            scrolled ? "hover:bg-slate-100" : "hover:bg-white/10"
+            useDark ? "hover:bg-slate-100" : "hover:bg-white/10"
           )}
           onClick={() => setMobileOpen(!mobileOpen)}
           aria-label={mobileOpen ? "Close menu" : "Open menu"}
         >
           {mobileOpen ? (
-            <X className={cn("w-5 h-5", scrolled ? "text-slate-900" : "text-white")} />
+            <X className={cn("w-5 h-5", useDark ? "text-slate-900" : "text-white")} />
           ) : (
-            <Menu className={cn("w-5 h-5", scrolled ? "text-slate-900" : "text-white")} />
+            <Menu className={cn("w-5 h-5", useDark ? "text-slate-900" : "text-white")} />
           )}
         </button>
       </div>

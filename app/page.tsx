@@ -13,13 +13,15 @@ import {
   Users,
   PlayCircle,
   Star,
-  User,
-  Briefcase,
-  Twitter,
-  Linkedin,
+  FileText,
+  Send,
+  Wallet,
 } from "lucide-react"
 import { LandingHeader } from "@/components/landing/landing-header"
+import { LandingFooter } from "@/components/landing/landing-footer"
 import { BentoCell } from "@/components/landing/bento-cell"
+import { Reveal } from "@/components/landing/reveal"
+import { FaqAccordion } from "@/components/landing/faq-accordion"
 import { cn } from "@/lib/utils"
 
 // Testimonial data
@@ -225,7 +227,7 @@ export default function LandingPage() {
       <section id="features" className="py-20 md:py-28 px-4 sm:px-6 bg-slate-50">
         <div className="max-w-6xl mx-auto">
           {/* Section header */}
-          <div className="text-center mb-14">
+          <Reveal className="text-center mb-14">
             <span className="inline-block rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-bold uppercase tracking-widest text-primary mb-4">
               Features
             </span>
@@ -235,7 +237,7 @@ export default function LandingPage() {
             <p className="text-slate-500 text-lg max-w-xl mx-auto leading-relaxed">
               From submission to reimbursement — one clean workflow, zero spreadsheets.
             </p>
-          </div>
+          </Reveal>
 
           {/* Bento grid */}
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4 auto-rows-auto">
@@ -283,6 +285,63 @@ export default function LandingPage() {
               title="Roles & permissions"
               body="Employee, Manager, Finance, Admin — each sees exactly what they need."
             />
+          </div>
+        </div>
+      </section>
+
+      {/* ============ HOW IT WORKS ============ */}
+      <section className="py-20 md:py-28 px-4 sm:px-6 bg-white">
+        <div className="max-w-6xl mx-auto">
+          <Reveal className="text-center mb-16">
+            <span className="inline-block rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-bold uppercase tracking-widest text-primary mb-4">
+              How it works
+            </span>
+            <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold text-slate-900 tracking-tight mb-4">
+              From receipt to reimbursed in three steps
+            </h2>
+            <p className="text-slate-500 text-lg max-w-xl mx-auto leading-relaxed">
+              No training required. Your team will know exactly what to do the moment they log in.
+            </p>
+          </Reveal>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 relative">
+            {/* connecting line on desktop */}
+            <div className="hidden md:block absolute top-8 left-[16.66%] right-[16.66%] h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
+            {[
+              {
+                step: "01",
+                Icon: FileText,
+                title: "Submit",
+                body: "An employee snaps a receipt, fills one short form, and hits submit — from any device.",
+              },
+              {
+                step: "02",
+                Icon: Send,
+                title: "Approve",
+                body: "The request routes automatically to the right approver with full context and budget impact.",
+              },
+              {
+                step: "03",
+                Icon: Wallet,
+                title: "Reimburse",
+                body: "Finance marks it paid, the employee is notified, and it lands in your reports instantly.",
+              },
+            ].map((item, i) => (
+              <Reveal key={i} delay={i * 120}>
+                <div className="relative flex flex-col items-center text-center px-4">
+                  <div className="relative z-10 w-16 h-16 mb-6">
+                    <div className="w-16 h-16 rounded-2xl bg-white border border-slate-200 shadow-card flex items-center justify-center">
+                      <item.Icon className="w-7 h-7 text-primary" strokeWidth={1.75} />
+                    </div>
+                    <span className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-primary text-white text-xs font-bold flex items-center justify-center tabular-nums">
+                      {item.step}
+                    </span>
+                  </div>
+                  <h3 className="font-display text-xl font-bold text-slate-900 mb-2">{item.title}</h3>
+                  <p className="text-slate-500 text-sm leading-relaxed max-w-xs">{item.body}</p>
+                </div>
+              </Reveal>
+            ))}
           </div>
         </div>
       </section>
@@ -430,14 +489,14 @@ export default function LandingPage() {
       <section className="py-20 md:py-28 px-4 sm:px-6 bg-slate-900">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
-          <div className="text-center mb-14">
+          <Reveal className="text-center mb-14">
             <span className="inline-block rounded-full border border-white/20 bg-white/5 px-3 py-1 text-xs font-bold uppercase tracking-widest text-slate-300 mb-4">
               Testimonials
             </span>
             <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-tight">
               Finance teams love Monytar
             </h2>
-          </div>
+          </Reveal>
 
           {/* Cards — horizontal scroll on mobile */}
           <div
@@ -495,7 +554,7 @@ export default function LandingPage() {
       <section id="pricing" className="py-20 md:py-28 px-4 sm:px-6 bg-white">
         <div className="max-w-5xl mx-auto">
           {/* Header */}
-          <div className="text-center mb-14">
+          <Reveal className="text-center mb-14">
             <span className="inline-block rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-bold uppercase tracking-widest text-primary mb-4">
               Pricing
             </span>
@@ -505,7 +564,7 @@ export default function LandingPage() {
             <p className="text-slate-500 text-lg">
               No hidden fees. Start free, scale when you&apos;re ready.
             </p>
-          </div>
+          </Reveal>
 
           {/* Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-4 items-start md:items-center">
@@ -591,6 +650,32 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ============ FAQ ============ */}
+      <section className="py-20 md:py-28 px-4 sm:px-6 bg-slate-50">
+        <div className="max-w-3xl mx-auto">
+          <Reveal className="text-center mb-12">
+            <span className="inline-block rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-bold uppercase tracking-widest text-primary mb-4">
+              FAQ
+            </span>
+            <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold text-slate-900 tracking-tight mb-3">
+              Questions, answered
+            </h2>
+            <p className="text-slate-500 text-lg">
+              Everything you need to know before getting started.
+            </p>
+          </Reveal>
+          <Reveal>
+            <FaqAccordion />
+          </Reveal>
+          <p className="text-center text-sm text-slate-500 mt-10">
+            Still have questions?{" "}
+            <Link href="/contact" className="text-primary font-semibold hover:underline">
+              Talk to our team
+            </Link>
+          </p>
+        </div>
+      </section>
+
       {/* ============ CTA BANNER ============ */}
       <section className="py-16 md:py-24 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto">
@@ -632,94 +717,7 @@ export default function LandingPage() {
       </section>
 
       {/* ============ FOOTER ============ */}
-      <footer className="bg-slate-900 border-t border-white/5 pt-16 pb-8 px-4 sm:px-6">
-        <div className="max-w-6xl mx-auto">
-          {/* 4-column grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-10 mb-16">
-            {/* Brand */}
-            <div className="col-span-2 md:col-span-1">
-              <p className="font-display font-bold text-xl text-white mb-3">Monytar</p>
-              <p className="text-slate-400 text-sm leading-relaxed mb-6">
-                Expense management your finance team will actually use.
-              </p>
-              <div className="flex gap-4">
-                <a href="#" className="text-slate-500 hover:text-white transition-colors">
-                  <Twitter className="w-4 h-4" />
-                </a>
-                <a href="#" className="text-slate-500 hover:text-white transition-colors">
-                  <Linkedin className="w-4 h-4" />
-                </a>
-              </div>
-            </div>
-
-            {/* Product */}
-            <div>
-              <p className="text-white text-sm font-semibold mb-4">Product</p>
-              <ul className="space-y-3">
-                {["Features", "Pricing", "Demo", "Changelog"].map((l) => (
-                  <li key={l}>
-                    <Link
-                      href={`/${l.toLowerCase()}`}
-                      className="text-slate-400 text-sm hover:text-white transition-colors"
-                    >
-                      {l}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Company */}
-            <div>
-              <p className="text-white text-sm font-semibold mb-4">Company</p>
-              <ul className="space-y-3">
-                {["About", "Blog", "Careers", "Contact"].map((l) => (
-                  <li key={l}>
-                    <Link
-                      href={`/${l.toLowerCase()}`}
-                      className="text-slate-400 text-sm hover:text-white transition-colors"
-                    >
-                      {l}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Legal */}
-            <div>
-              <p className="text-white text-sm font-semibold mb-4">Legal</p>
-              <ul className="space-y-3">
-                {["Privacy Policy", "Terms of Service", "Security", "Cookie Policy"].map((l) => (
-                  <li key={l}>
-                    <Link
-                      href={`/${l.toLowerCase().replace(/ /g, "-")}`}
-                      className="text-slate-400 text-sm hover:text-white transition-colors"
-                    >
-                      {l}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-
-          {/* Bottom bar */}
-          <div className="pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <p className="text-slate-500 text-sm">
-              &copy; {new Date().getFullYear()} Monytar. All rights reserved.
-            </p>
-            <div className="flex gap-6">
-              <Link href="/privacy" className="text-slate-500 text-sm hover:text-white transition-colors">
-                Privacy
-              </Link>
-              <Link href="/terms" className="text-slate-500 text-sm hover:text-white transition-colors">
-                Terms
-              </Link>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <LandingFooter />
     </div>
   )
 }

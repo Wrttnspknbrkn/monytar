@@ -8,6 +8,12 @@ const productLinks = [
   { label: "Changelog", href: "/changelog" },
 ]
 
+const resourceLinks = [
+  { label: "Blog", href: "/blog" },
+  { label: "Resources", href: "/resources" },
+  { label: "Help Center", href: "/contact" },
+]
+
 const companyLinks = [
   { label: "About", href: "/about" },
   { label: "Contact", href: "/contact" },
@@ -54,7 +60,7 @@ export function LandingFooter() {
           </div>
 
           {/* Links Columns */}
-          <div className="lg:col-span-8 grid sm:grid-cols-3 gap-8 lg:gap-12">
+          <div className="lg:col-span-8 grid grid-cols-2 sm:grid-cols-4 gap-8 lg:gap-12">
             {/* Product */}
             <div>
               <h4 className="text-xs font-bold uppercase tracking-widest text-white mb-5">
@@ -62,6 +68,26 @@ export function LandingFooter() {
               </h4>
               <ul className="flex flex-col gap-3">
                 {productLinks.map((item) => (
+                  <li key={item.label}>
+                    <Link
+                      href={item.href}
+                      className="text-sm text-slate-400 hover:text-white transition-colors inline-flex items-center gap-1 group"
+                    >
+                      {item.label}
+                      <ArrowUpRight className="w-3 h-3 opacity-0 -translate-y-0.5 translate-x-0.5 group-hover:opacity-100 transition-all" />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Resources */}
+            <div>
+              <h4 className="text-xs font-bold uppercase tracking-widest text-white mb-5">
+                Resources
+              </h4>
+              <ul className="flex flex-col gap-3">
+                {resourceLinks.map((item) => (
                   <li key={item.label}>
                     <Link
                       href={item.href}
