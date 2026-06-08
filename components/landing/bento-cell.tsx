@@ -32,7 +32,7 @@ export function BentoCell({
   const isLarge = size === "large"
   const isMedium = size === "medium"
 
-  const imageHeight = isLarge ? "h-64 md:h-80" : isMedium ? "h-56 md:h-64" : "h-48"
+  const imageHeight = isLarge ? "h-80 md:h-96" : isMedium ? "h-72 md:h-80" : "h-64 md:h-72"
 
   return (
     <div
