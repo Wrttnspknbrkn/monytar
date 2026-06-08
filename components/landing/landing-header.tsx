@@ -48,10 +48,13 @@ export function LandingHeader() {
     <>
       <header
         className={cn(
-          "fixed top-0 inset-x-0 z-50 transition-all duration-300",
-          useDark
-            ? "bg-white/90 backdrop-blur-md border-b border-slate-100 shadow-sm"
-            : "bg-transparent"
+          "fixed top-0 inset-x-0 transition-all duration-300",
+          mobileOpen ? "z-[110]" : "z-50",
+          mobileOpen
+            ? "bg-white border-b border-slate-100"
+            : useDark
+              ? "bg-white/90 backdrop-blur-md border-b border-slate-100 shadow-sm"
+              : "bg-transparent"
         )}
       >
         <div className="max-w-7xl mx-auto flex items-center justify-between h-16 px-4 sm:px-6">
@@ -113,7 +116,7 @@ export function LandingHeader() {
 
           <button
             className={cn(
-              "md:hidden relative z-[110] flex items-center justify-center w-11 h-11 rounded-lg transition-colors",
+              "md:hidden flex items-center justify-center w-11 h-11 rounded-lg transition-colors",
               mobileOpen
                 ? "hover:bg-slate-100"
                 : useDark
