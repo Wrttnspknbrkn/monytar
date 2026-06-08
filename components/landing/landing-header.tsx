@@ -8,8 +8,10 @@ import { cn } from "@/lib/utils"
 import { useState, useEffect } from "react"
 
 const navLinks = [
-  { label: "Features", href: "#features" },
-  { label: "Pricing", href: "#pricing" },
+  { label: "Features", href: "/features" },
+  { label: "Pricing", href: "/pricing" },
+  { label: "Blog", href: "/blog" },
+  { label: "Resources", href: "/resources" },
   { label: "Demo", href: "/demo" },
 ]
 
