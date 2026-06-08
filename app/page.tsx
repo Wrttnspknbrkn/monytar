@@ -100,7 +100,7 @@ const companyLogos = [
 const stats = [
   { value: "500+", label: "Finance teams" },
   { value: "98%", label: "Approval rate in 24h" },
-  { value: "$2.4M", label: "Expenses processed monthly" },
+  { value: "3 days", label: "Faster month-end close" },
   { value: "4.9★", label: "Average user rating" },
 ]
 
@@ -262,7 +262,7 @@ export default function LandingPage() {
               Icon={CheckCircle}
               title="Multi-step approvals that route themselves"
               body="Set rules once. Expenses automatically route to the right manager based on amount, category, or department."
-              image="/images/dashboard-preview.png"
+              image="/images/workflow.jpg"
             />
             <BentoCell
               cols="md:col-span-5"
@@ -271,6 +271,7 @@ export default function LandingPage() {
               Icon={PieChart}
               title="Budget tracking and real-time alerts"
               body="Department budgets with spend-to-date and automatic overage warnings before it is too late."
+              image="/images/dashboard1-dark.png"
             />
             <BentoCell
               cols="md:col-span-4"
@@ -279,6 +280,7 @@ export default function LandingPage() {
               Icon={ScanLine}
               title="Receipt capture"
               body="Upload from phone or desktop. Attach to any expense in one tap."
+              image="https://images.unsplash.com/photo-1634733988138-bf2c3a2a13fa?w=600&q=80"
             />
             <BentoCell
               cols="md:col-span-4"
@@ -287,6 +289,7 @@ export default function LandingPage() {
               Icon={BarChart3}
               title="Spend analytics"
               body="Slice spend by team, vendor, category, or time period."
+              image="/images/dashboard2-dark.png"
             />
             <BentoCell
               cols="md:col-span-4"
@@ -295,6 +298,7 @@ export default function LandingPage() {
               Icon={Users}
               title="Roles and permissions"
               body="Employee, Manager, Finance, Admin. Each sees exactly what they need."
+              image="/images/vendors.png"
             />
           </div>
         </div>
