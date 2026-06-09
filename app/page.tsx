@@ -22,6 +22,7 @@ import { LandingFooter } from "@/components/landing/landing-footer"
 import { BentoCell } from "@/components/landing/bento-cell"
 import { Reveal } from "@/components/landing/reveal"
 import { FaqAccordion } from "@/components/landing/faq-accordion"
+import { BlogShowcase } from "@/components/landing/blog-showcase"
 import { cn } from "@/lib/utils"
 
 const testimonials = [
@@ -52,8 +53,19 @@ const plans = [
     price: "$0",
     period: "/mo",
     users: "Up to 5 users",
-    features: ["Basic approvals", "Receipt upload", "Email notifications", "Email support"],
+    features: ["50 requests/month", "Basic approval workflow", "Standard reporting", "Email support"],
     cta: "Get started",
+    href: "/signup",
+  },
+  {
+    id: "starter",
+    name: "Starter",
+    price: "$19",
+    period: "/mo",
+    users: "Up to 25 users",
+    features: ["Unlimited requests", "Multi-level approvals", "Vendor management", "Priority support"],
+    cta: "Start free trial",
+    href: "/checkout?plan=starter-monthly",
   },
   {
     id: "pro",
@@ -63,13 +75,14 @@ const plans = [
     users: "Up to 100 users",
     featured: true,
     features: [
-      "Everything in Free",
-      "Analytics & exports",
-      "Vendor management",
-      "Custom approval chains",
-      "Priority support",
+      "Everything in Starter",
+      "Budget management",
+      "Advanced analytics",
+      "API access & SSO",
+      "Phone & email support",
     ],
     cta: "Start free trial",
+    href: "/checkout?plan=professional-monthly",
   },
   {
     id: "ent",
@@ -79,12 +92,13 @@ const plans = [
     users: "Unlimited users",
     features: [
       "Everything in Pro",
-      "SSO / SAML login",
-      "Custom workflows",
-      "API access",
-      "Dedicated CSM",
+      "Custom integrations",
+      "Dedicated account manager",
+      "On-premise option",
+      "24/7 priority support",
     ],
     cta: "Contact sales",
+    href: "/contact",
   },
 ]
 
@@ -533,7 +547,7 @@ export default function LandingPage() {
 
       {/* PRICING */}
       <section id="pricing" className="py-24 md:py-32 px-4 sm:px-6 bg-white">
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           <Reveal className="text-center mb-16">
             <span className="inline-block rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-bold uppercase tracking-widest text-primary mb-4">
               Pricing
@@ -546,7 +560,7 @@ export default function LandingPage() {
             </p>
           </Reveal>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-4 items-start md:items-center">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-4 items-start lg:items-center">
             {plans.map((plan) => (
               <div
                 key={plan.id}
@@ -585,7 +599,7 @@ export default function LandingPage() {
                   ))}
                 </ul>
                 <Link
-                  href={plan.cta === "Contact sales" ? "/contact" : "/signup"}
+                  href={plan.href}
                   className={cn(
                     "block text-center rounded-xl py-3 text-sm font-semibold transition-all duration-200",
                     plan.featured
@@ -626,6 +640,9 @@ export default function LandingPage() {
           </p>
         </div>
       </section>
+
+      {/* BLOG */}
+      <BlogShowcase />
 
       {/* CTA BANNER */}
       <section className="py-16 md:py-24 px-4 sm:px-6">
