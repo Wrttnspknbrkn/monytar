@@ -230,6 +230,26 @@ export interface SubscriptionHistory {
   created_at: string
 }
 
+export type DemoLeadRole = "employee" | "manager" | "finance" | "admin"
+
+export interface DemoLead {
+  id: string
+  full_name: string
+  email: string
+  company_name?: string
+  phone?: string
+  entry_role: DemoLeadRole
+  country?: string
+  device?: string
+  browser?: string
+  referrer?: string
+  utm_source?: string
+  utm_medium?: string
+  utm_campaign?: string
+  converted: boolean
+  created_at: string
+}
+
 // Helper types for UI
 export interface DepartmentWithManager extends Department {
   manager?: User

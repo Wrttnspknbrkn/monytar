@@ -47,27 +47,25 @@ const CHART_COLORS = [
 
 export default function DashboardPage() {
   const { dbUser } = useAuth()
-  const { 
+  const {
     currentUser,
-    expenseRequests, 
-    departments, 
-    users, 
-    vendors, 
-    getDepartmentSpend, 
+    expenseRequests,
+    departments,
+    users,
+    vendors,
+    getDepartmentSpend,
     getPendingApprovals,
-    dashboardStats,
     budgetAlerts,
     isLoading,
   } = useData()
 
-  // Use auth user or data user
   const user = dbUser || currentUser
   const role = user?.role || "employee"
-  
+
   if (isLoading || !user) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
       </div>
     )
   }
@@ -121,7 +119,7 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Page Header */}
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="font-heading text-2xl font-extrabold tracking-tight">Dashboard</h1>
@@ -131,7 +129,7 @@ export default function DashboardPage() {
         </div>
         {role === "employee" && (
           <Link href="/requests/new">
-            <Button className="shadow-sm shadow-primary/25 font-semibold">
+            <Button className="shadow-sm shadow-primary/25 font-semibold w-full sm:w-auto">
               <Plus className="w-4 h-4 mr-2" /> New Request
             </Button>
           </Link>
@@ -177,8 +175,8 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-5">
-        {/* Spending Trend Chart */}
         <Card className="lg:col-span-2 border-border/60">
           <CardHeader className="pb-2">
             <CardTitle className="font-heading text-base font-bold">Spending Trend</CardTitle>
@@ -192,21 +190,10 @@ export default function DashboardPage() {
                   <XAxis dataKey="month" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v / 1000}k`} />
                   <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "10px",
-                      fontSize: "13px",
-                      color: "hsl(var(--foreground))",
-                      boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)",
-                    }}
+                    contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "10px", fontSize: "13px", color: "hsl(var(--foreground))", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)" }}
                     formatter={(value: number) => [formatCurrency(value), "Amount"]}
                   />
-                  <Line
-                    type="monotone"
-                    dataKey="amount"
-                    stroke="hsl(221, 83%, 53%)"
-                    strokeWidth={2.5}
+                  <Line type="monotone" dataKey="amount" stroke="hsl(221, 83%, 53%)" strokeWidth={2.5}
                     dot={{ r: 4, fill: "hsl(var(--card))", stroke: "hsl(221, 83%, 53%)", strokeWidth: 2 }}
                     activeDot={{ r: 6, fill: "hsl(221, 83%, 53%)", stroke: "hsl(var(--card))", strokeWidth: 2 }}
                   />
@@ -216,7 +203,6 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Category Breakdown */}
         <Card className="border-border/60">
           <CardHeader className="pb-2">
             <CardTitle className="font-heading text-base font-bold">By Category</CardTitle>
@@ -232,13 +218,7 @@ export default function DashboardPage() {
                     ))}
                   </Pie>
                   <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "10px",
-                      fontSize: "13px",
-                      color: "hsl(var(--foreground))",
-                    }}
+                    contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "10px", fontSize: "13px", color: "hsl(var(--foreground))" }}
                     formatter={(value: number) => [formatCurrency(value), "Amount"]}
                   />
                 </PieChart>
@@ -247,7 +227,7 @@ export default function DashboardPage() {
             <div className="flex flex-wrap gap-x-4 gap-y-2 mt-3">
               {categoryData.map((cat, i) => (
                 <div key={cat.name} className="flex items-center gap-1.5 text-xs">
-                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }} />
+                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }} />
                   <span className="text-muted-foreground font-medium">{cat.name}</span>
                 </div>
               ))}
@@ -256,36 +236,37 @@ export default function DashboardPage() {
         </Card>
       </div>
 
+      {/* Recent Requests + Budget/Vendor */}
       <div className="grid lg:grid-cols-2 gap-5">
         {/* Recent Requests */}
-        <Card className="border-border/60">
+        <Card className="border-border/60 min-w-0">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div>
               <CardTitle className="font-heading text-base font-bold">Recent Requests</CardTitle>
               <CardDescription className="text-xs">Latest expense submissions</CardDescription>
             </div>
             <Link href="/requests">
-              <Button variant="ghost" size="sm" className="text-xs font-semibold text-primary hover:text-primary">
+              <Button variant="ghost" size="sm" className="text-xs font-semibold text-primary hover:text-primary shrink-0">
                 View all <ArrowRight className="w-3.5 h-3.5 ml-1" />
               </Button>
             </Link>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-3 sm:px-6">
             <div className="flex flex-col gap-1">
               {recentRequests.map((req) => (
-                <Link key={req.id} href={`/requests/${req.id}`}>
-                  <div className="flex items-center gap-4 p-3 rounded-xl hover:bg-secondary/60 transition-colors duration-200">
-                    <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-secondary">
-                      <FileText className="w-4 h-4 text-muted-foreground" />
+                <Link key={req.id} href={`/requests/${req.id}`} className="block">
+                  <div className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-secondary/60 transition-colors duration-200 min-w-0">
+                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-secondary shrink-0">
+                      <FileText className="w-3.5 h-3.5 text-muted-foreground" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{req.purpose}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {req.request_number} &middot; {formatRelativeTime(req.created_at)}
+                    <div className="flex-1 min-w-0 overflow-hidden">
+                      <p className="text-sm font-medium truncate leading-tight">{req.purpose}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                        {req.request_number} · {formatRelativeTime(req.created_at)}
                       </p>
                     </div>
-                    <div className="flex flex-col items-end gap-1.5">
-                      <span className="text-sm font-heading font-bold">{formatCurrency(req.amount)}</span>
+                    <div className="flex flex-col items-end gap-1 shrink-0 ml-1">
+                      <span className="text-sm font-heading font-bold tabular-nums whitespace-nowrap">{formatCurrency(req.amount)}</span>
                       <RequestStatusBadge status={req.status} />
                     </div>
                   </div>
@@ -295,25 +276,25 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Budget or Vendor panel */}
+        {/* Department Budgets or Vendors */}
         {role !== "employee" ? (
-          <Card className="border-border/60">
+          <Card className="border-border/60 min-w-0">
             <CardHeader className="pb-2">
               <CardTitle className="font-heading text-base font-bold">Department Budgets</CardTitle>
               <CardDescription className="text-xs">Current budget utilization</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="flex flex-col gap-5">
+            <CardContent className="px-3 sm:px-6">
+              <div className="flex flex-col gap-4">
                 {deptBudgets.map((dept) => (
-                  <div key={dept.id} className="flex flex-col gap-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="font-medium">{dept.name}</span>
-                      <span className="text-xs text-muted-foreground tabular-nums">
+                  <div key={dept.id} className="flex flex-col gap-1.5 min-w-0">
+                    <div className="flex items-center justify-between gap-2 min-w-0">
+                      <span className="text-sm font-medium truncate">{dept.name}</span>
+                      <span className="text-xs text-muted-foreground tabular-nums whitespace-nowrap shrink-0">
                         {formatCurrency(dept.spend)} / {formatCurrency(dept.budget_amount)}
                       </span>
                     </div>
                     <Progress value={Math.min(dept.pct, 100)} className="h-2" />
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-2">
                       <span
                         className={cn(
                           "text-xs font-semibold",
@@ -327,7 +308,7 @@ export default function DashboardPage() {
                         {dept.pct}% used
                       </span>
                       {dept.pct >= 75 && (
-                        <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 font-medium">
+                        <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 font-medium shrink-0">
                           <AlertTriangle className="w-3 h-3" />
                           {dept.pct >= 90 ? "Critical" : "Warning"}
                         </span>
@@ -338,7 +319,7 @@ export default function DashboardPage() {
               </div>
 
               {budgetAlerts.length > 0 && (
-                <div className="mt-6 pt-4 border-t border-border">
+                <div className="mt-5 pt-4 border-t border-border">
                   <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Active Alerts</h4>
                   <div className="flex flex-col gap-2">
                     {budgetAlerts.map((alert) => {
@@ -346,10 +327,10 @@ export default function DashboardPage() {
                       return (
                         <div
                           key={alert.id}
-                          className="flex items-center gap-3 p-2.5 rounded-lg bg-amber-50 dark:bg-amber-900/10 border border-amber-200/50 dark:border-amber-800/30 text-sm"
+                          className="flex items-center gap-2.5 p-2.5 rounded-lg bg-amber-50 dark:bg-amber-900/10 border border-amber-200/50 dark:border-amber-800/30"
                         >
-                          <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-                          <span className="text-amber-800 dark:text-amber-300 text-xs font-medium">
+                          <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+                          <span className="text-amber-800 dark:text-amber-300 text-xs font-medium truncate">
                             {dept?.name} at {alert.threshold_percentage}% of budget
                           </span>
                         </div>
@@ -361,7 +342,7 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         ) : (
-          <Card className="border-border/60">
+          <Card className="border-border/60 min-w-0">
             <CardHeader className="pb-2">
               <CardTitle className="font-heading text-base font-bold">Top Vendors</CardTitle>
               <CardDescription className="text-xs">Your most used vendors this period</CardDescription>
@@ -376,24 +357,16 @@ export default function DashboardPage() {
                     vendorSpend[v.id].amount += r.amount
                   }
                 }
-                const data = Object.values(vendorSpend)
-                  .sort((a, b) => b.amount - a.amount)
-                  .slice(0, 5)
+                const data = Object.values(vendorSpend).sort((a, b) => b.amount - a.amount).slice(0, 5)
                 return (
                   <div className="h-48">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={data} layout="vertical">
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
                         <XAxis type="number" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}`} />
-                        <YAxis type="category" dataKey="name" width={100} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} axisLine={false} tickLine={false} />
+                        <YAxis type="category" dataKey="name" width={90} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} axisLine={false} tickLine={false} />
                         <Tooltip
-                          contentStyle={{
-                            backgroundColor: "hsl(var(--card))",
-                            border: "1px solid hsl(var(--border))",
-                            borderRadius: "10px",
-                            fontSize: "13px",
-                            color: "hsl(var(--foreground))",
-                          }}
+                          contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "10px", fontSize: "13px", color: "hsl(var(--foreground))" }}
                           formatter={(value: number) => [formatCurrency(value), "Spent"]}
                         />
                         <Bar dataKey="amount" fill="hsl(221, 83%, 53%)" radius={[0, 6, 6, 0]} />
@@ -409,35 +382,35 @@ export default function DashboardPage() {
 
       {/* Pending Approvals */}
       {role !== "employee" && pendingApprovals.length > 0 && (
-        <Card className="border-border/60">
+        <Card className="border-border/60 min-w-0">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <div>
               <CardTitle className="font-heading text-base font-bold">Pending Approvals</CardTitle>
               <CardDescription className="text-xs">{pendingApprovals.length} requests awaiting your review</CardDescription>
             </div>
             <Link href="/approvals">
-              <Button variant="ghost" size="sm" className="text-xs font-semibold text-primary hover:text-primary">
+              <Button variant="ghost" size="sm" className="text-xs font-semibold text-primary hover:text-primary shrink-0">
                 View all <ArrowRight className="w-3.5 h-3.5 ml-1" />
               </Button>
             </Link>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-3 sm:px-6">
             <div className="flex flex-col gap-1">
               {pendingApprovals.slice(0, 5).map((req) => {
                 const emp = users.find((u) => u.id === req.employee_id)
                 return (
-                  <Link key={req.id} href={`/requests/${req.id}`}>
-                    <div className="flex items-center gap-4 p-3 rounded-xl hover:bg-secondary/60 transition-colors duration-200">
-                      <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200/50 dark:border-amber-800/30">
-                        <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                  <Link key={req.id} href={`/requests/${req.id}`} className="block">
+                    <div className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-secondary/60 transition-colors duration-200 min-w-0">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200/50 dark:border-amber-800/30 shrink-0">
+                        <Clock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{req.purpose}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          by {emp?.full_name || "Unknown"} &middot; {formatRelativeTime(req.submitted_at || req.created_at)}
+                      <div className="flex-1 min-w-0 overflow-hidden">
+                        <p className="text-sm font-medium truncate leading-tight">{req.purpose}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                          by {emp?.full_name || "Unknown"} · {formatRelativeTime(req.submitted_at || req.created_at)}
                         </p>
                       </div>
-                      <span className="text-sm font-heading font-bold">{formatCurrency(req.amount)}</span>
+                      <span className="text-sm font-heading font-bold tabular-nums whitespace-nowrap shrink-0 ml-1">{formatCurrency(req.amount)}</span>
                     </div>
                   </Link>
                 )
