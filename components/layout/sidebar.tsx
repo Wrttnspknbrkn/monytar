@@ -14,6 +14,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Wallet,
+  Sparkles,
 } from "lucide-react"
 import { Logo } from "@/components/ui/logo"
 import { cn } from "@/lib/utils"
@@ -29,6 +30,7 @@ const navItems = [
   { href: "/vendors", label: "Vendors", icon: Store, roles: ["employee", "manager", "finance", "admin"] },
   { href: "/departments", label: "Departments", icon: Building2, roles: ["manager", "finance", "admin"] },
   { href: "/users", label: "Users", icon: Users, roles: ["admin"] },
+  { href: "/demo-leads", label: "Demo Leads", icon: Sparkles, roles: ["admin"] },
   { href: "/reports", label: "Reports", icon: BarChart3, roles: ["finance", "admin"] },
   { href: "/settings", label: "Settings", icon: Settings, roles: ["employee", "manager", "finance", "admin"] },
 ]
