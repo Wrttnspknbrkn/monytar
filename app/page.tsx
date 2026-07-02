@@ -287,7 +287,7 @@ export default function LandingPage() {
               Icon={PieChart}
               title="Budget tracking and real-time alerts"
               body="Department budgets with spend-to-date and automatic overage warnings before it is too late."
-              image="/images/dashboard1-dark.png"
+              image="/images/reports.png"
               imagePosition="center top"
               imageFit="cover"
               imageBg="bg-slate-900"
@@ -299,7 +299,7 @@ export default function LandingPage() {
               Icon={ScanLine}
               title="Receipt capture"
               body="Upload from phone or desktop. Attach to any expense in one tap."
-              image="https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=600&q=80"
+              image="/images/requests.png"
               imagePosition="center center"
               imageFit="cover"
             />
@@ -430,7 +430,7 @@ export default function LandingPage() {
             <div className="absolute inset-0 bg-indigo-100/60 rounded-3xl rotate-2 scale-95 -z-10" />
             <div className="relative rounded-2xl overflow-hidden shadow-xl ring-1 ring-slate-200 hover:shadow-2xl transition-shadow duration-500">
               <Image
-                src="/images/hero-dashboard.jpg"
+                src="/images/dashboard-pc.png"
                 alt="Manager approval workflow"
                 width={600}
                 height={400}
