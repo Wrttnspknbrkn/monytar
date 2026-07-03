@@ -142,61 +142,57 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     try {
       const supabase = getSupabaseBrowserClient()
-      
-      // Create auth user
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
-        options: {
-          data: {
-            full_name: data.fullName,
-          },
-        },
-      })
-      
-      if (authError) {
-        return { error: authError.message }
-      }
-      
-      if (!authData.user) {
-        return { error: "Failed to create account" }
-      }
-      
-      // If invitation token provided, join existing org
+
+      // Auth accounts are created server-side (service role) so identity is never
+      // trusted from the client. We then establish a session with the credentials.
       if (data.invitationToken) {
+        // Join an existing org via invitation. Email is resolved server-side
+        // from the invitation record and returned for sign-in.
         const response = await fetch("/api/auth/accept-invitation", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             token: data.invitationToken,
-            userId: authData.user.id,
             fullName: data.fullName,
+            password: data.password,
           }),
         })
-        
+
+        const result = await response.json().catch(() => ({}))
         if (!response.ok) {
-          const result = await response.json()
           return { error: result.error || "Failed to accept invitation" }
         }
+
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: result.email ?? data.email,
+          password: data.password,
+        })
+        if (signInError) return { error: signInError.message }
       } else if (data.organizationName) {
-        // Create new organization
+        // Create a new organization + admin account.
         const response = await fetch("/api/auth/signup", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            userId: authData.user.id,
             email: data.email,
+            password: data.password,
             fullName: data.fullName,
-            organizationName: data.organizationName,
+            orgName: data.organizationName,
           }),
         })
-        
+
+        const result = await response.json().catch(() => ({}))
         if (!response.ok) {
-          const result = await response.json()
           return { error: result.error || "Failed to create organization" }
         }
+
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email: data.email,
+          password: data.password,
+        })
+        if (signInError) return { error: signInError.message }
       }
-      
+
       return {}
     } catch (error) {
       return { error: "An unexpected error occurred" }

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { rejectSchema } from "@/lib/validations"
 import { isSupabaseConfigured } from "@/lib/supabase/config"
-import { getSupabaseServerClient } from "@/lib/supabase/server"
+import { authorize } from "@/lib/api/authorize"
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -20,25 +20,39 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       return NextResponse.json({ demo: true, success: true })
     }
 
-    const supabase = await getSupabaseServerClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    // Only managers, finance, and admins may reject.
+    const { actor, response } = await authorize(["manager", "finance", "admin"])
+    if (response) return response
+    const { supabase, userId, organizationId, departmentId, role } = actor
 
     const now = new Date().toISOString()
 
-    const { data, error } = await supabase
+    let updateQuery = supabase
       .from("expense_requests")
       .update({
         status: "rejected",
-        rejected_by: user.id,
+        rejected_by: userId,
         rejected_at: now,
         manager_comment: parsed.data.comment,
       })
       .eq("id", id)
       .eq("status", "pending")
-      .select()
-      .single()
+      // Defense-in-depth: never act on another tenant's data.
+      .eq("organization_id", organizationId)
 
+    // Managers may only reject requests within their own department.
+    if (role === "manager") {
+      updateQuery = updateQuery.eq("department_id", departmentId)
+    }
+
+    const { data, error } = await updateQuery.select().single()
+
+    if (error && error.code === "PGRST116") {
+      return NextResponse.json(
+        { error: "Request not found or you are not authorized to reject it" },
+        { status: 403 },
+      )
+    }
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
     if (data) {
