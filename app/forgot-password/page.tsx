@@ -7,7 +7,6 @@ import { ArrowLeft, ArrowRight, MailCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 import { isSupabaseConfigured } from "@/lib/supabase/config"
 import { toast } from "sonner"
 
@@ -32,12 +31,21 @@ export default function ForgotPasswordPage() {
 
     setLoading(true)
     try {
-      const supabase = getSupabaseBrowserClient()
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+      // Go through the server endpoint so the request is rate-limited.
+      const res = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          redirectTo: `${window.location.origin}/reset-password`,
+        }),
       })
-      // Always show success to avoid leaking which emails are registered.
-      if (error) console.error("[v0] reset error:", error.message)
+      // Always show success to avoid leaking which emails are registered,
+      // except when we're explicitly rate-limited.
+      if (res.status === 429) {
+        toast.error("Too many attempts. Please wait a few minutes and try again.")
+        return
+      }
       setSent(true)
     } catch (err) {
       console.error("[v0] reset exception:", err)

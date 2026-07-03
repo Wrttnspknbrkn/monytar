@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { loginSchema } from "@/lib/validations"
 import { isSupabaseConfigured } from "@/lib/supabase/config"
 import { getSupabaseServerClient } from "@/lib/supabase/server"
+import { enforceRateLimit, getClientIp } from "@/lib/api/rate-limit"
 
 export async function POST(request: Request) {
   try {
@@ -16,6 +17,10 @@ export async function POST(request: Request) {
     }
 
     const { email, password } = parsed.data
+
+    // Throttle brute-force attempts per IP + email pair.
+    const limited = await enforceRateLimit("login", `${getClientIp(request)}:${email.toLowerCase()}`)
+    if (limited) return limited
 
     if (!isSupabaseConfigured()) {
       // Demo mode — accept any mock user email with any password

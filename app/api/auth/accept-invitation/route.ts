@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { z } from "zod"
+import { enforceRateLimit, getClientIp } from "@/lib/api/rate-limit"
 
 const acceptSchema = z.object({
   token: z.string().min(1),
@@ -26,6 +27,9 @@ function getAdminClient() {
 
 export async function POST(request: Request) {
   try {
+    const limited = await enforceRateLimit("acceptInvitation", getClientIp(request))
+    if (limited) return limited
+
     const body = await request.json()
     const parsed = acceptSchema.safeParse(body)
 

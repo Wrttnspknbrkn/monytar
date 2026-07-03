@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { getSupabaseServerClient } from "@/lib/supabase/server"
 import { isSupabaseConfigured } from "@/lib/supabase/config"
+import { enforceRateLimit, getClientIp } from "@/lib/api/rate-limit"
 import { z } from "zod"
 import { randomBytes } from "crypto"
 
@@ -73,6 +74,10 @@ export async function POST(request: Request) {
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
+
+    // Throttle invitation creation per inviting user.
+    const limited = await enforceRateLimit("invitation", user.id)
+    if (limited) return limited
 
     // Get user's organization and verify admin role
     const { data: dbUser } = await supabase
