@@ -169,6 +169,33 @@ export function getProductByTier(tier: SubscriptionTier, interval: "month" | "ye
   return PRODUCTS.find((p) => p.tier === tier && p.interval === interval)
 }
 
+/**
+ * Resolves a subscription tier from a Stripe product_id (authoritative) with a
+ * price-amount fallback. NEVER returns an invalid tier — the database CHECK only
+ * permits 'free' | 'starter' | 'professional' | 'enterprise'.
+ */
+export function getTierFromProductId(productId?: string | null): SubscriptionTier | null {
+  if (!productId) return null
+  const product = getProductById(productId)
+  return product ? product.tier : null
+}
+
+export function getTierFromPriceAmount(priceAmount: number): SubscriptionTier {
+  // Prefer an exact match against a known product price (handles monthly + yearly).
+  const exact = PRODUCTS.find((p) => p.priceInCents === priceAmount && p.priceInCents > 0)
+  if (exact) return exact.tier
+  // Heuristic fallback — always a valid tier, never "business".
+  if (priceAmount <= 0) return "free"
+  if (priceAmount <= 1900) return "starter"
+  if (priceAmount <= 4900) return "professional"
+  if (priceAmount <= 49000) return "professional"
+  return "enterprise"
+}
+
+export function resolveSubscriptionTier(opts: { productId?: string | null; priceAmount?: number }): SubscriptionTier {
+  return getTierFromProductId(opts.productId) ?? getTierFromPriceAmount(opts.priceAmount ?? 0)
+}
+
 export function getTierLimits(tier: SubscriptionTier): { maxUsers: number; maxDepartments: number; maxRequestsPerMonth: number | null } {
   const product = getProductByTier(tier)
   if (!product) {

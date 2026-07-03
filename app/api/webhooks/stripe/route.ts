@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server"
 import { isStripeConfigured } from "@/lib/stripe/config"
-import { createClient } from "@supabase/supabase-js"
+import { createClient, type SupabaseClient } from "@supabase/supabase-js"
+import { resolveSubscriptionTier } from "@/lib/products"
 import type Stripe from "stripe"
 
 // Initialize Supabase Admin client for webhook processing
@@ -17,12 +18,25 @@ function getSupabaseAdmin() {
   })
 }
 
-// Map Stripe price to subscription tier
-function getSubscriptionTier(priceAmount: number): string {
-  if (priceAmount <= 2900) return "starter"
-  if (priceAmount <= 7900) return "professional"
-  if (priceAmount <= 19900) return "business"
-  return "enterprise"
+// Resolve the tier from a Stripe subscription, preferring authoritative metadata
+// (product_id) and falling back to the price amount. Always a valid DB tier.
+function tierFromSubscription(subscription: Stripe.Subscription): string {
+  const productId = subscription.metadata?.product_id
+  const priceAmount = subscription.items.data[0]?.price?.unit_amount || 0
+  return resolveSubscriptionTier({ productId, priceAmount })
+}
+
+// Idempotency guard: returns true if this event was already processed.
+async function alreadyProcessed(supabase: SupabaseClient, event: Stripe.Event): Promise<boolean> {
+  const { error } = await supabase
+    .from("stripe_webhook_events")
+    .insert({ id: event.id, type: event.type })
+
+  // Unique violation => we've already handled this event.
+  if (error && (error.code === "23505" || error.message?.includes("duplicate"))) {
+    return true
+  }
+  return false
 }
 
 export async function POST(request: NextRequest) {
@@ -50,6 +64,12 @@ export async function POST(request: NextRequest) {
 
   const supabase = getSupabaseAdmin()
 
+  // Idempotency: skip events we've already handled (Stripe retries on non-2xx).
+  if (supabase && (await alreadyProcessed(supabase, event))) {
+    console.log(`[Webhook] Skipping already-processed event: ${event.id}`)
+    return NextResponse.json({ received: true, deduped: true })
+  }
+
   try {
     switch (event.type) {
       case "checkout.session.completed": {
@@ -58,8 +78,7 @@ export async function POST(request: NextRequest) {
         if (session.mode === "subscription" && session.subscription && supabase) {
           // Get subscription details
           const subscription = await stripe.subscriptions.retrieve(session.subscription as string)
-          const priceAmount = subscription.items.data[0]?.price?.unit_amount || 0
-          const tier = getSubscriptionTier(priceAmount)
+          const tier = tierFromSubscription(subscription)
 
           // Find user by email and update their organization's subscription
           const { data: user, error: userError } = await supabase
@@ -92,8 +111,7 @@ export async function POST(request: NextRequest) {
         const subscription = event.data.object as Stripe.Subscription
 
         if (supabase) {
-          const priceAmount = subscription.items.data[0]?.price?.unit_amount || 0
-          const tier = getSubscriptionTier(priceAmount)
+          const tier = tierFromSubscription(subscription)
 
           // Map Stripe status to our status
           let status: string = "active"
