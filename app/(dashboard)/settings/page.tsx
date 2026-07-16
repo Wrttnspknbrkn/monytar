@@ -17,6 +17,7 @@ import { toast } from "sonner"
 import { useTheme } from "next-themes"
 import Link from "next/link"
 import { PRODUCTS } from "@/lib/products"
+import { openBillingPortal } from "@/app/actions/stripe"
 
 const SUPPORTED_CURRENCIES = [
   { code: "USD", label: "US Dollar", symbol: "$" },
@@ -74,17 +75,34 @@ export default function SettingsPage() {
   }
 
   const [cancelLoading, setCancelLoading] = useState(false)
+  const [portalLoading, setPortalLoading] = useState(false)
 
   // Current plan detection based on org subscription tier
   const currentPlanId = `${organization?.subscription_tier || "free"}-monthly`
   const currentPlan = PRODUCTS.find((p) => p.id === currentPlanId) || PRODUCTS[0]
 
+  async function handleManageBilling() {
+    setPortalLoading(true)
+    try {
+      const result = await openBillingPortal()
+      if (result.error) {
+        toast.error(result.error)
+        return
+      }
+      if (result.url) {
+        window.location.href = result.url
+      }
+    } catch {
+      toast.error("Failed to open billing portal. Please try again.")
+    } finally {
+      setPortalLoading(false)
+    }
+  }
+
   function handleCancelSubscription() {
-    setCancelLoading(true)
-    setTimeout(() => {
-      setCancelLoading(false)
-      toast.success("Subscription cancelled. You will retain access until the end of your billing period.")
-    }, 1500)
+    // Cancellation, plan changes, and payment methods are all handled securely
+    // through Stripe's hosted Customer Portal.
+    handleManageBilling()
   }
 
   const isAdminOrFinance = user?.role === "admin" || user?.role === "finance"
@@ -437,6 +455,25 @@ export default function SettingsPage() {
                   ))}
                 </div>
               </div>
+
+              {isAdminOrFinance && (
+                <div className="flex items-center gap-3 pt-1">
+                  <Button
+                    onClick={handleManageBilling}
+                    disabled={portalLoading}
+                    className="font-semibold shadow-sm shadow-primary/20"
+                  >
+                    {portalLoading ? (
+                      <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Opening portal...</>
+                    ) : (
+                      <><CreditCard className="w-4 h-4 mr-2" /> Manage Billing</>
+                    )}
+                  </Button>
+                  <p className="text-xs text-muted-foreground">
+                    Update payment methods, download invoices, or change your plan.
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
 

@@ -2,6 +2,8 @@ import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { z } from "zod"
 import { enforceRateLimit, getClientIp } from "@/lib/api/rate-limit"
+import { getTierLimits } from "@/lib/products"
+import type { SubscriptionTier } from "@/lib/types"
 
 const acceptSchema = z.object({
   token: z.string().min(1),
@@ -62,10 +64,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invitation has expired" }, { status: 400 })
     }
 
-    // Enforce the organization's seat limit before provisioning.
+    // Enforce the organization's seat limit before provisioning. The cap is
+    // derived from the current subscription tier (authoritative).
     const { data: org } = await supabase
       .from("organizations")
-      .select("max_users")
+      .select("max_users, subscription_tier")
       .eq("id", invitation.organization_id)
       .single()
 
@@ -75,7 +78,10 @@ export async function POST(request: Request) {
       .eq("organization_id", invitation.organization_id)
       .eq("is_active", true)
 
-    if (org && userCount !== null && userCount >= org.max_users) {
+    const tierMax = getTierLimits((org?.subscription_tier as SubscriptionTier) || "free").maxUsers
+    const seatLimit = Math.min(tierMax, org?.max_users ?? tierMax)
+
+    if (userCount !== null && userCount >= seatLimit) {
       return NextResponse.json(
         { error: "Organization has reached its maximum user limit. Please contact the admin to upgrade." },
         { status: 400 },

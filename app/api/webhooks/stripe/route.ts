@@ -138,11 +138,11 @@ export async function POST(request: NextRequest) {
         const subscription = event.data.object as Stripe.Subscription
 
         if (supabase) {
-          // Downgrade to free/starter tier
+          // Downgrade to the free tier when a subscription is cancelled.
           await supabase
             .from("organizations")
             .update({
-              subscription_tier: "starter",
+              subscription_tier: "free",
               subscription_status: "cancelled",
               stripe_subscription_id: null,
               updated_at: new Date().toISOString(),
@@ -197,6 +197,10 @@ export async function POST(request: NextRequest) {
     }
   } catch (err) {
     console.error("[Webhook] Error processing event:", err)
+    // Roll back the idempotency record so Stripe's retry can reprocess this event.
+    if (supabase) {
+      await supabase.from("stripe_webhook_events").delete().eq("id", event.id)
+    }
     return NextResponse.json({ error: "Webhook handler failed" }, { status: 500 })
   }
 

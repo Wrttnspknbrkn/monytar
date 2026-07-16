@@ -2,6 +2,8 @@ import { NextResponse } from "next/server"
 import { getSupabaseServerClient } from "@/lib/supabase/server"
 import { isSupabaseConfigured } from "@/lib/supabase/config"
 import { enforceRateLimit, getClientIp } from "@/lib/api/rate-limit"
+import { getTierLimits } from "@/lib/products"
+import type { SubscriptionTier } from "@/lib/types"
 import { z } from "zod"
 import { randomBytes } from "crypto"
 
@@ -90,10 +92,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Only admins can invite users" }, { status: 403 })
     }
 
-    // Check organization user limit
+    // Check organization user limit. The seat cap is derived from the current
+    // subscription tier (authoritative) rather than a possibly-stale max_users column.
     const { data: org } = await supabase
       .from("organizations")
-      .select("max_users, name")
+      .select("max_users, subscription_tier, name")
       .eq("id", dbUser.organization_id)
       .single()
 
@@ -110,10 +113,14 @@ export async function POST(request: Request) {
       .eq("status", "pending")
 
     const totalUsers = (currentUsers || 0) + (pendingInvites || 0)
-    
-    if (org && totalUsers >= org.max_users) {
-      return NextResponse.json({ 
-        error: `Your organization has reached the maximum of ${org.max_users} users. Please upgrade your subscription to add more users.` 
+
+    const tierMax = getTierLimits((org?.subscription_tier as SubscriptionTier) || "free").maxUsers
+    // Respect the stricter of tier limit and any stored override.
+    const seatLimit = Math.min(tierMax, org?.max_users ?? tierMax)
+
+    if (totalUsers >= seatLimit) {
+      return NextResponse.json({
+        error: `Your organization has reached the maximum of ${seatLimit} users on the ${org?.subscription_tier || "free"} plan. Please upgrade your subscription to add more users.`,
       }, { status: 400 })
     }
 

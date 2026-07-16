@@ -4,8 +4,13 @@ import {
   getProductById,
   getProductByTier,
   getTierLimits,
+  getTierFromProductId,
+  getTierFromPriceAmount,
+  resolveSubscriptionTier,
   type SubscriptionTier,
 } from "@/lib/products"
+
+const VALID_TIERS: SubscriptionTier[] = ["free", "starter", "professional", "enterprise"]
 
 describe("PRODUCTS catalog integrity", () => {
   it("has unique product ids", () => {
@@ -95,5 +100,48 @@ describe("getTierLimits", () => {
       maxDepartments: 1,
       maxRequestsPerMonth: 50,
     })
+  })
+})
+
+describe("subscription tier resolution (Stripe webhook)", () => {
+  it("resolves tier from a known product id", () => {
+    for (const product of PRODUCTS) {
+      expect(getTierFromProductId(product.id)).toBe(product.tier)
+    }
+  })
+
+  it("returns null for unknown or missing product ids", () => {
+    expect(getTierFromProductId("does-not-exist")).toBeNull()
+    expect(getTierFromProductId(null)).toBeNull()
+    expect(getTierFromProductId(undefined)).toBeNull()
+  })
+
+  it("never returns an invalid tier from a price amount (regression: no 'business')", () => {
+    for (const amount of [0, 1, 1900, 4900, 9900, 19900, 49000, 999999]) {
+      const tier = getTierFromPriceAmount(amount)
+      expect(VALID_TIERS).toContain(tier)
+      expect(tier).not.toBe("business")
+    }
+  })
+
+  it("maps zero/negative amounts to free", () => {
+    expect(getTierFromPriceAmount(0)).toBe("free")
+    expect(getTierFromPriceAmount(-100)).toBe("free")
+  })
+
+  it("prefers product_id metadata over price amount", () => {
+    const pro = PRODUCTS.find((p) => p.tier === "professional")!
+    // Even with a mismatched price, the authoritative product id wins.
+    expect(resolveSubscriptionTier({ productId: pro.id, priceAmount: 1 })).toBe("professional")
+  })
+
+  it("falls back to price amount when product id is absent", () => {
+    const tier = resolveSubscriptionTier({ priceAmount: 1900 })
+    expect(VALID_TIERS).toContain(tier)
+  })
+
+  it("always yields a DB-valid tier for any input", () => {
+    expect(VALID_TIERS).toContain(resolveSubscriptionTier({}))
+    expect(VALID_TIERS).toContain(resolveSubscriptionTier({ productId: "bogus", priceAmount: 123456 }))
   })
 })
