@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { signupSchema } from "@/lib/validations"
 import { isSupabaseConfigured } from "@/lib/supabase/config"
 import { createClient } from "@supabase/supabase-js"
+import { enforceRateLimit, getClientIp } from "@/lib/api/rate-limit"
 
 // Use service role for admin operations
 function getAdminClient() {
@@ -22,6 +23,9 @@ function getAdminClient() {
 
 export async function POST(request: Request) {
   try {
+    const limited = await enforceRateLimit("signup", getClientIp(request))
+    if (limited) return limited
+
     const body = await request.json()
     const parsed = signupSchema.safeParse(body)
 

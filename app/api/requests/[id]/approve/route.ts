@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { approvalSchema } from "@/lib/validations"
 import { isSupabaseConfigured } from "@/lib/supabase/config"
-import { getSupabaseServerClient } from "@/lib/supabase/server"
+import { authorize } from "@/lib/api/authorize"
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -17,25 +17,40 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       return NextResponse.json({ demo: true, success: true })
     }
 
-    const supabase = await getSupabaseServerClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    // Only managers, finance, and admins may approve.
+    const { actor, response } = await authorize(["manager", "finance", "admin"])
+    if (response) return response
+    const { supabase, userId, organizationId, departmentId, role } = actor
 
     const now = new Date().toISOString()
 
-    const { data, error } = await supabase
+    let updateQuery = supabase
       .from("expense_requests")
       .update({
         status: "approved",
-        approved_by: user.id,
+        approved_by: userId,
         approved_at: now,
         manager_comment: parsed.data.comment || null,
       })
       .eq("id", id)
       .eq("status", "pending")
-      .select()
-      .single()
+      // Defense-in-depth: never act on another tenant's data.
+      .eq("organization_id", organizationId)
 
+    // Managers may only approve requests within their own department.
+    if (role === "manager") {
+      updateQuery = updateQuery.eq("department_id", departmentId)
+    }
+
+    const { data, error } = await updateQuery.select().single()
+
+    if (error && error.code === "PGRST116") {
+      // No matching row: wrong tenant/department, not pending, or not found.
+      return NextResponse.json(
+        { error: "Request not found or you are not authorized to approve it" },
+        { status: 403 },
+      )
+    }
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
     // Update approval workflow

@@ -2,7 +2,62 @@
 
 import type Stripe from "stripe"
 import { isStripeConfigured } from "@/lib/stripe/config"
+import { isSupabaseConfigured } from "@/lib/supabase/config"
+import { getSupabaseServerClient } from "@/lib/supabase/server"
 import { getProductById, PRODUCTS } from "@/lib/products"
+
+/**
+ * Opens the Stripe Customer Portal for the CURRENT authenticated user's
+ * organization. The customer id is resolved server-side from the session —
+ * never accepted from the client — so one tenant can't manage another's billing.
+ */
+export async function openBillingPortal() {
+  if (!isStripeConfigured()) {
+    return { error: "Billing is not configured yet." }
+  }
+  if (!isSupabaseConfigured()) {
+    return { error: "Billing management is unavailable in demo mode." }
+  }
+
+  const supabase = await getSupabaseServerClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "You must be signed in." }
+
+  // Only admins/finance may manage billing.
+  const { data: dbUser } = await supabase
+    .from("users")
+    .select("organization_id, role")
+    .eq("id", user.id)
+    .single()
+
+  if (!dbUser || (dbUser.role !== "admin" && dbUser.role !== "finance")) {
+    return { error: "Only admins and finance users can manage billing." }
+  }
+
+  const { data: org } = await supabase
+    .from("organizations")
+    .select("stripe_customer_id")
+    .eq("id", dbUser.organization_id)
+    .single()
+
+  if (!org?.stripe_customer_id) {
+    return { error: "No billing account found. Subscribe to a paid plan first." }
+  }
+
+  const { stripe } = await import("@/lib/stripe/server")
+  try {
+    const session = await stripe.billingPortal.sessions.create({
+      customer: org.stripe_customer_id,
+      return_url: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/settings`,
+    })
+    return { url: session.url }
+  } catch (err) {
+    console.error("[Stripe] Portal error:", err)
+    return { error: "Failed to open billing portal. Please try again." }
+  }
+}
 
 /**
  * Creates a Stripe Checkout session for subscription purchase.

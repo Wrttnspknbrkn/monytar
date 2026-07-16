@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { paymentSchema } from "@/lib/validations"
 import { isSupabaseConfigured } from "@/lib/supabase/config"
-import { getSupabaseServerClient } from "@/lib/supabase/server"
+import { authorize } from "@/lib/api/authorize"
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -20,9 +20,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       return NextResponse.json({ demo: true, success: true })
     }
 
-    const supabase = await getSupabaseServerClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    // Only finance and admins may mark a request as paid.
+    const { actor, response } = await authorize(["finance", "admin"])
+    if (response) return response
+    const { supabase, organizationId } = actor
 
     const now = new Date().toISOString()
 
@@ -37,9 +38,17 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       })
       .eq("id", id)
       .eq("status", "approved")
+      // Defense-in-depth: never act on another tenant's data.
+      .eq("organization_id", organizationId)
       .select()
       .single()
 
+    if (error && error.code === "PGRST116") {
+      return NextResponse.json(
+        { error: "Request not found, not approved, or you are not authorized to mark it paid" },
+        { status: 403 },
+      )
+    }
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
     if (data) {
