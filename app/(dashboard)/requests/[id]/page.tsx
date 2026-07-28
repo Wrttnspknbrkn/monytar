@@ -7,6 +7,7 @@ import { ArrowLeft, Clock, CheckCircle2, XCircle, FileText, DollarSign, User, Bu
 import { useData, useAuth } from "@/lib/providers"
 import { formatCurrency, formatDateTime, formatRelativeTime, getCategoryLabel, getRoleLabel, cn } from "@/lib/utils"
 import { RequestStatusBadge } from "@/components/requests/request-status-badge"
+import { RequestReceipts } from "@/components/requests/request-receipts"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
@@ -172,26 +173,7 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
           </Card>
 
           {/* Receipts */}
-          {request.receipts && request.receipts.length > 0 && (
-            <Card className="border-border/60">
-              <CardHeader className="pb-3">
-                <CardTitle className="font-heading text-base font-bold">Receipts</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col gap-2">
-                  {request.receipts.map((receipt) => (
-                    <div key={receipt.id} className="flex items-center gap-3 p-3 rounded-xl bg-secondary/40 border border-border/40">
-                      <FileText className="w-4 h-4 text-muted-foreground" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{receipt.file_name}</p>
-                        <p className="text-xs text-muted-foreground">{receipt.file_type} &middot; {((receipt.file_size || 0) / 1024).toFixed(0)} KB</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          <RequestReceipts requestId={id} fallbackReceipts={request.receipts} />
 
           {/* Actions */}
           {(canApprove || canPay) && (

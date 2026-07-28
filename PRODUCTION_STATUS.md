@@ -1,6 +1,6 @@
 # Monytar — Production Readiness Status
 
-_Last updated: Phase 2 complete_
+_Last updated: Phase 3 complete_
 
 This document tracks progress toward a 100% production-complete product, based on the
 17-section audit and the phased plan in `v0_plans/calm-spec.md`.
@@ -12,16 +12,22 @@ This document tracks progress toward a 100% production-complete product, based o
 | Milestone | Status |
 |-----------|--------|
 | Core product (schema, RLS, roles, dashboard, demo, billing model) | Complete (pre-existing) |
-| Automated test foundation (86 unit + integration tests) | Complete |
+| Automated test foundation (108 unit + integration tests) | Complete |
 | **Phase 1 — Security & Authorization hardening** | **Complete** |
 | **Phase 2 — Billing integrity** | **Complete** |
-| Phase 3 — Receipts & storage | Not started |
+| **Phase 3 — Receipts & storage** | **Complete** |
 | Phase 4 — Approval engine & expense logic | Not started |
 | Phase 5 — Reporting, exports & notifications | Not started |
 | Phase 6 — DevOps & observability | Not started |
 | Phase 7 — E2E tests & marketing reconciliation | Partially (7.1/7.2 done) |
 
-**Estimated completion: ~40% of the remaining hardening plan done (2 of 7 phases).**
+**Estimated completion: ~55% of the remaining hardening plan done (3 of 7 phases).**
+
+> **Action required to activate Phase 3 in production:** apply migration
+> `008_receipts_storage_vendor_totals.sql` to the Supabase project (creates the private
+> `receipts` bucket, storage RLS, vendor-total trigger, and the race-safe request-number
+> function). The code degrades gracefully until then; in demo mode receipts are validated
+> and captured client-side only.
 
 ---
 
@@ -50,14 +56,24 @@ This document tracks progress toward a 100% production-complete product, based o
 - Added a session-authoritative `openBillingPortal` server action (resolves the customer id from the logged-in user's org — never trusts the client) and wired a **Manage Billing** button into Settings for admins/finance.
 - Added 7 regression tests locking in "never emit an invalid tier."
 
+### Phase 3 — Receipts & Storage (DONE)
+- Added migration `008_receipts_storage_vendor_totals.sql`:
+  - Reconciled the `receipts` table with the app `Receipt` type (`organization_id`, `uploaded_by`, `created_at` + backfill) and added tenant-scoped **RLS** (select/insert/delete).
+  - Created a **private `receipts` storage bucket** (10 MB cap, image/PDF mime allowlist) with storage RLS that scopes every object to `<organization_id>/…` on the path prefix.
+  - Added a **vendor-total trigger** (`sync_vendor_totals`) that keeps `total_spend`/`transaction_count` accurate as requests move in and out of the `paid` state.
+  - Added a **race-safe, per-org request-number** function (`next_request_number`) backed by an atomic counter table — eliminates the `count+1` collision risk.
+- Built the receipt storage layer:
+  - `lib/receipts/shared.ts` — pure helpers (filename sanitization, org-scoped path builder, mime/size validation) shared by client, server, and tests.
+  - `lib/receipts/storage.ts` — server signed **upload/read URL** generation + object deletion.
+  - `lib/receipts/client.ts` — browser upload flow (signed URL → direct-to-storage → record row).
+- Added API routes: `POST /api/receipts/upload-url` (org-verified signed target), `POST /api/receipts` (records a row, path-prefix defense-in-depth), `GET /api/receipts?request_id=` (lists with short-lived signed view URLs), `DELETE /api/receipts/[id]` (uploader or admin/finance).
+- Replaced the fake "click to add receipt-N.pdf" control with a real `ReceiptUploader` (multi-file `<input type=file>`, client-side type/size validation, dedupe, previews) and a `RequestReceipts` viewer that fetches signed URLs via SWR in connected mode and falls back to the store in demo mode.
+- Hardened `POST /api/requests` to use the race-safe RPC (with fallback) and stop inserting the non-column `receipt_urls`.
+- Added 22 receipt tests (filename sanitization, path isolation, mime/size validation, upload/record schemas). **Suite now 108 passing.**
+
 ---
 
 ## What Remains
-
-### Phase 3 — Receipts & Storage
-- Private storage bucket for receipts with per-tenant RLS/path scoping.
-- Upload/download/delete flow wired into request create + detail views.
-- Vendor-total aggregation triggers; race-safe request-number generation.
 
 ### Phase 4 — Approval Engine & Expense Logic
 - Multi-level approval chains and auto-approval under threshold.
@@ -90,15 +106,14 @@ with tests + build verification each time):
 
 | Phase | Scope | Estimated effort |
 |-------|-------|-----------------|
-| Phase 3 — Receipts & storage | 1 integration (Blob/Supabase storage) + triggers | 2–3 days |
 | Phase 4 — Approval engine | Schema + logic + UI | 3–5 days |
 | Phase 5 — Reporting/exports/notifications | Aggregations + Resend + export formats | 4–6 days |
 | Phase 6 — DevOps & observability | Sentry, CI, indexes, pooling | 2–3 days |
 | Phase 7.3 — E2E + reconciliation | Playwright suite + copy audit | 2–3 days |
 
-**Total to 100% production-complete: approximately 3–4 weeks of focused engineering.**
+**Total to 100% production-complete: approximately 2–3 weeks of focused engineering remaining.**
 
 External dependencies to connect when their phase begins:
 - **Resend** (email delivery) — Phase 5.
 - **Sentry** (error tracking) — Phase 6.
-- **Blob or Supabase Storage** (receipts) — Phase 3.
+- **Supabase Storage** (receipts) — Phase 3: activated by applying migration `008`.

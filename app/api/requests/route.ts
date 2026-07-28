@@ -63,11 +63,28 @@ export async function POST(request: Request) {
     const { data: dbUser } = await supabase.from("users").select("organization_id, department_id").eq("id", user.id).single()
     if (!dbUser) return NextResponse.json({ error: "User not found" }, { status: 404 })
 
-    const { count } = await supabase.from("expense_requests").select("id", { count: "exact" }).eq("organization_id", dbUser.organization_id)
-    const requestNumber = `REQ-${new Date().getFullYear()}-${String((count || 0) + 1).padStart(5, "0")}`
+    // Race-safe, per-org request number via the atomic RPC (migration 008).
+    // Falls back to a count-based number if the function isn't present yet.
+    let requestNumber: string
+    const { data: rpcNumber, error: rpcError } = await supabase.rpc("next_request_number", {
+      org: dbUser.organization_id,
+    })
+    if (!rpcError && rpcNumber) {
+      requestNumber = rpcNumber as string
+    } else {
+      const { count } = await supabase
+        .from("expense_requests")
+        .select("id", { count: "exact" })
+        .eq("organization_id", dbUser.organization_id)
+      requestNumber = `REQ-${new Date().getFullYear()}-${String((count || 0) + 1).padStart(5, "0")}`
+    }
+
+    // receipt_urls is not a column on expense_requests — receipts are stored as
+    // separate rows via /api/receipts. Strip it from the insert payload.
+    const { receipt_urls, ...requestFields } = parsed.data
 
     const { data, error } = await supabase.from("expense_requests").insert({
-      ...parsed.data,
+      ...requestFields,
       organization_id: dbUser.organization_id,
       employee_id: user.id,
       department_id: parsed.data.department_id || dbUser.department_id,
