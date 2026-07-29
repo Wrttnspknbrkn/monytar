@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Plus, Building2, Users, AlertTriangle } from "lucide-react"
 import { useData, useAuth } from "@/lib/providers"
 import { formatCurrency, generateId, cn, getInitials } from "@/lib/utils"
+import { computeBudgetStatus } from "@/lib/budgets/calc"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -17,7 +18,8 @@ import type { BudgetPeriod } from "@/lib/types"
 
 export default function DepartmentsPage() {
   const { dbUser } = useAuth()
-  const { currentUser, departments, users, getDepartmentSpend, addDepartment, updateDepartment, organization } = useData()
+  const { currentUser, departments, users, getDepartmentSpend, addDepartment, updateDepartment, organization, orgSettings } = useData()
+  const currency = organization?.currency || orgSettings?.default_currency || "USD"
   const user = dbUser || currentUser
   const [dialogOpen, setDialogOpen] = useState(false)
   const [form, setForm] = useState({ name: "", budget_amount: "", budget_period: "monthly" as BudgetPeriod, description: "", manager_id: "" })
@@ -87,7 +89,8 @@ export default function DepartmentsPage() {
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
         {departments.map((dept) => {
           const spend = getDepartmentSpend(dept.id)
-          const pct = dept.budget_amount > 0 ? Math.round((spend / dept.budget_amount) * 100) : 0
+          const budgetStatus = computeBudgetStatus(spend, dept.budget_amount, orgSettings?.budget_alert_thresholds)
+          const pct = budgetStatus.percentage
           const manager = dept.manager_id ? users.find((u) => u.id === dept.manager_id) : undefined
           const memberCount = users.filter((u) => u.department_id === dept.id).length
           return (
