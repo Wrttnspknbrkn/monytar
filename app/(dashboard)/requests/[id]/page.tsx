@@ -7,6 +7,8 @@ import { ArrowLeft, Clock, CheckCircle2, XCircle, FileText, DollarSign, User, Bu
 import { useData, useAuth } from "@/lib/providers"
 import { formatCurrency, formatDateTime, formatRelativeTime, getCategoryLabel, getRoleLabel, cn } from "@/lib/utils"
 import { RequestStatusBadge } from "@/components/requests/request-status-badge"
+import { RequestReceipts } from "@/components/requests/request-receipts"
+import { ApprovalChain } from "@/components/requests/approval-chain"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
@@ -21,7 +23,7 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
   const { id } = use(params)
   const router = useRouter()
   const { dbUser } = useAuth()
-  const { currentUser, getRequestWithRelations, approveRequest, rejectRequest, markPaid, canUserApprove } = useData()
+  const { currentUser, getRequestWithRelations, approveRequest, rejectRequest, markPaid, canUserApprove, orgSettings, updateRequest } = useData()
   const [comment, setComment] = useState("")
   const [rejectComment, setRejectComment] = useState("")
   const [payRef, setPayRef] = useState("")
@@ -49,6 +51,27 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
 
   const canApprove = user && canUserApprove(request)
   const canPay = user && (user.role === "finance" || user.role === "admin") && request.status === "approved"
+  // The requester may revise and resubmit a rejected request.
+  const canResubmit = user && request.employee_id === user.id && request.status === "rejected"
+
+  async function handleResubmit() {
+    if (isProcessing) return
+    setIsProcessing(true)
+    try {
+      await updateRequest(id, {
+        status: "pending",
+        rejected_by: undefined,
+        rejected_at: undefined,
+        manager_comment: undefined,
+        submitted_at: new Date().toISOString(),
+      })
+      toast.success("Request resubmitted for approval")
+    } catch {
+      toast.error("Failed to resubmit request")
+    } finally {
+      setIsProcessing(false)
+    }
+  }
 
   async function handleApprove() {
     if (isProcessing) return
@@ -129,7 +152,7 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
             <p className="text-sm text-muted-foreground mt-0.5">{request.purpose}</p>
           </div>
         </div>
-        <p className="font-heading text-3xl font-extrabold tracking-tight tabular-nums">{formatCurrency(request.amount)}</p>
+        <p className="font-heading text-3xl font-extrabold tracking-tight tabular-nums">{formatCurrency(request.amount, request.currency)}</p>
       </div>
 
       <div className="grid lg:grid-cols-3 gap-5">
@@ -172,23 +195,21 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
           </Card>
 
           {/* Receipts */}
-          {request.receipts && request.receipts.length > 0 && (
+          <RequestReceipts requestId={id} fallbackReceipts={request.receipts} />
+
+          {/* Resubmit (owner of a rejected request) */}
+          {canResubmit && (
             <Card className="border-border/60">
               <CardHeader className="pb-3">
-                <CardTitle className="font-heading text-base font-bold">Receipts</CardTitle>
+                <CardTitle className="font-heading text-base font-bold">Revise &amp; Resubmit</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="flex flex-col gap-2">
-                  {request.receipts.map((receipt) => (
-                    <div key={receipt.id} className="flex items-center gap-3 p-3 rounded-xl bg-secondary/40 border border-border/40">
-                      <FileText className="w-4 h-4 text-muted-foreground" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{receipt.file_name}</p>
-                        <p className="text-xs text-muted-foreground">{receipt.file_type} &middot; {((receipt.file_size || 0) / 1024).toFixed(0)} KB</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+              <CardContent className="flex flex-col gap-3">
+                <p className="text-sm text-muted-foreground">
+                  This request was rejected. Address the reviewer&apos;s comment above, then resubmit it for approval.
+                </p>
+                <Button onClick={handleResubmit} disabled={isProcessing} className="font-semibold shadow-sm shadow-primary/20">
+                  <Clock className="w-4 h-4 mr-2" /> {isProcessing ? "Resubmitting..." : "Resubmit for Approval"}
+                </Button>
               </CardContent>
             </Card>
           )}
@@ -250,7 +271,7 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
                     <DialogContent className="rounded-2xl">
                       <DialogHeader>
                         <DialogTitle className="font-heading">Process Payment</DialogTitle>
-                        <DialogDescription>Mark this expense as paid for {formatCurrency(request.amount)}.</DialogDescription>
+                        <DialogDescription>Mark this expense as paid for {formatCurrency(request.amount, request.currency)}.</DialogDescription>
                       </DialogHeader>
                       <div className="flex flex-col gap-4">
                         <div className="flex flex-col gap-2">
@@ -314,6 +335,9 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
               </div>
             </CardContent>
           </Card>
+
+          {/* Approval Chain */}
+          {orgSettings && <ApprovalChain request={request} settings={orgSettings} />}
 
           {/* Timeline */}
           <Card className="border-border/60">

@@ -2,6 +2,8 @@ import { NextResponse } from "next/server"
 import { expenseRequestSchema } from "@/lib/validations"
 import { isSupabaseConfigured } from "@/lib/supabase/config"
 import { getSupabaseServerClient } from "@/lib/supabase/server"
+import { loadApprovalSettings } from "@/lib/approvals/settings"
+import { shouldAutoApprove } from "@/lib/approvals/engine"
 
 export async function GET(request: Request) {
   try {
@@ -63,21 +65,45 @@ export async function POST(request: Request) {
     const { data: dbUser } = await supabase.from("users").select("organization_id, department_id").eq("id", user.id).single()
     if (!dbUser) return NextResponse.json({ error: "User not found" }, { status: 404 })
 
-    const { count } = await supabase.from("expense_requests").select("id", { count: "exact" }).eq("organization_id", dbUser.organization_id)
-    const requestNumber = `REQ-${new Date().getFullYear()}-${String((count || 0) + 1).padStart(5, "0")}`
+    // Race-safe, per-org request number via the atomic RPC (migration 008).
+    // Falls back to a count-based number if the function isn't present yet.
+    let requestNumber: string
+    const { data: rpcNumber, error: rpcError } = await supabase.rpc("next_request_number", {
+      org: dbUser.organization_id,
+    })
+    if (!rpcError && rpcNumber) {
+      requestNumber = rpcNumber as string
+    } else {
+      const { count } = await supabase
+        .from("expense_requests")
+        .select("id", { count: "exact" })
+        .eq("organization_id", dbUser.organization_id)
+      requestNumber = `REQ-${new Date().getFullYear()}-${String((count || 0) + 1).padStart(5, "0")}`
+    }
+
+    // receipt_urls is not a column on expense_requests — receipts are stored as
+    // separate rows via /api/receipts. Strip it from the insert payload.
+    const { receipt_urls, ...requestFields } = parsed.data
+
+    // Apply the org's auto-approval policy: sub-threshold amounts skip review.
+    const settings = await loadApprovalSettings(supabase, dbUser.organization_id)
+    const autoApprove = shouldAutoApprove(parsed.data.amount, settings)
+    const now = new Date().toISOString()
 
     const { data, error } = await supabase.from("expense_requests").insert({
-      ...parsed.data,
+      ...requestFields,
       organization_id: dbUser.organization_id,
       employee_id: user.id,
       department_id: parsed.data.department_id || dbUser.department_id,
       request_number: requestNumber,
-      status: "pending",
+      status: autoApprove ? "approved" : "pending",
+      approved_at: autoApprove ? now : null,
+      manager_comment: autoApprove ? "Auto-approved: amount below approval threshold." : null,
     }).select().single()
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-    return NextResponse.json({ data }, { status: 201 })
+    return NextResponse.json({ data, auto_approved: autoApprove }, { status: 201 })
   } catch {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }

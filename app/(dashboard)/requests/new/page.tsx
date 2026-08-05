@@ -2,16 +2,18 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Upload, X, DollarSign, FileText, Tag, Building2, Calendar, AlertCircle } from "lucide-react"
+import { ArrowLeft, Upload, DollarSign, FileText } from "lucide-react"
 import { useData, useAuth } from "@/lib/providers"
 import { generateId } from "@/lib/utils"
+import { isSupabaseConfigured } from "@/lib/supabase/config"
+import { uploadReceipts } from "@/lib/receipts/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { ReceiptUploader } from "@/components/requests/receipt-uploader"
 import { toast } from "sonner"
 import type { ExpenseCategory, Priority } from "@/lib/types"
 import Link from "next/link"
@@ -29,14 +31,16 @@ export default function NewRequestPage() {
   const [expenseDate, setExpenseDate] = useState(new Date().toISOString().split("T")[0])
   const [dueDate, setDueDate] = useState("")
   const [notes, setNotes] = useState("")
-  const [files, setFiles] = useState<string[]>([])
+  const [files, setFiles] = useState<File[]>([])
+  const [submitting, setSubmitting] = useState(false)
 
-  function handleSubmit(asDraft: boolean) {
+  async function handleSubmit(asDraft: boolean) {
     if (!user) return
     if (!amount || !purpose) {
       toast.error("Please fill in amount and purpose")
       return
     }
+    setSubmitting(true)
     const now = new Date().toISOString()
     const id = generateId()
     addExpenseRequest({
@@ -57,10 +61,23 @@ export default function NewRequestPage() {
       due_date: dueDate || undefined,
       submitted_at: asDraft ? undefined : now,
       finance_notes: notes || undefined,
-      metadata: {},
+      metadata: { receipt_count: files.length },
       created_at: now,
       updated_at: now,
     })
+
+    // Upload receipts to storage when a real backend is connected; otherwise
+    // the validated files are simply captured for the demo flow.
+    if (files.length > 0 && isSupabaseConfigured()) {
+      try {
+        await uploadReceipts(id, files)
+      } catch (err) {
+        console.error("[Receipts] upload failed:", err)
+        toast.warning("Request saved, but some receipts failed to upload. You can re-add them from the request page.")
+      }
+    }
+
+    setSubmitting(false)
     toast.success(asDraft ? "Saved as draft" : "Request submitted for approval")
     router.push("/requests")
   }
@@ -214,47 +231,17 @@ export default function NewRequestPage() {
           </div>
         </CardHeader>
         <CardContent className="pt-5">
-          <div
-            className="flex flex-col items-center justify-center border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-primary/40 hover:bg-primary/[0.02] transition-all cursor-pointer group"
-            onClick={() => {
-              setFiles((prev) => [...prev, `receipt-${prev.length + 1}.pdf`])
-              toast.info("Receipt added (demo mode)")
-            }}
-          >
-            <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-secondary mb-3 group-hover:bg-primary/10 transition-colors">
-              <Upload className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
-            </div>
-            <p className="text-sm font-medium">Click to upload receipts</p>
-            <p className="text-xs text-muted-foreground mt-1">PDF, JPG, PNG up to 10MB</p>
-          </div>
-          {files.length > 0 && (
-            <div className="flex flex-col gap-2 mt-4">
-              {files.map((file, i) => (
-                <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-secondary/40 border border-border/40">
-                  <FileText className="w-4 h-4 text-muted-foreground shrink-0" />
-                  <span className="flex-1 text-sm font-medium truncate">{file}</span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="w-7 h-7 shrink-0 hover:bg-destructive/10 hover:text-destructive"
-                    onClick={() => setFiles(files.filter((_, j) => j !== i))}
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          )}
+          <ReceiptUploader files={files} onChange={setFiles} disabled={submitting} />
         </CardContent>
       </Card>
 
       {/* Actions */}
       <div className="flex items-center gap-3 pb-4">
-        <Button variant="outline" className="flex-1 h-11 bg-transparent font-semibold" onClick={() => handleSubmit(true)}>
+        <Button variant="outline" disabled={submitting} className="flex-1 h-11 bg-transparent font-semibold" onClick={() => handleSubmit(true)}>
           Save as Draft
         </Button>
-        <Button className="flex-1 h-11 font-semibold shadow-sm shadow-primary/20 hover:shadow-md hover:shadow-primary/25 transition-all" onClick={() => handleSubmit(false)}>
-          Submit for Approval
+        <Button disabled={submitting} className="flex-1 h-11 font-semibold shadow-sm shadow-primary/20 hover:shadow-md hover:shadow-primary/25 transition-all" onClick={() => handleSubmit(false)}>
+          {submitting ? "Submitting..." : "Submit for Approval"}
         </Button>
       </div>
     </div>

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { approvalSchema } from "@/lib/validations"
 import { isSupabaseConfigured } from "@/lib/supabase/config"
 import { authorize } from "@/lib/api/authorize"
+import { computeBudgetStatus, budgetLevelToAlertType } from "@/lib/budgets/calc"
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -71,6 +72,41 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         related_entity_type: "expense_request",
         related_entity_id: id,
       })
+    }
+
+    // Best-effort budget alerting: recompute department spend and raise an alert
+    // if the newly-approved amount pushes the department past a threshold.
+    if (data?.department_id) {
+      try {
+        const [{ data: dept }, { data: spendRows }] = await Promise.all([
+          supabase
+            .from("departments")
+            .select("budget_amount")
+            .eq("id", data.department_id)
+            .single(),
+          supabase
+            .from("expense_requests")
+            .select("amount")
+            .eq("department_id", data.department_id)
+            .in("status", ["approved", "paid"]),
+        ])
+
+        const spend = (spendRows ?? []).reduce((sum, r) => sum + Number(r.amount || 0), 0)
+        const status = computeBudgetStatus(spend, Number(dept?.budget_amount || 0))
+        const alertType = budgetLevelToAlertType(status.level)
+
+        if (alertType) {
+          await supabase.from("budget_alerts").insert({
+            organization_id: data.organization_id,
+            department_id: data.department_id,
+            alert_type: alertType, // 'approaching_limit' | 'over_budget'
+            threshold_percentage: status.percentage,
+            message: `Department spend is at ${status.percentage}% of budget after approving ${data.request_number}.`,
+          })
+        }
+      } catch (err) {
+        console.error("[Approve] budget alert check failed:", err)
+      }
     }
 
     return NextResponse.json({ data })

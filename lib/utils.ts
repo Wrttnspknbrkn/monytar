@@ -2,13 +2,15 @@ import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { format, formatDistanceToNow, isAfter, parseISO } from "date-fns"
 import type { RequestStatus, Priority, ExpenseCategory, UserRole } from "./types"
+import { formatMoney } from "./currency"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
 export function formatCurrency(amount: number, currency = "USD"): string {
-  return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(amount)
+  // Delegates to the multi-currency formatter (locale-aware, correct decimals).
+  return formatMoney(amount, currency)
 }
 
 export function formatDate(dateString: string): string {

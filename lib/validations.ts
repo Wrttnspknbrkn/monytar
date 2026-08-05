@@ -65,6 +65,32 @@ export const paymentSchema = z.object({
   payment_method: z.enum(["cash", "bank_transfer", "credit_card", "check"]),
 })
 
+const RECEIPT_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/heic", "application/pdf"] as const
+const MAX_RECEIPT_BYTES = 10 * 1024 * 1024 // 10 MB
+
+// Requests a signed upload target for a specific expense request.
+export const receiptUploadUrlSchema = z.object({
+  expense_request_id: z.string().uuid("A valid request id is required"),
+  file_name: z.string().min(1, "File name is required").max(255),
+  file_type: z.enum(RECEIPT_MIME_TYPES, {
+    errorMap: () => ({ message: "Unsupported file type. Use JPG, PNG, WEBP, HEIC, or PDF." }),
+  }),
+  file_size: z
+    .number()
+    .int()
+    .positive("File size must be positive")
+    .max(MAX_RECEIPT_BYTES, "File exceeds the 10 MB limit"),
+})
+
+// Records a receipt row after the file has been uploaded to storage.
+export const receiptRecordSchema = z.object({
+  expense_request_id: z.string().uuid(),
+  file_path: z.string().min(1).max(500),
+  file_name: z.string().min(1).max(255),
+  file_type: z.enum(RECEIPT_MIME_TYPES),
+  file_size: z.number().int().positive().max(MAX_RECEIPT_BYTES),
+})
+
 export type LoginInput = z.infer<typeof loginSchema>
 export type SignupInput = z.infer<typeof signupSchema>
 export type ExpenseRequestInput = z.infer<typeof expenseRequestSchema>
@@ -74,3 +100,5 @@ export type UserInput = z.infer<typeof userSchema>
 export type ApprovalInput = z.infer<typeof approvalSchema>
 export type RejectInput = z.infer<typeof rejectSchema>
 export type PaymentInput = z.infer<typeof paymentSchema>
+export type ReceiptUploadUrlInput = z.infer<typeof receiptUploadUrlSchema>
+export type ReceiptRecordInput = z.infer<typeof receiptRecordSchema>
