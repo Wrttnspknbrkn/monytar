@@ -1,6 +1,6 @@
 # Monytar — Production Readiness Status
 
-_Last updated: Phase 3 complete_
+_Last updated: Phase 4 complete_
 
 This document tracks progress toward a 100% production-complete product, based on the
 17-section audit and the phased plan in `v0_plans/calm-spec.md`.
@@ -12,22 +12,27 @@ This document tracks progress toward a 100% production-complete product, based o
 | Milestone | Status |
 |-----------|--------|
 | Core product (schema, RLS, roles, dashboard, demo, billing model) | Complete (pre-existing) |
-| Automated test foundation (108 unit + integration tests) | Complete |
+| Automated test foundation (143 unit + integration tests) | Complete |
 | **Phase 1 — Security & Authorization hardening** | **Complete** |
 | **Phase 2 — Billing integrity** | **Complete** |
 | **Phase 3 — Receipts & storage** | **Complete** |
-| Phase 4 — Approval engine & expense logic | Not started |
+| **Phase 4 — Approval engine & expense logic** | **Complete** |
 | Phase 5 — Reporting, exports & notifications | Not started |
 | Phase 6 — DevOps & observability | Not started |
 | Phase 7 — E2E tests & marketing reconciliation | Partially (7.1/7.2 done) |
 
-**Estimated completion: ~55% of the remaining hardening plan done (3 of 7 phases).**
+**Estimated completion: ~65% of the remaining hardening plan done (4 of 7 phases).**
 
 > **Action required to activate Phase 3 in production:** apply migration
 > `008_receipts_storage_vendor_totals.sql` to the Supabase project (creates the private
 > `receipts` bucket, storage RLS, vendor-total trigger, and the race-safe request-number
 > function). The code degrades gracefully until then; in demo mode receipts are validated
 > and captured client-side only.
+>
+> **Phase 4 note:** the approval engine, budget math, and multi-currency modules are pure
+> and active in both demo and connected mode. Auto-approve, receipt-required, and budget
+> alerting are enforced server-side in the API routes; the `organization_settings` row
+> drives thresholds (safe defaults apply when columns are absent).
 
 ---
 
@@ -71,14 +76,23 @@ This document tracks progress toward a 100% production-complete product, based o
 - Hardened `POST /api/requests` to use the race-safe RPC (with fallback) and stop inserting the non-column `receipt_urls`.
 - Added 22 receipt tests (filename sanitization, path isolation, mime/size validation, upload/record schemas). **Suite now 108 passing.**
 
+### Phase 4 — Approval Engine & Expense Logic (DONE)
+- Built three pure, dependency-free business-logic modules (reused by demo store, server APIs, and tests):
+  - `lib/approvals/engine.ts` — `shouldAutoApprove`, `isReceiptRequired`, `buildApprovalChain` (manager → finance ordering, finance stage forced above the approval threshold, guaranteed ≥1 stage), plus `getCurrentStage` / `applyDecision` / `canActOnStage` for advancing a chain (rejection skips downstream stages; immutably applied).
+  - `lib/budgets/calc.ts` — `computeBudgetStatus` (warning/critical/exceeded levels), `budgetLevelToAlertType` (maps to the DB `alert_type` CHECK values), and `projectBudgetAfter` for pre-approval checks.
+  - `lib/currency/index.ts` — 8 supported currencies, locale-aware `formatMoney` (correct minor units, e.g. JPY = 0 decimals), and deterministic `convertCurrency` via a USD reference table. `formatCurrency` in `lib/utils.ts` now delegates here.
+- Server enforcement:
+  - `POST /api/requests` loads `organization_settings` (`lib/approvals/settings.ts`, safe defaults) and **auto-approves** sub-threshold requests (sets `approved`/`approved_at` + audit comment, returns `auto_approved`).
+  - `POST /api/requests/[id]/approve` recomputes department spend after approval and writes a **budget alert** (`approaching_limit` / `over_budget`) when a threshold is crossed — best-effort, never blocks the approval.
+- UI:
+  - New `ApprovalChain` component renders a vertical stage timeline (auto-approved / awaiting / upcoming / rejected states) on the request detail page.
+  - Added a **revise & resubmit** flow for the owner of a rejected request.
+  - Multi-currency formatting wired into request detail (amount + pay dialog) and the departments budget view, which now uses the shared `computeBudgetStatus` for consistent thresholds and shows an "Over budget" state.
+- Added 35 tests across the three modules (auto-approve boundaries, receipt gating, chain build/advance/reject, authority checks, budget levels/mapping/projection, currency format/convert/fallback). **Suite now 143 passing.**
+
 ---
 
 ## What Remains
-
-### Phase 4 — Approval Engine & Expense Logic
-- Multi-level approval chains and auto-approval under threshold.
-- Department/category budget enforcement.
-- Multi-currency handling on requests (currently display-only).
 
 ### Phase 5 — Reporting, Exports & Notifications
 - CSV export endpoints (advertised but missing) + accounting export (QuickBooks/Xero).
@@ -106,12 +120,11 @@ with tests + build verification each time):
 
 | Phase | Scope | Estimated effort |
 |-------|-------|-----------------|
-| Phase 4 — Approval engine | Schema + logic + UI | 3–5 days |
 | Phase 5 — Reporting/exports/notifications | Aggregations + Resend + export formats | 4–6 days |
 | Phase 6 — DevOps & observability | Sentry, CI, indexes, pooling | 2–3 days |
 | Phase 7.3 — E2E + reconciliation | Playwright suite + copy audit | 2–3 days |
 
-**Total to 100% production-complete: approximately 2–3 weeks of focused engineering remaining.**
+**Total to 100% production-complete: approximately 1.5–2.5 weeks of focused engineering remaining.**
 
 External dependencies to connect when their phase begins:
 - **Resend** (email delivery) — Phase 5.

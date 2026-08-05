@@ -110,14 +110,23 @@ export default function DepartmentsPage() {
                 <div className="mb-4">
                   <div className="flex items-center justify-between text-xs mb-1.5">
                     <span className="font-medium">Budget Utilization</span>
-                    <span className="text-muted-foreground tabular-nums">{formatCurrency(spend)} / {formatCurrency(dept.budget_amount)}</span>
+                    <span className="text-muted-foreground tabular-nums">{formatCurrency(spend, currency)} / {formatCurrency(dept.budget_amount, currency)}</span>
                   </div>
                   <Progress value={Math.min(pct, 100)} className="h-2" />
                   <div className="flex items-center justify-between mt-1.5">
-                    <span className={cn("text-xs font-semibold", pct >= 90 ? "text-red-600 dark:text-red-400" : pct >= 75 ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400")}>
+                    <span className={cn("text-xs font-semibold",
+                      budgetStatus.level === "exceeded" || budgetStatus.level === "critical" ? "text-red-600 dark:text-red-400"
+                      : budgetStatus.level === "warning" ? "text-amber-600 dark:text-amber-400"
+                      : "text-emerald-600 dark:text-emerald-400")}>
                       {pct}% used
                     </span>
-                    {pct >= 75 && <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 font-medium"><AlertTriangle className="w-3 h-3" />{pct >= 90 ? "Critical" : "Warning"}</span>}
+                    {budgetStatus.level !== "none" && (
+                      <span className={cn("flex items-center gap-1 text-xs font-medium",
+                        budgetStatus.level === "warning" ? "text-amber-600 dark:text-amber-400" : "text-red-600 dark:text-red-400")}>
+                        <AlertTriangle className="w-3 h-3" />
+                        {budgetStatus.level === "exceeded" ? "Over budget" : budgetStatus.level === "critical" ? "Critical" : "Warning"}
+                      </span>
+                    )}
                   </div>
                 </div>
 

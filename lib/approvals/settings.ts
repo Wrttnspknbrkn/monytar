@@ -1,4 +1,3 @@
-import "server-only"
 import type { SupabaseClient } from "@supabase/supabase-js"
 
 // Engine-facing settings shape with production-safe defaults. Reads from the

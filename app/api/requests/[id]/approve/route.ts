@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { approvalSchema } from "@/lib/validations"
 import { isSupabaseConfigured } from "@/lib/supabase/config"
 import { authorize } from "@/lib/api/authorize"
-import { computeBudgetStatus } from "@/lib/budgets/calc"
+import { computeBudgetStatus, budgetLevelToAlertType } from "@/lib/budgets/calc"
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -93,12 +93,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
         const spend = (spendRows ?? []).reduce((sum, r) => sum + Number(r.amount || 0), 0)
         const status = computeBudgetStatus(spend, Number(dept?.budget_amount || 0))
+        const alertType = budgetLevelToAlertType(status.level)
 
-        if (status.level !== "none") {
+        if (alertType) {
           await supabase.from("budget_alerts").insert({
             organization_id: data.organization_id,
             department_id: data.department_id,
-            alert_type: status.level, // 'warning' | 'critical' | 'exceeded'
+            alert_type: alertType, // 'approaching_limit' | 'over_budget'
             threshold_percentage: status.percentage,
             message: `Department spend is at ${status.percentage}% of budget after approving ${data.request_number}.`,
           })
