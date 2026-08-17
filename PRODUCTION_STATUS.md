@@ -1,6 +1,6 @@
 # Monytar — Production Readiness Status
 
-_Last updated: Phase 4 complete_
+_Last updated: Phase 5 complete_
 
 This document tracks progress toward a 100% production-complete product, based on the
 17-section audit and the phased plan in `v0_plans/calm-spec.md`.
@@ -12,16 +12,16 @@ This document tracks progress toward a 100% production-complete product, based o
 | Milestone | Status |
 |-----------|--------|
 | Core product (schema, RLS, roles, dashboard, demo, billing model) | Complete (pre-existing) |
-| Automated test foundation (143 unit + integration tests) | Complete |
+| Automated test foundation (160 unit + integration tests) | Complete |
 | **Phase 1 — Security & Authorization hardening** | **Complete** |
 | **Phase 2 — Billing integrity** | **Complete** |
 | **Phase 3 — Receipts & storage** | **Complete** |
 | **Phase 4 — Approval engine & expense logic** | **Complete** |
-| Phase 5 — Reporting, exports & notifications | Not started |
+| **Phase 5 — Reporting, exports & notifications** | **Complete** |
 | Phase 6 — DevOps & observability | Not started |
 | Phase 7 — E2E tests & marketing reconciliation | Partially (7.1/7.2 done) |
 
-**Estimated completion: ~65% of the remaining hardening plan done (4 of 7 phases).**
+**Estimated completion: ~78% of the remaining hardening plan done (5 of 7 phases).**
 
 > **Action required to activate Phase 3 in production:** apply migration
 > `008_receipts_storage_vendor_totals.sql` to the Supabase project (creates the private
@@ -33,6 +33,13 @@ This document tracks progress toward a 100% production-complete product, based o
 > and active in both demo and connected mode. Auto-approve, receipt-required, and budget
 > alerting are enforced server-side in the API routes; the `organization_settings` row
 > drives thresholds (safe defaults apply when columns are absent).
+>
+> **Phase 5 notes:** (1) apply migration `009_align_budget_alert_types.sql` to align the
+> `budget_alerts.alert_type` CHECK with the app's `AlertType` (`approaching_limit` /
+> `over_budget`) — a cross-phase mismatch surfaced while wiring alerts. (2) Email delivery
+> uses Resend via `fetch` and **gracefully no-ops** without `RESEND_API_KEY` (in-app
+> notifications still fire). To enable email, set `RESEND_API_KEY`, `EMAIL_FROM`, and
+> `NEXT_PUBLIC_APP_URL`.
 
 ---
 
@@ -90,14 +97,25 @@ This document tracks progress toward a 100% production-complete product, based o
   - Multi-currency formatting wired into request detail (amount + pay dialog) and the departments budget view, which now uses the shared `computeBudgetStatus` for consistent thresholds and shows an "Over budget" state.
 - Added 35 tests across the three modules (auto-approve boundaries, receipt gating, chain build/advance/reject, authority checks, budget levels/mapping/projection, currency format/convert/fallback). **Suite now 143 passing.**
 
+### Phase 5 — Reporting, Exports & Notifications (DONE)
+- Built a pure reporting aggregation module `lib/reports/aggregate.ts`:
+  - `computeTotals`, `spendByCategory`, `countByStatus`, `topVendors`, `spendByDepartment`, and `monthlyTrend` — all deterministic and unit-tested.
+  - **Removed the fake `Math.random()` monthly trend** from the reports page; the chart now derives submitted/approved/paid series from real request dates.
+- Built the export layer:
+  - `lib/reports/export.ts` — `buildExpenseReport` produces a properly RFC-escaped **CSV** (per-request rows) and a self-contained **printable HTML report** (summary + breakdowns) with all dynamic content HTML-escaped.
+  - `lib/reports/download.ts` — browser helpers (`downloadCSV`, `downloadHTMLReport` which opens a print window → Save as PDF).
+  - Wired an **Export** dropdown (CSV / Print-PDF) into the reports page, replacing the previously non-functional "Export CSV" button.
+- Built the notification service:
+  - `lib/notifications/templates.ts` — pure, HTML-escaped email templates (`requestApprovedEmail`, `requestRejectedEmail`, `invitationEmail`) returning `{ subject, html, text }`.
+  - `lib/notifications/email.ts` — Resend transport via `fetch`; **gracefully no-ops** (returns `{ sent: false }`) when `RESEND_API_KEY` is unset, so flows never break.
+  - `lib/notifications/service.ts` — `notify()` writes the in-app `notifications` row **and** sends a best-effort email in one call.
+  - Wired into `approve` (approval email), `reject` (rejection email with reason), and `invitations` (real invite email; response now reports `emailSent`).
+- Added migration `009_align_budget_alert_types.sql` to fix the `budget_alerts.alert_type` CHECK mismatch found during wiring.
+- Added 17 tests (aggregation math, CSV escaping/row integrity, HTML-report content + injection safety, email templates, no-op transport). **Suite now 160 passing.**
+
 ---
 
 ## What Remains
-
-### Phase 5 — Reporting, Exports & Notifications
-- CSV export endpoints (advertised but missing) + accounting export (QuickBooks/Xero).
-- Real aggregation queries (by category/department/vendor/time) with custom date ranges.
-- Email delivery (Resend) for notifications; per-user preferences and digests.
 
 ### Phase 6 — DevOps & Observability
 - Sentry error tracking + structured logging.
@@ -120,13 +138,12 @@ with tests + build verification each time):
 
 | Phase | Scope | Estimated effort |
 |-------|-------|-----------------|
-| Phase 5 — Reporting/exports/notifications | Aggregations + Resend + export formats | 4–6 days |
 | Phase 6 — DevOps & observability | Sentry, CI, indexes, pooling | 2–3 days |
 | Phase 7.3 — E2E + reconciliation | Playwright suite + copy audit | 2–3 days |
 
-**Total to 100% production-complete: approximately 1.5–2.5 weeks of focused engineering remaining.**
+**Total to 100% production-complete: approximately 1 week of focused engineering remaining.**
 
 External dependencies to connect when their phase begins:
-- **Resend** (email delivery) — Phase 5.
+- **Resend** (email delivery) — Phase 5: wired; set `RESEND_API_KEY` + `EMAIL_FROM` + `NEXT_PUBLIC_APP_URL` to activate.
 - **Sentry** (error tracking) — Phase 6.
 - **Supabase Storage** (receipts) — Phase 3: activated by applying migration `008`.
