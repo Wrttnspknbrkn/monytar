@@ -2,6 +2,9 @@ import { NextResponse } from "next/server"
 import { rejectSchema } from "@/lib/validations"
 import { isSupabaseConfigured } from "@/lib/supabase/config"
 import { authorize } from "@/lib/api/authorize"
+import { notify } from "@/lib/notifications/service"
+import { requestRejectedEmail } from "@/lib/notifications/templates"
+import { formatMoney } from "@/lib/currency"
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -56,14 +59,33 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
     if (data) {
-      await supabase.from("notifications").insert({
-        organization_id: data.organization_id,
-        user_id: data.employee_id,
+      const { data: employee } = await supabase
+        .from("users")
+        .select("email, full_name")
+        .eq("id", data.employee_id)
+        .single()
+
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || ""
+      await notify(supabase, {
+        organizationId: data.organization_id,
+        userId: data.employee_id,
         type: "request_rejected",
         title: "Request Rejected",
         message: `Your request ${data.request_number} has been rejected: ${parsed.data.comment}`,
-        related_entity_type: "expense_request",
-        related_entity_id: id,
+        relatedEntityType: "expense_request",
+        relatedEntityId: id,
+        email: employee?.email
+          ? {
+              to: employee.email,
+              content: requestRejectedEmail({
+                recipientName: employee.full_name,
+                requestNumber: data.request_number,
+                amount: formatMoney(Number(data.amount), data.currency || "USD"),
+                reason: parsed.data.comment,
+                url: appUrl ? `${appUrl}/requests/${id}` : undefined,
+              }),
+            }
+          : undefined,
       })
     }
 

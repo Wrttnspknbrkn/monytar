@@ -4,6 +4,8 @@ import { isSupabaseConfigured } from "@/lib/supabase/config"
 import { enforceRateLimit, getClientIp } from "@/lib/api/rate-limit"
 import { getTierLimits } from "@/lib/products"
 import type { SubscriptionTier } from "@/lib/types"
+import { sendEmail } from "@/lib/notifications/email"
+import { invitationEmail } from "@/lib/notifications/templates"
 import { z } from "zod"
 import { randomBytes } from "crypto"
 
@@ -84,7 +86,7 @@ export async function POST(request: Request) {
     // Get user's organization and verify admin role
     const { data: dbUser } = await supabase
       .from("users")
-      .select("organization_id, role")
+      .select("organization_id, role, full_name")
       .eq("id", user.id)
       .single()
 
@@ -171,13 +173,24 @@ export async function POST(request: Request) {
 
     if (error) throw error
 
-    // In a real app, send invitation email here
+    // Send the invitation email (best-effort; gracefully no-ops without RESEND_API_KEY).
     const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL}/signup?invitation=${token}`
+    const emailResult = await sendEmail(
+      email,
+      invitationEmail({
+        organizationName: org?.name || "your organization",
+        inviterName: dbUser.full_name,
+        role,
+        url: inviteUrl,
+      }),
+    )
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
       invitation,
-      inviteUrl, // For development - in production, send via email
+      emailSent: emailResult.sent,
+      // Returned for development so invites work before email is configured.
+      inviteUrl,
     })
   } catch (error) {
     console.error("Error creating invitation:", error)
