@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { isSupabaseConfigured } from "@/lib/supabase/config"
 import { getSupabaseServerClient } from "@/lib/supabase/server"
+import { serverError } from "@/lib/api/errors"
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -19,11 +20,11 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       .eq("id", id)
       .single()
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 404 })
+    if (error) return NextResponse.json({ error: "Request not found" }, { status: 404 })
 
     return NextResponse.json({ data })
-  } catch {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  } catch (err) {
+    return serverError(err, { route: "requests.[id].GET" })
   }
 }
 
@@ -47,11 +48,11 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       .select()
       .single()
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) return serverError(error, { route: "requests.[id].PATCH", id })
 
     return NextResponse.json({ data })
-  } catch {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  } catch (err) {
+    return serverError(err, { route: "requests.[id].PATCH" })
   }
 }
 
@@ -67,10 +68,10 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
     const { error } = await supabase.from("expense_requests").delete().eq("id", id)
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) return serverError(error, { route: "requests.[id].DELETE", id })
 
     return NextResponse.json({ success: true })
-  } catch {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  } catch (err) {
+    return serverError(err, { route: "requests.[id].DELETE" })
   }
 }

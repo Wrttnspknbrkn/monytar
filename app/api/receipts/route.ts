@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { receiptRecordSchema } from "@/lib/validations"
 import { isSupabaseConfigured } from "@/lib/supabase/config"
 import { authorize } from "@/lib/api/authorize"
+import { serverError } from "@/lib/api/errors"
 import { getReceiptSignedUrl } from "@/lib/receipts/storage"
 
 // POST /api/receipts
@@ -60,12 +61,11 @@ export async function POST(request: Request) {
       .select()
       .single()
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) return serverError(error, { route: "receipts.POST" })
 
     return NextResponse.json({ receipt: data }, { status: 201 })
   } catch (err) {
-    console.error("[Receipts] record error:", err)
-    return NextResponse.json({ error: "An unexpected error occurred" }, { status: 500 })
+    return serverError(err, { route: "receipts.POST" })
   }
 }
 
@@ -95,7 +95,7 @@ export async function GET(request: Request) {
       .eq("organization_id", organizationId)
       .order("created_at", { ascending: true })
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) return serverError(error, { route: "receipts.GET" })
 
     // Attach a signed URL to each receipt for viewing/downloading.
     const withUrls = await Promise.all(
@@ -107,7 +107,6 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ receipts: withUrls })
   } catch (err) {
-    console.error("[Receipts] list error:", err)
-    return NextResponse.json({ error: "An unexpected error occurred" }, { status: 500 })
+    return serverError(err, { route: "receipts.GET" })
   }
 }

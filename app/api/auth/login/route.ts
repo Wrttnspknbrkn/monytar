@@ -3,6 +3,7 @@ import { loginSchema } from "@/lib/validations"
 import { isSupabaseConfigured } from "@/lib/supabase/config"
 import { getSupabaseServerClient } from "@/lib/supabase/server"
 import { enforceRateLimit, getClientIp } from "@/lib/api/rate-limit"
+import { serverError } from "@/lib/api/errors"
 
 export async function POST(request: Request) {
   try {
@@ -31,11 +32,12 @@ export async function POST(request: Request) {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 401 })
+      // Generic message avoids account enumeration (invalid email vs. password).
+      return NextResponse.json({ error: "Invalid email or password" }, { status: 401 })
     }
 
     return NextResponse.json({ success: true, user: data.user })
-  } catch {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  } catch (err) {
+    return serverError(err, { route: "auth.login" })
   }
 }

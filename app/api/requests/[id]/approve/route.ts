@@ -2,7 +2,12 @@ import { NextResponse } from "next/server"
 import { approvalSchema } from "@/lib/validations"
 import { isSupabaseConfigured } from "@/lib/supabase/config"
 import { authorize } from "@/lib/api/authorize"
+import { serverError } from "@/lib/api/errors"
+import { captureException } from "@/lib/observability/capture"
 import { computeBudgetStatus, budgetLevelToAlertType } from "@/lib/budgets/calc"
+import { notify } from "@/lib/notifications/service"
+import { requestApprovedEmail } from "@/lib/notifications/templates"
+import { formatMoney } from "@/lib/currency"
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -52,7 +57,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         { status: 403 },
       )
     }
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) return serverError(error, { route: "requests.[id].approve", id })
 
     // Update approval workflow
     await supabase
@@ -61,16 +66,40 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       .eq("expense_request_id", id)
       .eq("status", "pending")
 
-    // Create notification for requester
+    // Notify the requester (in-app + best-effort email).
     if (data) {
-      await supabase.from("notifications").insert({
-        organization_id: data.organization_id,
-        user_id: data.employee_id,
+      const { data: employee } = await supabase
+        .from("users")
+        .select("email, full_name")
+        .eq("id", data.employee_id)
+        .single()
+      const { data: approver } = await supabase
+        .from("users")
+        .select("full_name")
+        .eq("id", userId)
+        .single()
+
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || ""
+      await notify(supabase, {
+        organizationId: data.organization_id,
+        userId: data.employee_id,
         type: "request_approved",
         title: "Request Approved",
         message: `Your request ${data.request_number} has been approved`,
-        related_entity_type: "expense_request",
-        related_entity_id: id,
+        relatedEntityType: "expense_request",
+        relatedEntityId: id,
+        email: employee?.email
+          ? {
+              to: employee.email,
+              content: requestApprovedEmail({
+                recipientName: employee.full_name,
+                requestNumber: data.request_number,
+                amount: formatMoney(Number(data.amount), data.currency || "USD"),
+                approverName: approver?.full_name,
+                url: appUrl ? `${appUrl}/requests/${id}` : undefined,
+              }),
+            }
+          : undefined,
       })
     }
 
@@ -105,12 +134,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
           })
         }
       } catch (err) {
-        console.error("[Approve] budget alert check failed:", err)
+        // Non-fatal: log but never fail the approval over a best-effort alert.
+        void captureException(err, { route: "requests.[id].approve", stage: "budget-alert" })
       }
     }
 
     return NextResponse.json({ data })
-  } catch {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  } catch (err) {
+    return serverError(err, { route: "requests.[id].approve" })
   }
 }

@@ -12,6 +12,17 @@ import {
 } from "lucide-react"
 import { useData, useAuth } from "@/lib/providers"
 import { formatCurrency, cn, getCategoryLabel } from "@/lib/utils"
+import {
+  computeTotals,
+  spendByCategory,
+  countByStatus,
+  topVendors,
+  monthlyTrend,
+  spendByDepartment,
+} from "@/lib/reports/aggregate"
+import { buildExpenseReport } from "@/lib/reports/export"
+import { downloadCSV, downloadHTMLReport } from "@/lib/reports/download"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { StatCard } from "@/components/dashboard/stat-card"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -47,78 +58,77 @@ const CHART_COLORS = [
 
 export default function ReportsPage() {
   const { dbUser } = useAuth()
-  const { currentUser, expenseRequests, departments, vendors, users, getDepartmentSpend } = useData()
+  const { currentUser, expenseRequests, departments, vendors, users, organization } = useData()
 
   const user = dbUser || currentUser
   const isRestricted = user?.role === "employee" || user?.role === "manager"
 
-  const totalExpenses = expenseRequests.filter((r) => r.status !== "draft" && r.status !== "cancelled")
-  const totalAmount = totalExpenses.reduce((s, r) => s + r.amount, 0)
-  const approvedAmount = expenseRequests
-    .filter((r) => r.status === "approved" || r.status === "paid")
-    .reduce((s, r) => s + r.amount, 0)
-  const paidAmount = expenseRequests.filter((r) => r.status === "paid").reduce((s, r) => s + r.amount, 0)
-  const avgRequestAmount = totalExpenses.length > 0 ? totalAmount / totalExpenses.length : 0
+  const totals = useMemo(() => computeTotals(expenseRequests), [expenseRequests])
+  const totalAmount = totals.submitted
+  const approvedAmount = totals.approved
+  const paidAmount = totals.paid
+  const avgRequestAmount = totals.avg
 
-  const monthlyData = useMemo(() => {
-    const months = ["Sep", "Oct", "Nov", "Dec", "Jan", "Feb"]
-    return months.map((month, i) => ({
-      month,
-      submitted: Math.round(12000 + Math.random() * 8000),
-      approved: Math.round(10000 + Math.random() * 6000),
-      paid: Math.round(8000 + Math.random() * 5000),
-    }))
-  }, [])
+  // Real monthly trend derived from request dates (no random data).
+  const monthlyData = useMemo(
+    () => monthlyTrend(expenseRequests, 6).map((p) => ({ month: p.label, ...p })),
+    [expenseRequests],
+  )
 
-  const categoryBreakdown = useMemo(() => {
-    const cats: Record<string, { count: number; amount: number }> = {}
-    for (const r of totalExpenses) {
-      if (!cats[r.category]) cats[r.category] = { count: 0, amount: 0 }
-      cats[r.category].count++
-      cats[r.category].amount += r.amount
+  const categoryBreakdown = useMemo(
+    () =>
+      spendByCategory(expenseRequests).map((c) => ({
+        name: getCategoryLabel(c.category),
+        count: c.count,
+        amount: c.amount,
+        pct: c.pct,
+      })),
+    [expenseRequests],
+  )
+
+  const deptData = useMemo(
+    () =>
+      spendByDepartment(expenseRequests, departments).map((d) => {
+        const dept = departments.find((x) => x.id === d.departmentId)
+        return { name: dept?.name ?? "Unknown", spend: d.spend, budget: d.budget, pct: d.pct }
+      }),
+    [expenseRequests, departments],
+  )
+
+  const vendorSpend = useMemo(
+    () =>
+      topVendors(expenseRequests, 8).map((v) => ({
+        name: vendors.find((x) => x.id === v.vendorId)?.name ?? "Unknown vendor",
+        amount: v.amount,
+        count: v.count,
+      })),
+    [expenseRequests, vendors],
+  )
+
+  const statusBreakdown = useMemo(
+    () =>
+      countByStatus(expenseRequests).map((s) => ({
+        name: s.status.charAt(0).toUpperCase() + s.status.slice(1),
+        value: s.count,
+      })),
+    [expenseRequests],
+  )
+
+  function handleExport(format: "csv" | "pdf") {
+    const report = buildExpenseReport({
+      requests: expenseRequests,
+      departments,
+      vendors,
+      users,
+      organizationName: organization?.name,
+    })
+    const stamp = new Date().toISOString().slice(0, 10)
+    if (format === "csv") {
+      downloadCSV(report.csv, `expense-report-${stamp}.csv`)
+    } else {
+      downloadHTMLReport(report.html, `expense-report-${stamp}`)
     }
-    return Object.entries(cats)
-      .map(([name, data]) => ({
-        name: getCategoryLabel(name as Parameters<typeof getCategoryLabel>[0]),
-        ...data,
-        pct: totalAmount > 0 ? Math.round((data.amount / totalAmount) * 100) : 0,
-      }))
-      .sort((a, b) => b.amount - a.amount)
-  }, [totalExpenses, totalAmount])
-
-  const deptData = departments.map((d) => {
-    const spend = getDepartmentSpend(d.id)
-    return {
-      name: d.name,
-      spend,
-      budget: d.budget_amount,
-      pct: d.budget_amount > 0 ? Math.round((spend / d.budget_amount) * 100) : 0,
-    }
-  })
-
-  const vendorSpend = useMemo(() => {
-    const vs: Record<string, { name: string; amount: number; count: number }> = {}
-    for (const r of totalExpenses.filter((r) => r.vendor_id)) {
-      const v = vendors.find((v) => v.id === r.vendor_id)
-      if (v) {
-        if (!vs[v.id]) vs[v.id] = { name: v.name, amount: 0, count: 0 }
-        vs[v.id].amount += r.amount
-        vs[v.id].count++
-      }
-    }
-    return Object.values(vs).sort((a, b) => b.amount - a.amount).slice(0, 8)
-  }, [totalExpenses, vendors])
-
-  const statusBreakdown = useMemo(() => {
-    const statuses: Record<string, number> = {}
-    for (const r of expenseRequests) {
-      statuses[r.status] = (statuses[r.status] || 0) + 1
-    }
-    return Object.entries(statuses).map(([name, value]) => ({
-      name: name.charAt(0).toUpperCase() + name.slice(1),
-      value,
-    }))
-  }, [expenseRequests])
+  }
 
   if (isRestricted) {
     return (
@@ -139,9 +149,21 @@ export default function ReportsPage() {
           <h1 className="font-heading text-2xl font-extrabold tracking-tight">Reports</h1>
           <p className="text-muted-foreground text-sm mt-0.5">Financial analytics and spending insights</p>
         </div>
-        <Button variant="outline" className="bg-transparent font-semibold">
-          <Download className="w-4 h-4 mr-2" /> Export CSV
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="bg-transparent font-semibold">
+              <Download className="w-4 h-4 mr-2" /> Export
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => handleExport("csv")}>
+              <FileText className="w-4 h-4 mr-2" /> Download CSV
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleExport("pdf")}>
+              <FileText className="w-4 h-4 mr-2" /> Print / Save as PDF
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Summary Stats */}
