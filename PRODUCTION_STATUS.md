@@ -46,9 +46,10 @@ This document tracks progress toward a 100% production-complete product, based o
 > DSN-gated Sentry transport that **no-ops without `SENTRY_DSN`** — set it (and optionally
 > `SENTRY_ENVIRONMENT`) to activate. (3) The requests list API now uses **keyset
 > pagination** (`?cursor=&limit=`) and returns `{ data, nextCursor, limit }` — the old
-> `page`/`total` offset shape is gone (it had no client consumers). (4) CI runs on push/PR
-> via `.github/workflows/ci.yml` (lint + typecheck + test + build); operational runbook in
-> `docs/OPERATIONS.md`.
+> `page`/`total` offset shape is gone (it had no client consumers). (4) CI (lint + typecheck
+> + test + build) ships as `docs/ci.yml`; copy it to `.github/workflows/ci.yml` to activate
+> (the v0 GitHub App lacks `workflows` permission to commit it directly). Operational
+> runbook in `docs/OPERATIONS.md`.
 
 ---
 
@@ -133,7 +134,7 @@ This document tracks progress toward a 100% production-complete product, based o
   - Rewrote `GET /api/requests` to keyset pagination ordered by `(created_at, id)` DESC — **removed the `OFFSET` + `count: "exact"`** full-scan pattern.
   - Migration `010_query_performance.sql` — composite indexes matching hot query paths (`expense_requests` by org/status/created_at, employee, department, vendor-paid; `notifications` unread; `receipts`, `budget_alerts`, `audit_logs`) and wrapped RLS `auth.uid()` calls in `(SELECT …)` so Postgres evaluates them once per query (initplan) instead of per row.
 - CI/ops:
-  - `.github/workflows/ci.yml` — runs lint, typecheck, test, and build on push/PR (pnpm, frozen lockfile).
+  - CI config runs lint, typecheck, test, and build on push/PR (pnpm, frozen lockfile). Shipped as `docs/ci.yml`; copy to `.github/workflows/ci.yml` to activate (the v0 GitHub App lacks `workflows` permission to commit it directly — see `docs/OPERATIONS.md`).
   - Added a `typecheck` script (`tsc --noEmit`).
   - `docs/OPERATIONS.md` — environment variables, migration order + rollback strategy, backup/PITR guidance, observability activation, and an incident runbook.
 - Added 14 tests (redaction depth/secret coverage, capture no-op without DSN, safe-error shape + no message leak, cursor encode/decode round-trip, has-more detection, limit clamping). **Suite now 174 passing; typecheck clean.**

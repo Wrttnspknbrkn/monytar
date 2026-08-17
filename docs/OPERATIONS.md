@@ -71,9 +71,20 @@ Supabase manages Postgres backups. Verify these settings per environment:
 
 ---
 
-## 4. CI gates (`.github/workflows/ci.yml`)
+## 4. CI gates
 
-Every push to `main` and every PR runs, in order:
+> **One-time install:** the CI config ships as `docs/ci.yml` (not under
+> `.github/workflows/`) because the v0 GitHub App cannot create workflow files
+> without the `workflows` permission. To activate it, copy the template into
+> place and commit it from a client that has workflow permission:
+>
+> ```bash
+> mkdir -p .github/workflows
+> cp docs/ci.yml .github/workflows/ci.yml
+> git add .github/workflows/ci.yml && git commit -m "chore: enable CI workflow"
+> ```
+
+Once installed, every push to `main` and every PR runs, in order:
 
 1. `pnpm lint` — Next.js/ESLint
 2. `pnpm typecheck` — `tsc --noEmit`
