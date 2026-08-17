@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { departmentSchema } from "@/lib/validations"
 import { isSupabaseConfigured } from "@/lib/supabase/config"
 import { getSupabaseServerClient } from "@/lib/supabase/server"
+import { serverError } from "@/lib/api/errors"
 
 export async function GET() {
   try {
@@ -18,10 +19,10 @@ export async function GET() {
       .select("*, manager:users!manager_id(full_name)")
       .order("name")
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) return serverError(error, { route: "departments.GET" })
     return NextResponse.json({ data })
-  } catch {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  } catch (err) {
+    return serverError(err, { route: "departments.GET" })
   }
 }
 
@@ -49,9 +50,9 @@ export async function POST(request: Request) {
       organization_id: dbUser.organization_id,
     }).select().single()
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) return serverError(error, { route: "departments.POST" })
     return NextResponse.json({ data }, { status: 201 })
-  } catch {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  } catch (err) {
+    return serverError(err, { route: "departments.POST" })
   }
 }

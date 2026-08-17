@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { receiptUploadUrlSchema } from "@/lib/validations"
 import { isSupabaseConfigured } from "@/lib/supabase/config"
 import { authorize } from "@/lib/api/authorize"
+import { serverError } from "@/lib/api/errors"
 import { buildReceiptPath, createReceiptUploadTarget } from "@/lib/receipts/storage"
 
 // POST /api/receipts/upload-url
@@ -57,7 +58,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json(target)
   } catch (err) {
-    console.error("[Receipts] upload-url error:", err)
-    return NextResponse.json({ error: "An unexpected error occurred" }, { status: 500 })
+    return serverError(err, { route: "receipts.upload-url.POST" })
   }
 }

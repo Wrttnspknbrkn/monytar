@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { paymentSchema } from "@/lib/validations"
 import { isSupabaseConfigured } from "@/lib/supabase/config"
 import { authorize } from "@/lib/api/authorize"
+import { serverError } from "@/lib/api/errors"
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -49,7 +50,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         { status: 403 },
       )
     }
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) return serverError(error, { route: "requests.[id].mark-paid", id })
 
     if (data) {
       await supabase.from("notifications").insert({
@@ -64,7 +65,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     }
 
     return NextResponse.json({ data })
-  } catch {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  } catch (err) {
+    return serverError(err, { route: "requests.[id].mark-paid" })
   }
 }

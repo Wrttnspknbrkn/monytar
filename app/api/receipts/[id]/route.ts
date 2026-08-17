@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { isSupabaseConfigured } from "@/lib/supabase/config"
 import { authorize } from "@/lib/api/authorize"
+import { serverError } from "@/lib/api/errors"
 import { deleteReceiptObject } from "@/lib/receipts/storage"
 
 // DELETE /api/receipts/[id]
@@ -40,11 +41,10 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     await deleteReceiptObject(receipt.file_url)
 
     const { error } = await supabase.from("receipts").delete().eq("id", id)
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) return serverError(error, { route: "receipts.[id].DELETE", id })
 
     return NextResponse.json({ success: true })
   } catch (err) {
-    console.error("[Receipts] delete error:", err)
-    return NextResponse.json({ error: "An unexpected error occurred" }, { status: 500 })
+    return serverError(err, { route: "receipts.[id].DELETE" })
   }
 }

@@ -2,6 +2,8 @@ import { NextResponse } from "next/server"
 import { approvalSchema } from "@/lib/validations"
 import { isSupabaseConfigured } from "@/lib/supabase/config"
 import { authorize } from "@/lib/api/authorize"
+import { serverError } from "@/lib/api/errors"
+import { captureException } from "@/lib/observability/capture"
 import { computeBudgetStatus, budgetLevelToAlertType } from "@/lib/budgets/calc"
 import { notify } from "@/lib/notifications/service"
 import { requestApprovedEmail } from "@/lib/notifications/templates"
@@ -55,7 +57,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         { status: 403 },
       )
     }
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) return serverError(error, { route: "requests.[id].approve", id })
 
     // Update approval workflow
     await supabase
@@ -132,12 +134,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
           })
         }
       } catch (err) {
-        console.error("[Approve] budget alert check failed:", err)
+        // Non-fatal: log but never fail the approval over a best-effort alert.
+        void captureException(err, { route: "requests.[id].approve", stage: "budget-alert" })
       }
     }
 
     return NextResponse.json({ data })
-  } catch {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  } catch (err) {
+    return serverError(err, { route: "requests.[id].approve" })
   }
 }

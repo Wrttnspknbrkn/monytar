@@ -4,6 +4,8 @@ import { isSupabaseConfigured } from "@/lib/supabase/config"
 import { getSupabaseServerClient } from "@/lib/supabase/server"
 import { loadApprovalSettings } from "@/lib/approvals/settings"
 import { shouldAutoApprove } from "@/lib/approvals/engine"
+import { serverError } from "@/lib/api/errors"
+import { clampLimit, decodeCursor, buildPage } from "@/lib/api/pagination"
 
 export async function GET(request: Request) {
   try {
@@ -17,27 +19,38 @@ export async function GET(request: Request) {
 
     const url = new URL(request.url)
     const status = url.searchParams.get("status")
-    const page = parseInt(url.searchParams.get("page") || "1")
-    const limit = parseInt(url.searchParams.get("limit") || "20")
-    const offset = (page - 1) * limit
+    const limit = clampLimit(url.searchParams.get("limit"))
+    const cursor = decodeCursor(url.searchParams.get("cursor"))
 
+    // Keyset pagination: order by (created_at, id) DESC and fetch limit+1 rows
+    // to detect whether another page exists. No OFFSET, no count: "exact".
     let query = supabase
       .from("expense_requests")
-      .select("*, employee:users!employee_id(full_name, email), vendor:vendors(name), department:departments(name)", { count: "exact" })
+      .select("*, employee:users!employee_id(full_name, email), vendor:vendors(name), department:departments(name)")
       .order("created_at", { ascending: false })
-      .range(offset, offset + limit - 1)
+      .order("id", { ascending: false })
+      .limit(limit + 1)
 
     if (status && status !== "all") {
       query = query.eq("status", status)
     }
 
-    const { data, error, count } = await query
+    // Fetch rows strictly "after" the cursor in the composite ordering.
+    if (cursor) {
+      query = query.or(
+        `created_at.lt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.lt.${cursor.id})`,
+      )
+    }
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    const { data, error } = await query
 
-    return NextResponse.json({ data, total: count, page, limit })
-  } catch {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    if (error) return serverError(error, { route: "requests.GET" })
+
+    const { items, nextCursor } = buildPage(data ?? [], limit)
+
+    return NextResponse.json({ data: items, nextCursor, limit })
+  } catch (err) {
+    return serverError(err, { route: "requests.GET" })
   }
 }
 
@@ -101,10 +114,10 @@ export async function POST(request: Request) {
       manager_comment: autoApprove ? "Auto-approved: amount below approval threshold." : null,
     }).select().single()
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) return serverError(error, { route: "requests.POST" })
 
     return NextResponse.json({ data, auto_approved: autoApprove }, { status: 201 })
-  } catch {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  } catch (err) {
+    return serverError(err, { route: "requests.POST" })
   }
 }

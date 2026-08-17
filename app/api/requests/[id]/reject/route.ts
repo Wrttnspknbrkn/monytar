@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { rejectSchema } from "@/lib/validations"
 import { isSupabaseConfigured } from "@/lib/supabase/config"
 import { authorize } from "@/lib/api/authorize"
+import { serverError } from "@/lib/api/errors"
 import { notify } from "@/lib/notifications/service"
 import { requestRejectedEmail } from "@/lib/notifications/templates"
 import { formatMoney } from "@/lib/currency"
@@ -56,7 +57,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         { status: 403 },
       )
     }
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) return serverError(error, { route: "requests.[id].reject", id })
 
     if (data) {
       const { data: employee } = await supabase
@@ -90,7 +91,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     }
 
     return NextResponse.json({ data })
-  } catch {
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  } catch (err) {
+    return serverError(err, { route: "requests.[id].reject" })
   }
 }
