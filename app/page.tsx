@@ -76,9 +76,9 @@ const plans = [
     featured: true,
     features: [
       "Everything in Starter",
-      "Budget management",
-      "Advanced analytics",
-      "API access & SSO",
+      "Budget management & alerts",
+      "Advanced analytics & exports",
+      "Audit trail & receipt storage",
       "Phone & email support",
     ],
     cta: "Start free trial",
@@ -103,19 +103,18 @@ const plans = [
 ]
 
 const companyLogos = [
-  { name: "TechCorp" },
-  { name: "FinanceHub" },
-  { name: "GrowthCo" },
-  { name: "StartupX" },
-  { name: "ScaleUp" },
-  { name: "InnovateLabs" },
+  { name: "Next.js" },
+  { name: "Supabase" },
+  { name: "PostgreSQL" },
+  { name: "Stripe" },
+  { name: "Vercel" },
 ]
 
 const stats = [
-  { value: "500+", label: "Finance teams" },
-  { value: "98%", label: "Approval rate in 24h" },
-  { value: "3 days", label: "Faster month-end close" },
-  { value: "4.9★", label: "Average user rating" },
+  { value: "4", label: "Roles with tailored access" },
+  { value: "Real-time", label: "Budget tracking & alerts" },
+  { value: "Multi-level", label: "Approval routing" },
+  { value: "CSV + PDF", label: "One-click exports" },
 ]
 
 const howItWorks = [
@@ -193,20 +192,18 @@ export default function LandingPage() {
             </Link>
           </div>
 
-          <div className="flex items-center justify-center gap-3 mb-16 text-sm text-slate-400">
-            <div className="flex -space-x-2">
-              {["AC", "BR", "PL"].map((initials, i) => (
-                <div
-                  key={i}
-                  className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/60 to-indigo-700/60 ring-2 ring-slate-950
-                    flex items-center justify-center text-xs font-semibold text-white"
-                >
-                  {initials}
-                </div>
-              ))}
-            </div>
-            <span>
-              Trusted by <span className="text-white font-semibold">500+</span> finance teams
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 mb-16 text-sm text-slate-400">
+            <span className="flex items-center gap-2">
+              <Check className="w-4 h-4 text-primary" strokeWidth={2.5} />
+              Role-based approvals
+            </span>
+            <span className="flex items-center gap-2">
+              <Check className="w-4 h-4 text-primary" strokeWidth={2.5} />
+              Real-time budgets
+            </span>
+            <span className="flex items-center gap-2">
+              <Check className="w-4 h-4 text-primary" strokeWidth={2.5} />
+              CSV &amp; PDF exports
             </span>
           </div>
         </div>
@@ -234,7 +231,7 @@ export default function LandingPage() {
       <section className="bg-white border-b border-slate-100">
         <div className="pt-28 pb-14 max-w-5xl mx-auto px-6">
           <p className="text-center text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 mb-10">
-            Trusted by teams at
+            Built on a modern, secure stack
           </p>
           <div className="relative overflow-hidden">
             <div className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none" />

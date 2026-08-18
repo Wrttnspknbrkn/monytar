@@ -128,7 +128,7 @@ const faqs = [
   },
   {
     q: "Is my data secure?",
-    a: "Security is our top priority. We use end-to-end encryption, role-based access control with Row Level Security (RLS), and maintain SOC 2 Type II compliance. All data is encrypted at rest and in transit.",
+    a: "Security is a top priority. We enforce role-based access control with Row Level Security (RLS) on every table, server-side authorization on every action, private signed-URL storage for receipts, and a complete audit trail. Data is encrypted in transit and at rest by our infrastructure providers.",
   },
 ]
 

@@ -97,9 +97,9 @@ const features = [
     items: [
       "Responsive design for all screen sizes",
       "Mobile-optimized expense submission",
-      "Camera receipt capture",
-      "Push notifications for approvals",
-      "Offline draft support",
+      "Upload receipts from your phone",
+      "Approve or reject from any device",
+      "Accessible, keyboard-friendly UI",
     ],
   },
   {
@@ -109,23 +109,23 @@ const features = [
       "Stay informed with intelligent alerts for approvals, payments, budget warnings, and important status changes.",
     items: [
       "In-app notification center",
-      "Email digest options (real-time, daily, weekly)",
+      "Email notifications for approvals and rejections",
+      "Budget threshold alerts",
       "Role-based notification routing",
-      "Custom notification preferences",
-      "Escalation alerts for managers",
+      "Email invitations for new teammates",
     ],
   },
   {
     icon: ShieldCheck,
     title: "Security & Compliance",
     description:
-      "Enterprise-grade security with role-based access, audit trails, data encryption, and compliance-ready features.",
+      "Strong security with role-based access, complete audit trails, row-level data isolation, and encrypted receipt storage.",
     items: [
       "Role-based access control (RBAC)",
       "Complete audit trail for all actions",
-      "SOC 2 Type II ready infrastructure",
-      "GDPR and data privacy compliance",
-      "SSO and two-factor authentication",
+      "Row-level security (RLS) on every table",
+      "Private, signed-URL receipt storage",
+      "Server-side authorization on every action",
     ],
   },
 ]
