@@ -5,8 +5,11 @@ import { defineConfig, devices } from "@playwright/test"
  *
  * These tests run against the app in DEMO mode (no Supabase env vars), which
  * makes the dashboard reachable without real auth and seeds it with mock data.
- * The dev server is started automatically via `webServer` below unless one is
- * already running on PORT (reused in local/CI to keep runs fast).
+ *
+ * The dev server is expected to already be running on BASE_URL. In CI, start it
+ * before this suite (e.g. `pnpm dev &` with Supabase env unset) — see
+ * docs/OPERATIONS.md. We intentionally do NOT let Playwright spawn its own
+ * server to avoid colliding with an existing dev server on the same port.
  */
 const PORT = Number(process.env.PORT ?? 3000)
 const BASE_URL = process.env.E2E_BASE_URL ?? `http://localhost:${PORT}`
@@ -31,15 +34,4 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
   ],
-  webServer: {
-    command: "pnpm dev",
-    url: BASE_URL,
-    reuseExistingServer: true,
-    timeout: 120_000,
-    // Ensure demo mode: unset Supabase config so the app seeds mock data.
-    env: {
-      NEXT_PUBLIC_SUPABASE_URL: "",
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: "",
-    },
-  },
 })

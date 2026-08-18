@@ -5,7 +5,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
-import { Eye, EyeOff, ArrowRight, TrendingUp, Receipt, ShieldCheck } from "lucide-react"
+import { Eye, EyeOff, ArrowRight, TrendingUp, Receipt, ShieldCheck, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -123,19 +123,19 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Testimonial */}
+          {/* Value proposition */}
           <div className="mt-auto">
-            <p className="text-white/80 text-sm leading-relaxed italic mb-4">
-              &ldquo;We cut our month-end close by 3 days. The approval workflows just work.&rdquo;
+            <p className="text-white/80 text-sm leading-relaxed mb-4">
+              Submit expenses, route approvals, and track budgets in real time — with a
+              complete audit trail and CSV or PDF exports at month-end.
             </p>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-white font-semibold text-sm">
-                SC
-              </div>
-              <div>
-                <p className="text-white text-sm font-semibold">Sarah Chen</p>
-                <p className="text-white/50 text-xs">CFO, Tempo Labs</p>
-              </div>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-white/60 text-xs">
+              <span className="flex items-center gap-1.5">
+                <Check className="w-3.5 h-3.5" strokeWidth={2.5} /> Role-based approvals
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Check className="w-3.5 h-3.5" strokeWidth={2.5} /> Real-time budgets
+              </span>
             </div>
           </div>
         </div>
