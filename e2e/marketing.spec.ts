@@ -23,6 +23,15 @@ test.describe("landing page", () => {
     expect(body).not.toMatch(/Trusted by\s+500\+/i)
     expect(body).not.toMatch(/Average user rating/i)
     expect(body).not.toMatch(/Trusted by teams at/i)
+    // Fabricated testimonials were replaced with honest benefit cards.
+    expect(body).not.toMatch(/Sarah Chen/i)
+    expect(body).not.toMatch(/Tempo Labs/i)
+    expect(body).not.toMatch(/Finance teams love Monytar/i)
+  })
+
+  test("renders honest benefit section", async ({ page }) => {
+    await page.goto("/")
+    await expect(page.getByText(/Built for how finance teams actually work/i)).toBeVisible()
   })
 })
 
