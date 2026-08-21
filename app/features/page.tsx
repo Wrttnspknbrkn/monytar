@@ -30,11 +30,11 @@ const features = [
     description:
       "Submit, track, and manage expense requests with ease. Attach receipts, categorize spending, and get real-time status updates.",
     items: [
-      "Multi-step expense submission with receipt upload",
-      "Auto-categorization by expense type",
-      "Duplicate detection and smart suggestions",
+      "Guided expense submission with receipt upload",
+      "Categorize spending by expense type",
       "Draft mode for incomplete submissions",
-      "Bulk expense upload via CSV",
+      "Multi-currency amounts with live formatting",
+      "Real-time status tracking from submit to paid",
     ],
   },
   {
@@ -46,8 +46,8 @@ const features = [
       "Auto-routing to the right approver",
       "Multi-level approval for high-value requests",
       "One-click approve or reject with comments",
-      "Automatic escalation for overdue approvals",
       "Threshold-based auto-approval rules",
+      "Revise and resubmit rejected requests",
     ],
   },
   {
@@ -56,11 +56,11 @@ const features = [
     description:
       "Maintain a centralized vendor directory with approval status, payment terms, and spending history for complete visibility.",
     items: [
-      "Approved vendor directory",
-      "Vendor performance tracking",
-      "Custom payment terms per vendor",
+      "Centralized vendor directory",
+      "Vendor approval status",
+      "Link expenses to vendors",
       "Spending analytics by vendor",
-      "Vendor onboarding workflows",
+      "Top-vendor breakdowns in reports",
     ],
   },
   {
@@ -69,11 +69,11 @@ const features = [
     description:
       "Set and enforce budgets at department, project, or category level with real-time alerts when thresholds are approached.",
     items: [
-      "Department and project-level budgets",
+      "Department-level budgets",
       "Real-time spend tracking vs budget",
-      "Configurable alert thresholds (75%, 90%, 100%)",
-      "Period-based budgets (monthly, quarterly, yearly)",
-      "Budget rollover and carry-forward options",
+      "Configurable alert thresholds (warning, critical)",
+      "Automatic alerts written on approval",
+      "Over-budget status surfaced inline",
     ],
   },
   {
@@ -83,10 +83,10 @@ const features = [
       "Comprehensive dashboards and reports that give you full visibility into organizational spending patterns and trends.",
     items: [
       "Executive spending dashboard",
-      "Category and department breakdowns",
-      "Trend analysis with historical comparison",
-      "Custom report builder with date ranges",
-      "One-click CSV and PDF export",
+      "Category, department, and vendor breakdowns",
+      "Monthly trend analysis from real request data",
+      "Status breakdown across the request lifecycle",
+      "One-click CSV and printable PDF export",
     ],
   },
   {
@@ -97,9 +97,9 @@ const features = [
     items: [
       "Responsive design for all screen sizes",
       "Mobile-optimized expense submission",
-      "Camera receipt capture",
-      "Push notifications for approvals",
-      "Offline draft support",
+      "Upload receipts from your phone",
+      "Approve or reject from any device",
+      "Accessible, keyboard-friendly UI",
     ],
   },
   {
@@ -109,23 +109,23 @@ const features = [
       "Stay informed with intelligent alerts for approvals, payments, budget warnings, and important status changes.",
     items: [
       "In-app notification center",
-      "Email digest options (real-time, daily, weekly)",
+      "Email notifications for approvals and rejections",
+      "Budget threshold alerts",
       "Role-based notification routing",
-      "Custom notification preferences",
-      "Escalation alerts for managers",
+      "Email invitations for new teammates",
     ],
   },
   {
     icon: ShieldCheck,
     title: "Security & Compliance",
     description:
-      "Enterprise-grade security with role-based access, audit trails, data encryption, and compliance-ready features.",
+      "Strong security with role-based access, complete audit trails, row-level data isolation, and encrypted receipt storage.",
     items: [
       "Role-based access control (RBAC)",
       "Complete audit trail for all actions",
-      "SOC 2 Type II ready infrastructure",
-      "GDPR and data privacy compliance",
-      "SSO and two-factor authentication",
+      "Row-level security (RLS) on every table",
+      "Private, signed-URL receipt storage",
+      "Server-side authorization on every action",
     ],
   },
 ]

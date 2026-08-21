@@ -22,8 +22,8 @@ const entries = [
       { type: "feature", text: "Customer portal for invoice history and payment method management" },
       { type: "improvement", text: "Production-hardened API with rate limiting and input validation" },
       { type: "improvement", text: "Responsive design finalized for mobile, tablet, and desktop" },
-      { type: "security", text: "SOC 2 Type II readiness assessment completed" },
-      { type: "security", text: "GDPR compliance tools and cookie consent integrated" },
+      { type: "security", text: "Row Level Security (RLS) enforced on every table with server-side authorization" },
+      { type: "security", text: "Private receipt storage via short-lived signed URLs and full audit trail" },
     ],
   },
   {

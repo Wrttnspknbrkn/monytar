@@ -12,7 +12,6 @@ import {
   BarChart3,
   Users,
   PlayCircle,
-  Star,
   FileText,
   Send,
   Wallet,
@@ -25,24 +24,21 @@ import { FaqAccordion } from "@/components/landing/faq-accordion"
 import { BlogShowcase } from "@/components/landing/blog-showcase"
 import { cn } from "@/lib/utils"
 
-const testimonials = [
+const benefits = [
   {
-    quote: "We cut our month-end close by 3 days. The approval workflows just work.",
-    name: "Sarah Chen",
-    role: "CFO",
-    company: "Tempo Labs",
+    title: "Approvals that route themselves",
+    description:
+      "Requests flow to the right approver automatically, with multi-level routing for high-value spend and threshold-based auto-approval for the rest.",
   },
   {
-    quote: "My team stopped submitting expenses on sticky notes. That alone is worth it.",
-    name: "Marcus Reid",
-    role: "Finance Manager",
-    company: "Birch Studio",
+    title: "No more sticky-note expenses",
+    description:
+      "A guided submission flow with receipt upload, draft mode, and real-time status tracking from submitted all the way through to paid.",
   },
   {
-    quote: "The budget alerts saved us from a very uncomfortable board conversation.",
-    name: "Priya Nair",
-    role: "Head of Finance",
-    company: "Luma Health",
+    title: "Budget surprises, eliminated",
+    description:
+      "Real-time spend tracking against department budgets, with warning and critical alerts written automatically as expenses are approved.",
   },
 ]
 
@@ -76,9 +72,9 @@ const plans = [
     featured: true,
     features: [
       "Everything in Starter",
-      "Budget management",
-      "Advanced analytics",
-      "API access & SSO",
+      "Budget management & alerts",
+      "Advanced analytics & exports",
+      "Audit trail & receipt storage",
       "Phone & email support",
     ],
     cta: "Start free trial",
@@ -103,19 +99,18 @@ const plans = [
 ]
 
 const companyLogos = [
-  { name: "TechCorp" },
-  { name: "FinanceHub" },
-  { name: "GrowthCo" },
-  { name: "StartupX" },
-  { name: "ScaleUp" },
-  { name: "InnovateLabs" },
+  { name: "Next.js" },
+  { name: "Supabase" },
+  { name: "PostgreSQL" },
+  { name: "Stripe" },
+  { name: "Vercel" },
 ]
 
 const stats = [
-  { value: "500+", label: "Finance teams" },
-  { value: "98%", label: "Approval rate in 24h" },
-  { value: "3 days", label: "Faster month-end close" },
-  { value: "4.9★", label: "Average user rating" },
+  { value: "4", label: "Roles with tailored access" },
+  { value: "Real-time", label: "Budget tracking & alerts" },
+  { value: "Multi-level", label: "Approval routing" },
+  { value: "CSV + PDF", label: "One-click exports" },
 ]
 
 const howItWorks = [
@@ -193,20 +188,18 @@ export default function LandingPage() {
             </Link>
           </div>
 
-          <div className="flex items-center justify-center gap-3 mb-16 text-sm text-slate-400">
-            <div className="flex -space-x-2">
-              {["AC", "BR", "PL"].map((initials, i) => (
-                <div
-                  key={i}
-                  className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/60 to-indigo-700/60 ring-2 ring-slate-950
-                    flex items-center justify-center text-xs font-semibold text-white"
-                >
-                  {initials}
-                </div>
-              ))}
-            </div>
-            <span>
-              Trusted by <span className="text-white font-semibold">500+</span> finance teams
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 mb-16 text-sm text-slate-400">
+            <span className="flex items-center gap-2">
+              <Check className="w-4 h-4 text-primary" strokeWidth={2.5} />
+              Role-based approvals
+            </span>
+            <span className="flex items-center gap-2">
+              <Check className="w-4 h-4 text-primary" strokeWidth={2.5} />
+              Real-time budgets
+            </span>
+            <span className="flex items-center gap-2">
+              <Check className="w-4 h-4 text-primary" strokeWidth={2.5} />
+              CSV &amp; PDF exports
             </span>
           </div>
         </div>
@@ -234,7 +227,7 @@ export default function LandingPage() {
       <section className="bg-white border-b border-slate-100">
         <div className="pt-28 pb-14 max-w-5xl mx-auto px-6">
           <p className="text-center text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 mb-10">
-            Trusted by teams at
+            Built on a modern, secure stack
           </p>
           <div className="relative overflow-hidden">
             <div className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none" />
@@ -493,15 +486,15 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* TESTIMONIALS */}
+      {/* BENEFITS */}
       <section className="py-24 md:py-32 px-4 sm:px-6 bg-slate-950">
         <div className="max-w-6xl mx-auto">
           <Reveal className="text-center mb-16">
             <span className="inline-block rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-bold uppercase tracking-widest text-slate-300 mb-4">
-              Testimonials
+              Why Monytar
             </span>
             <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-tight">
-              Finance teams love Monytar
+              Built for how finance teams actually work
             </h2>
           </Reveal>
 
@@ -512,32 +505,18 @@ export default function LandingPage() {
             pb-4 md:pb-0 -mx-4 px-4 md:mx-0 md:px-0
             scrollbar-hide"
           >
-            {testimonials.map((t, i) => (
+            {benefits.map((b, i) => (
               <Reveal key={i} delay={i * 100}>
                 <div
                   className="flex-shrink-0 w-[85vw] sm:w-[75vw] md:w-auto snap-center h-full
                   rounded-2xl bg-white/[0.05] border border-white/8 p-7
                   hover:bg-white/[0.08] hover:border-white/15 transition-all duration-300 flex flex-col"
                 >
-                  <div className="flex gap-1 mb-5">
-                    {[...Array(5)].map((_, s) => (
-                      <Star key={s} className="w-4 h-4 text-yellow-400 fill-yellow-400" strokeWidth={0} />
-                    ))}
+                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary/50 to-indigo-700/50 flex items-center justify-center mb-5">
+                    <Check className="w-5 h-5 text-white" strokeWidth={2.5} />
                   </div>
-                  <p className="text-white/70 text-[15px] leading-relaxed mb-6 flex-1">
-                    &ldquo;{t.quote}&rdquo;
-                  </p>
-                  <div className="flex items-center gap-3 pt-5 border-t border-white/8">
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary/50 to-indigo-700/50 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
-                      {t.name.split(" ").map((n) => n[0]).join("")}
-                    </div>
-                    <div>
-                      <p className="text-white text-sm font-semibold leading-none mb-1">{t.name}</p>
-                      <p className="text-white/40 text-xs">
-                        {t.role} at {t.company}
-                      </p>
-                    </div>
-                  </div>
+                  <h3 className="font-display text-lg font-semibold text-white mb-3">{b.title}</h3>
+                  <p className="text-white/60 text-[15px] leading-relaxed flex-1">{b.description}</p>
                 </div>
               </Reveal>
             ))}
@@ -662,7 +641,7 @@ export default function LandingPage() {
               expense management?
             </h2>
             <p className="relative text-white/55 text-lg mb-10 max-w-lg mx-auto leading-relaxed">
-              Join 500+ finance teams. Set up in under 5 minutes. Free forever on our starter plan.
+              Set up in minutes. Start free on our starter plan, no credit card required.
             </p>
             <div className="relative flex flex-col sm:flex-row gap-4 justify-center">
               <Link

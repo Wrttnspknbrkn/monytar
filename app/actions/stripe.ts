@@ -115,13 +115,18 @@ export async function createCheckoutSession(productId: string, userEmail?: strin
       ],
       ui_mode: "embedded",
       return_url: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-      // Allow subscription updates
+      // 14-day free trial with no up-front card, matching the pricing page promise.
+      // The subscription starts in `trialing`; the webhook already treats that as active.
       subscription_data: {
+        trial_period_days: 14,
         metadata: {
           product_id: product.id,
           tier: product.name.toLowerCase(),
         },
       },
+      // Only ask for a card if Stripe actually needs one (i.e. not during the trial),
+      // so "no credit card required" holds true at signup.
+      payment_method_collection: "if_required",
     }
 
     // Pre-fill email if provided (for logged-in users)
