@@ -27,19 +27,22 @@ CREATE INDEX IF NOT EXISTS idx_budget_alerts_org_created
 CREATE INDEX IF NOT EXISTS idx_notifications_user_created
   ON notifications (user_id, created_at DESC);
 
--- 2. RLS helper optimization: wrap auth.* calls in (SELECT …)
+-- 2. RLS helper optimization: wrap helper calls in (SELECT …)
 -- --------------------------------------------------------------------------
 -- Wrapping a STABLE function call in a scalar subquery lets Postgres evaluate
 -- it ONCE per statement (as an InitPlan) instead of once per row, a large win
 -- on multi-row scans. Recreate the hot policies accordingly.
+--
+-- NOTE: helpers live in `public` (see 002) because Supabase does not permit
+-- creating functions in the reserved `auth` schema.
 
 -- expense_requests SELECT
 DROP POLICY IF EXISTS "Employees see own requests" ON expense_requests;
 CREATE POLICY "Employees see own requests" ON expense_requests FOR SELECT USING (
-  organization_id = (SELECT auth.user_org_id()) AND (
+  organization_id = (SELECT public.user_org_id()) AND (
     employee_id = (SELECT auth.uid()) OR
-    (SELECT auth.user_role()) IN ('admin', 'finance') OR
-    ((SELECT auth.user_role()) = 'manager' AND department_id IN (
+    (SELECT public.user_role()) IN ('admin', 'finance') OR
+    ((SELECT public.user_role()) = 'manager' AND department_id IN (
       SELECT department_id FROM users WHERE id = (SELECT auth.uid())
     ))
   )
@@ -48,15 +51,15 @@ CREATE POLICY "Employees see own requests" ON expense_requests FOR SELECT USING 
 -- expense_requests INSERT
 DROP POLICY IF EXISTS "Users can create requests" ON expense_requests;
 CREATE POLICY "Users can create requests" ON expense_requests FOR INSERT WITH CHECK (
-  organization_id = (SELECT auth.user_org_id()) AND employee_id = (SELECT auth.uid())
+  organization_id = (SELECT public.user_org_id()) AND employee_id = (SELECT auth.uid())
 );
 
 -- expense_requests UPDATE
 DROP POLICY IF EXISTS "Users can update own drafts" ON expense_requests;
 CREATE POLICY "Users can update own drafts" ON expense_requests FOR UPDATE USING (
-  organization_id = (SELECT auth.user_org_id()) AND (
+  organization_id = (SELECT public.user_org_id()) AND (
     (employee_id = (SELECT auth.uid()) AND status = 'draft') OR
-    (SELECT auth.user_role()) IN ('admin', 'finance', 'manager')
+    (SELECT public.user_role()) IN ('admin', 'finance', 'manager')
   )
 );
 
@@ -73,11 +76,11 @@ CREATE POLICY "Users can update own notifications" ON notifications FOR UPDATE U
 -- budget_alerts
 DROP POLICY IF EXISTS "Users can view budget alerts" ON budget_alerts;
 CREATE POLICY "Users can view budget alerts" ON budget_alerts FOR SELECT USING (
-  organization_id = (SELECT auth.user_org_id())
+  organization_id = (SELECT public.user_org_id())
 );
 
 -- activity_logs
 DROP POLICY IF EXISTS "Admin/finance view logs" ON activity_logs;
 CREATE POLICY "Admin/finance view logs" ON activity_logs FOR SELECT USING (
-  organization_id = (SELECT auth.user_org_id()) AND (SELECT auth.user_role()) IN ('admin', 'finance')
+  organization_id = (SELECT public.user_org_id()) AND (SELECT public.user_role()) IN ('admin', 'finance')
 );
