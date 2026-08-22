@@ -78,6 +78,37 @@ Migration `008` creates the private **`receipts`** storage bucket and its
 path-prefixed RLS, so you do **not** create the bucket by hand. Verify under
 **Storage** that a private bucket named `receipts` exists after running it.
 
+Do **not** use the dashboard's "enable automatic RLS policies" helper — `002`
+and `010` define the policies explicitly, and the generated ones conflict.
+
+#### Verify the RLS helpers exist
+
+`002` creates two helper functions in the **`public`** schema that most policies
+depend on. Confirm both are present before moving on:
+
+```sql
+select routine_schema, routine_name
+from information_schema.routines
+where routine_name in ('user_org_id', 'user_role');
+-- expect two rows, both with routine_schema = 'public'
+```
+
+#### Troubleshooting
+
+**`ERROR: 42501: permission denied for schema auth`** (running `002`)
+Supabase reserves the `auth` schema for the `supabase_auth_admin` role, so
+`CREATE FUNCTION auth.…` is rejected. The helpers therefore live in `public`
+(`public.user_org_id()` / `public.user_role()`). If you hit this, you are running
+an older copy of `002` — pull the latest and re-run it.
+
+**`ERROR: 42883: function auth.user_org_id() does not exist`** (running `010`)
+A downstream symptom of the error above: `002` rolled back, so the helpers were
+never created. Re-run the current `002` first, then `010`.
+
+Both `002` and `010` are **idempotent** (`DROP POLICY IF EXISTS` before each
+`CREATE POLICY`, `CREATE OR REPLACE FUNCTION`), so re-running them after a
+failed attempt is safe.
+
 ### 1.3 Configure Auth
 
 1. **Authentication → Providers → Email**: enable **Email/Password**. (This app
