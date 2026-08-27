@@ -4,15 +4,19 @@ import { isSupabaseConfigured } from "@/lib/supabase/config"
 import { createClient } from "@supabase/supabase-js"
 import { enforceRateLimit, getClientIp } from "@/lib/api/rate-limit"
 
+/** Missing env vars required for real (non-demo) signup. */
+function getMissingAdminEnv(): string[] {
+  const missing: string[] = []
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) missing.push("NEXT_PUBLIC_SUPABASE_URL")
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) missing.push("SUPABASE_SERVICE_ROLE_KEY")
+  return missing
+}
+
 // Use service role for admin operations
 function getAdminClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  
-  if (!url || !serviceKey) {
-    throw new Error("Supabase admin credentials not configured")
-  }
-  
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+
   return createClient(url, serviceKey, {
     auth: {
       autoRefreshToken: false,
@@ -40,6 +44,21 @@ export async function POST(request: Request) {
 
     if (!isSupabaseConfigured()) {
       return NextResponse.json({ success: true, demo: true, email })
+    }
+
+    // Supabase is configured for the browser, but creating an org + admin user
+    // requires the SERVICE ROLE key on the server. Without it the request used
+    // to fail as an opaque 500, so surface exactly what is missing instead.
+    const missingEnv = getMissingAdminEnv()
+    if (missingEnv.length > 0) {
+      console.error("[v0] Signup misconfigured — missing env:", missingEnv.join(", "))
+      return NextResponse.json(
+        {
+          error: `Server is missing required configuration: ${missingEnv.join(", ")}. Add it to your environment and redeploy.`,
+          code: "MISSING_ENV",
+        },
+        { status: 500 },
+      )
     }
 
     const supabase = getAdminClient()
