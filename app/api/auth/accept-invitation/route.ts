@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js"
 import { z } from "zod"
 import { enforceRateLimit, getClientIp } from "@/lib/api/rate-limit"
 import { getTierLimits } from "@/lib/products"
+import { getSupabaseUrl, getSupabaseServiceKey } from "@/lib/supabase/config"
 import type { SubscriptionTier } from "@/lib/types"
 
 const acceptSchema = z.object({
@@ -12,14 +13,7 @@ const acceptSchema = z.object({
 })
 
 function getAdminClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-  if (!url || !serviceKey) {
-    throw new Error("Supabase admin credentials not configured")
-  }
-
-  return createClient(url, serviceKey, {
+  return createClient(getSupabaseUrl(), getSupabaseServiceKey(), {
     auth: {
       autoRefreshToken: false,
       persistSession: false,

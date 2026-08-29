@@ -2,20 +2,19 @@ import { NextResponse, type NextRequest } from "next/server"
 import { isStripeConfigured } from "@/lib/stripe/config"
 import { createClient, type SupabaseClient } from "@supabase/supabase-js"
 import { resolveSubscriptionTier } from "@/lib/products"
+import { getSupabaseUrl, getSupabaseServiceKey } from "@/lib/supabase/config"
 import type Stripe from "stripe"
 
 // Initialize Supabase Admin client for webhook processing
 function getSupabaseAdmin() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-  if (!supabaseUrl || !supabaseServiceKey) {
+  try {
+    return createClient(getSupabaseUrl(), getSupabaseServiceKey(), {
+      auth: { autoRefreshToken: false, persistSession: false },
+    })
+  } catch (error) {
+    console.error("[v0] Stripe webhook: Supabase admin client unavailable:", error)
     return null
   }
-
-  return createClient(supabaseUrl, supabaseServiceKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  })
 }
 
 // Resolve the tier from a Stripe subscription, preferring authoritative metadata

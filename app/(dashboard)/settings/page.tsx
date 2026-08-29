@@ -6,6 +6,7 @@ import { useData, useAuth } from "@/lib/providers"
 import { getRoleLabel, formatCurrency, cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { PasswordInput } from "@/components/ui/password-input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -203,12 +204,12 @@ export default function SettingsPage() {
             <CardContent className="flex flex-col gap-4">
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-2">
-                  <Label className="text-[13px] font-medium">Current Password</Label>
-                  <Input type="password" placeholder="Enter current password" />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <Label className="text-[13px] font-medium">New Password</Label>
-                  <Input type="password" placeholder="Enter new password" />
+                      <Label className="text-[13px] font-medium">Current Password</Label>
+                      <PasswordInput placeholder="Enter current password" />
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <Label className="text-[13px] font-medium">New Password</Label>
+                      <PasswordInput placeholder="Enter new password" />
                 </div>
               </div>
               <Button variant="outline" className="w-fit bg-transparent font-semibold" onClick={() => toast.success("Password updated successfully")}>
