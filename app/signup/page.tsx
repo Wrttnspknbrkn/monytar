@@ -7,6 +7,7 @@ import { ArrowRight, ArrowLeft, Check, Users, BarChart3, TrendingUp, Globe, Shie
 import { Logo } from "@/components/ui/logo"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { PasswordInput } from "@/components/ui/password-input"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
@@ -252,9 +253,8 @@ export default function SignupPage() {
               </div>
               <div className="flex flex-col gap-2">
                 <Label htmlFor="signupPassword" className="text-[13px] font-medium">Password</Label>
-                <Input
+                <PasswordInput
                   id="signupPassword"
-                  type="password"
                   placeholder="Min 8 characters"
                   value={formData.password}
                   onChange={(e) => { setFormData({ ...formData, password: e.target.value }); setErrors({}) }}

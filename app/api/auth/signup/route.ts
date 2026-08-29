@@ -1,23 +1,12 @@
 import { NextResponse } from "next/server"
 import { signupSchema } from "@/lib/validations"
-import { isSupabaseConfigured } from "@/lib/supabase/config"
+import { isSupabaseConfigured, getSupabaseUrl, getSupabaseServiceKey } from "@/lib/supabase/config"
 import { createClient } from "@supabase/supabase-js"
 import { enforceRateLimit, getClientIp } from "@/lib/api/rate-limit"
 
-/** Missing env vars required for real (non-demo) signup. */
-function getMissingAdminEnv(): string[] {
-  const missing: string[] = []
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) missing.push("NEXT_PUBLIC_SUPABASE_URL")
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) missing.push("SUPABASE_SERVICE_ROLE_KEY")
-  return missing
-}
-
 // Use service role for admin operations
 function getAdminClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
-
-  return createClient(url, serviceKey, {
+  return createClient(getSupabaseUrl(), getSupabaseServiceKey(), {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
@@ -47,20 +36,8 @@ export async function POST(request: Request) {
     }
 
     // Supabase is configured for the browser, but creating an org + admin user
-    // requires the SERVICE ROLE key on the server. Without it the request used
-    // to fail as an opaque 500, so surface exactly what is missing instead.
-    const missingEnv = getMissingAdminEnv()
-    if (missingEnv.length > 0) {
-      console.error("[v0] Signup misconfigured — missing env:", missingEnv.join(", "))
-      return NextResponse.json(
-        {
-          error: `Server is missing required configuration: ${missingEnv.join(", ")}. Add it to your environment and redeploy.`,
-          code: "MISSING_ENV",
-        },
-        { status: 500 },
-      )
-    }
-
+    // requires a valid service_role key on the server (getAdminClient throws a
+    // clear, actionable error below if it's missing or misconfigured).
     const supabase = getAdminClient()
 
     // Create auth user
@@ -156,7 +133,14 @@ export async function POST(request: Request) {
       organization: org,
     })
   } catch (error) {
-    console.error("Signup error:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    console.error("[v0] Signup error:", error)
+    const message = error instanceof Error ? error.message : "Internal server error"
+    // Config errors (missing/misconfigured Supabase env vars) are actionable —
+    // surface them as-is instead of a generic 500 so setup mistakes are obvious.
+    const isConfigError = error instanceof Error && /SUPABASE_|service_role/i.test(error.message)
+    return NextResponse.json(
+      { error: isConfigError ? message : "Internal server error" },
+      { status: 500 },
+    )
   }
 }
