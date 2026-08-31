@@ -3,6 +3,7 @@ import { signupSchema } from "@/lib/validations"
 import { isSupabaseConfigured, getSupabaseUrl, getSupabaseServiceKey } from "@/lib/supabase/config"
 import { createClient } from "@supabase/supabase-js"
 import { enforceRateLimit, getClientIp } from "@/lib/api/rate-limit"
+import { getSupabaseServerClient } from "@/lib/supabase/server"
 
 // Use service role for admin operations
 function getAdminClient() {
@@ -130,10 +131,21 @@ export async function POST(request: Request) {
         is_active: true,
       })
 
-    return NextResponse.json({ 
-      success: true, 
+    // Establish a browser session so the client is authenticated once signup
+    // completes — admin.createUser() above only creates the account, it does
+    // not sign the browser in (that's why "Go to Dashboard" led nowhere).
+    const sessionClient = await getSupabaseServerClient()
+    const { error: signInError } = await sessionClient.auth.signInWithPassword({ email, password })
+
+    if (signInError) {
+      console.error("[v0] post-signup sign-in failed:", JSON.stringify({ message: signInError.message, code: signInError.code, status: signInError.status }))
+    }
+
+    return NextResponse.json({
+      success: true,
       user: authData.user,
       organization: org,
+      signedIn: !signInError,
     })
   } catch (error) {
     console.error("[v0] Signup error:", error)

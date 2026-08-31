@@ -30,6 +30,9 @@ export default function SignupPage() {
     orgSize: "",
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
+  // Whether the signup response left the browser with an authenticated
+  // session (real signup) or no server session applies (demo mode).
+  const [readyForDashboard, setReadyForDashboard] = useState(false)
 
   function validateStep(currentStep: number): boolean {
     const newErrors: Record<string, string> = {}
@@ -73,16 +76,28 @@ export default function SignupPage() {
 
           if (res.ok && data.demo) {
             toast.success("Account created! (Demo Mode)")
+            setReadyForDashboard(true)
             setStep(2)
           } else if (res.ok) {
             toast.success("Account created!")
+            if (data.signedIn === false) {
+              // Account + org were created, but the post-signup sign-in
+              // failed server-side (see console for the logged cause) —
+              // send them to log in manually instead of a dead-end dashboard.
+              console.error("[signup] account created but no session was established; sending to /login")
+              toast.error("Account created — please sign in to continue.")
+            } else {
+              setReadyForDashboard(true)
+            }
             setStep(2)
           } else {
             toast.error(data.error || "Registration failed")
           }
-        } catch {
+        } catch (err) {
+          console.error("[signup] request failed:", err)
           // Network error - demo mode fallback
           toast.success("Account created! (Demo Mode)")
+          setReadyForDashboard(true)
           setStep(2)
         } finally {
           setLoading(false)
@@ -91,8 +106,12 @@ export default function SignupPage() {
         setStep(step + 1)
       }
     } else {
-      // After signup completion, redirect to onboarding for real accounts
-      router.push("/onboarding")
+      try {
+        router.push(readyForDashboard ? "/dashboard" : "/login")
+      } catch (err) {
+        console.error("[signup] navigation failed:", err)
+        toast.error("Couldn't open the dashboard. Please try navigating manually.")
+      }
     }
   }
 
