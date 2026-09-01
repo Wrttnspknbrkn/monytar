@@ -126,7 +126,7 @@ export default function LoginPage() {
           {/* Value proposition */}
           <div className="mt-auto">
             <p className="text-white/80 text-sm leading-relaxed mb-4">
-              Submit expenses, route approvals, and track budgets in real time — with a
+              Submit expenses, route approvals, and track budgets in real time, with a
               complete audit trail and CSV or PDF exports at month-end.
             </p>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-white/60 text-xs">

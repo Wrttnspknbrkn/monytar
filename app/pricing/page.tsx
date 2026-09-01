@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { ArrowRight, Check, Minus, ChevronRight } from "lucide-react"
+import { ArrowRight, Check, Minus } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { LandingHeader } from "@/components/landing/landing-header"
 import { LandingFooter } from "@/components/landing/landing-footer"
@@ -143,164 +143,149 @@ export default function PricingPage() {
       {/* HERO */}
       <section className="relative pt-28 pb-16 md:pb-20 overflow-hidden">
         <div className="absolute inset-0 bg-slate-950" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_100%_70%_at_60%_-10%,rgba(99,102,241,0.3),transparent)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_90%_60%_at_85%_-10%,rgba(99,102,241,0.28),transparent)]" />
         <div className="absolute inset-0 bg-[url('/images/dot-grid.svg')] opacity-[0.06]" />
 
-        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 pt-10 text-center">
-          <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/8 px-4 py-1.5 text-sm text-primary/90 mb-8 backdrop-blur-sm">
-            <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-            Organization-based pricing, not per seat
-            <ChevronRight className="w-3.5 h-3.5 opacity-50" />
-          </div>
-          <h1 className="font-display text-4xl sm:text-5xl md:text-6xl font-bold text-white leading-[1.05] tracking-tight mb-6">
-            Simple, transparent
-            <br />
-            <span className="bg-gradient-to-r from-indigo-300 via-primary to-cyan-400 bg-clip-text text-transparent">
-              pricing
-            </span>
-          </h1>
-          <p className="text-slate-400 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed mb-10">
-            Start free and scale as you grow. No hidden fees, no surprises.
-          </p>
+        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 pt-10">
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-8">
+            <div>
+              <h1 className="font-display text-4xl sm:text-5xl md:text-6xl font-bold text-white leading-[1.05] tracking-tight mb-4">
+                Priced by organization,
+                <br />
+                not by seat
+              </h1>
+              <p className="text-slate-400 text-lg leading-relaxed max-w-lg">
+                Start free and scale as you grow. No hidden fees, no surprises.
+              </p>
+            </div>
 
-          {/* Billing toggle */}
-          <div className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 p-1 backdrop-blur-sm">
-            <button
-              onClick={() => setInterval("month")}
-              className={cn(
-                "rounded-full px-5 py-2 text-sm font-semibold transition-all duration-200",
-                interval === "month" ? "bg-white text-slate-900 shadow-sm" : "text-white/60 hover:text-white"
-              )}
-            >
-              Monthly
-            </button>
-            <button
-              onClick={() => setInterval("year")}
-              className={cn(
-                "rounded-full px-5 py-2 text-sm font-semibold transition-all duration-200 flex items-center gap-2",
-                interval === "year" ? "bg-white text-slate-900 shadow-sm" : "text-white/60 hover:text-white"
-              )}
-            >
-              Yearly
-              <span className="rounded-full bg-primary/15 text-primary text-xs font-bold px-2 py-0.5">
-                Save 2 months
-              </span>
-            </button>
+            {/* Billing toggle */}
+            <div className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 p-1 backdrop-blur-sm shrink-0">
+              <button
+                onClick={() => setInterval("month")}
+                className={cn(
+                  "rounded-full px-5 py-2 text-sm font-semibold transition-all duration-200",
+                  interval === "month" ? "bg-white text-slate-900 shadow-sm" : "text-white/60 hover:text-white"
+                )}
+              >
+                Monthly
+              </button>
+              <button
+                onClick={() => setInterval("year")}
+                className={cn(
+                  "rounded-full px-5 py-2 text-sm font-semibold transition-all duration-200 flex items-center gap-2",
+                  interval === "year" ? "bg-white text-slate-900 shadow-sm" : "text-white/60 hover:text-white"
+                )}
+              >
+                Yearly
+                <span className="rounded-full bg-primary/15 text-primary text-xs font-bold px-2 py-0.5">
+                  Save 2 months
+                </span>
+              </button>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* PRICING CARDS */}
-      <section className="relative -mt-4 pb-20 px-4 sm:px-6 bg-white">
-        <div className="max-w-6xl mx-auto grid md:grid-cols-2 lg:grid-cols-4 gap-5">
-          {plans.map((plan, i) => (
-            <Reveal key={plan.tier} delay={i * 70}>
+      {/* RATE CARD */}
+      <section className="relative pt-16 md:pt-20 pb-20 px-4 sm:px-6 bg-white">
+        <div className="max-w-6xl mx-auto">
+          <Reveal variant="grow" className="grid grid-cols-1 md:grid-cols-4 rounded-2xl border border-slate-200 overflow-hidden">
+            {plans.map((plan, i) => (
               <div
+                key={plan.tier}
                 className={cn(
-                  "relative h-full rounded-2xl p-7 transition-all duration-300 flex flex-col",
-                  plan.popular
-                    ? "bg-primary text-white shadow-[0_8px_48px_rgba(99,102,241,0.45)] lg:scale-[1.03] z-10"
-                    : "bg-white border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-300"
+                  "relative p-7 flex flex-col",
+                  i > 0 && "md:border-l border-slate-200",
+                  plan.popular ? "bg-primary text-white" : "bg-white"
                 )}
               >
                 {plan.popular && (
-                  <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-white text-primary text-xs font-bold uppercase tracking-widest px-4 py-1.5 rounded-full shadow-sm border border-primary/10 whitespace-nowrap">
+                  <span className="absolute top-0 left-0 right-0 bg-white text-primary text-[11px] font-bold uppercase tracking-widest text-center py-1.5">
                     Most popular
                   </span>
                 )}
                 <p
                   className={cn(
-                    "text-sm font-bold uppercase tracking-widest mb-1",
-                    plan.popular ? "text-white/60" : "text-slate-500"
+                    "font-mono text-xs uppercase tracking-widest mb-6",
+                    plan.popular && "mt-5",
+                    plan.popular ? "text-white/60" : "text-slate-400"
                   )}
                 >
                   {plan.name}
                 </p>
                 <div className="flex items-baseline gap-1 mb-1">
-                  <span
-                    className={cn(
-                      "font-display text-4xl font-bold",
-                      plan.popular ? "text-white" : "text-slate-900"
-                    )}
-                  >
+                  <span className={cn("font-mono text-4xl font-bold", plan.popular ? "text-white" : "text-slate-900")}>
                     {plan.priceLabel}
                   </span>
                   {plan.periodLabel && (
-                    <span className={plan.popular ? "text-white/50" : "text-slate-400"}>
+                    <span className={cn("text-sm", plan.popular ? "text-white/50" : "text-slate-400")}>
                       {plan.periodLabel}
                     </span>
                   )}
                 </div>
-                <p className={cn("text-xs h-4 mb-3", plan.popular ? "text-white/55" : "text-slate-400")}>
+                <p className={cn("text-xs h-4 mb-1", plan.popular ? "text-white/55" : "text-slate-400")}>
                   {plan.yearlyNote ?? ""}
                 </p>
-                <p className={cn("text-sm mb-6", plan.popular ? "text-white/70" : "text-slate-500")}>
-                  {plan.description}
+                <p className={cn("text-xs mb-7", plan.popular ? "text-white/55" : "text-slate-400")}>
+                  {plan.users}
                 </p>
+                <ul className="space-y-2.5 mb-8 flex-1">
+                  {plan.features.map((f) => (
+                    <li
+                      key={f}
+                      className={cn(
+                        "flex items-start gap-2.5 text-[13px] pt-2.5 border-t border-dashed",
+                        plan.popular ? "border-white/20 text-white/85" : "border-slate-100 text-slate-600"
+                      )}
+                    >
+                      <Check className={cn("w-3.5 h-3.5 shrink-0 mt-0.5", plan.popular ? "text-white" : "text-primary")} strokeWidth={2.5} />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
                 <Link
                   href={plan.href}
                   className={cn(
-                    "block text-center rounded-xl py-3 text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-1.5",
-                    plan.popular
-                      ? "bg-white text-primary hover:bg-white/90"
-                      : "bg-slate-900 text-white hover:bg-slate-800"
+                    "block text-center rounded-lg py-2.5 text-sm font-semibold transition-colors duration-200 flex items-center justify-center gap-1.5",
+                    plan.popular ? "bg-white text-primary hover:bg-white/90" : "bg-slate-900 text-white hover:bg-slate-800"
                   )}
                 >
                   {plan.cta}
                   {plan.tier !== "enterprise" && <ArrowRight className="w-3.5 h-3.5" />}
                 </Link>
-                <ul className="flex flex-col gap-2.5 mt-6">
-                  {plan.features.map((f) => (
-                    <li
-                      key={f}
-                      className={cn(
-                        "flex items-start gap-2.5 text-sm",
-                        plan.popular ? "text-white/85" : "text-slate-600"
-                      )}
-                    >
-                      <Check
-                        className={cn(
-                          "w-4 h-4 shrink-0 mt-0.5",
-                          plan.popular ? "text-white" : "text-primary"
-                        )}
-                        strokeWidth={2.5}
-                      />
-                      <span>{f}</span>
-                    </li>
-                  ))}
-                </ul>
               </div>
-            </Reveal>
-          ))}
+            ))}
+          </Reveal>
         </div>
       </section>
 
-      {/* COMPARISON TABLE */}
+      {/* COMPARISON STATEMENT */}
       <section className="py-20 px-4 sm:px-6 bg-slate-50">
         <div className="max-w-5xl mx-auto">
-          <Reveal className="text-center mb-12">
-            <span className="inline-block rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-bold uppercase tracking-widest text-primary mb-4">
-              Compare plans
-            </span>
-            <h2 className="font-display text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight">
+          <Reveal variant="rise" className="max-w-lg mb-12">
+            <h2 className="font-display text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight mb-3">
               Every feature, side by side
             </h2>
+            <p className="text-slate-500 leading-relaxed">
+              The full breakdown, not the highlight reel.
+            </p>
           </Reveal>
-          <Reveal>
-            <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <Reveal variant="grow">
+            <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
               <table className="w-full text-sm min-w-[640px]">
                 <thead>
                   <tr className="border-b border-slate-200">
-                    <th className="text-left py-4 px-5 font-semibold text-slate-500">Feature</th>
-                    <th className="text-center py-4 px-4 font-semibold text-slate-900">Free</th>
-                    <th className="text-center py-4 px-4 font-semibold text-slate-900">Starter</th>
-                    <th className="text-center py-4 px-4 font-semibold text-primary">Professional</th>
-                    <th className="text-center py-4 px-4 font-semibold text-slate-900">Enterprise</th>
+                    <th className="text-left py-4 px-5 font-mono text-xs uppercase tracking-widest text-slate-400">Feature</th>
+                    <th className="text-center py-4 px-4 font-mono text-xs uppercase tracking-widest text-slate-500">Free</th>
+                    <th className="text-center py-4 px-4 font-mono text-xs uppercase tracking-widest text-slate-500">Starter</th>
+                    <th className="text-center py-4 px-4 font-mono text-xs uppercase tracking-widest text-primary">Professional</th>
+                    <th className="text-center py-4 px-4 font-mono text-xs uppercase tracking-widest text-slate-500">Enterprise</th>
                   </tr>
                 </thead>
                 <tbody>
                   {comparisonFeatures.map((row) => (
-                    <tr key={row.name} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                    <tr key={row.name} className="border-b border-dashed border-slate-100 hover:bg-slate-50/60 transition-colors">
                       <td className="py-3.5 px-5 font-medium text-slate-700">{row.name}</td>
                       {[row.free, row.starter, row.pro, row.enterprise].map((val, i) => (
                         <td key={i} className="text-center py-3.5 px-4">
@@ -311,7 +296,7 @@ export default function PricingPage() {
                               <Minus className="w-4 h-4 text-slate-300 mx-auto" />
                             )
                           ) : (
-                            <span className="text-slate-600">{val}</span>
+                            <span className="font-mono text-slate-600 tabular-nums">{val}</span>
                           )}
                         </td>
                       ))}
@@ -327,17 +312,14 @@ export default function PricingPage() {
       {/* FAQ */}
       <section className="py-20 px-4 sm:px-6 bg-white">
         <div className="max-w-3xl mx-auto">
-          <Reveal className="text-center mb-12">
-            <span className="inline-block rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-bold uppercase tracking-widest text-primary mb-4">
-              FAQ
-            </span>
+          <Reveal variant="rise" className="text-center mb-12">
             <h2 className="font-display text-3xl sm:text-4xl font-bold text-slate-900 tracking-tight">
               Frequently asked questions
             </h2>
           </Reveal>
           <div className="flex flex-col gap-6">
-            {faqs.map((faq) => (
-              <Reveal key={faq.q}>
+            {faqs.map((faq, i) => (
+              <Reveal key={faq.q} variant="rise" delay={i * 40}>
                 <div className="rounded-2xl border border-slate-100 bg-white p-6 hover:border-slate-200 transition-colors">
                   <h3 className="font-display font-bold text-slate-900 mb-2">{faq.q}</h3>
                   <p className="text-sm text-slate-500 leading-relaxed">{faq.a}</p>

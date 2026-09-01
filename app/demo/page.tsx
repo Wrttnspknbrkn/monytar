@@ -21,6 +21,7 @@ import type { UserRole } from "@/lib/types"
 import { captureDemoLead } from "@/lib/demo/leads"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
+import { Reveal } from "@/components/landing/reveal"
 
 type DemoRole = Extract<UserRole, "employee" | "manager" | "finance" | "admin">
 
@@ -115,7 +116,7 @@ function DemoContent() {
 
     switchDemoRole(selectedRole)
     const title = demoRoles.find((r) => r.role === selectedRole)?.title ?? selectedRole
-    toast.success(`Welcome, ${form.full_name.split(" ")[0]} — entering as ${title}`)
+    toast.success(`Welcome, ${form.full_name.split(" ")[0]}. Entering as ${title}`)
     setTimeout(() => router.push("/dashboard"), 450)
   }
 
@@ -142,7 +143,7 @@ function DemoContent() {
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-4 py-1.5 text-sm text-primary/90 mb-6 backdrop-blur-sm">
             <Sparkles className="w-3.5 h-3.5" />
-            Interactive demo — no account required
+            Interactive demo, no account required
           </div>
           <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-tight mb-4 text-balance">
             {selectedRole ? `Start your ${activeRole?.title} demo` : "Explore Monytar from any role"}
@@ -150,41 +151,42 @@ function DemoContent() {
           <p className="text-slate-400 text-lg max-w-xl mx-auto leading-relaxed text-pretty">
             {selectedRole
               ? "Tell us where to send your results. We'll drop you straight into a live sandbox with sample data."
-              : "Pick a role to see the product from that perspective. The sandbox uses sample data and resets daily — explore freely."}
+              : "Pick a role to see the product from that perspective. The sandbox uses sample data and resets daily, so explore freely."}
           </p>
         </div>
 
         {!selectedRole ? (
           /* ---------- Step 1: Role selection ---------- */
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
-            {demoRoles.map(({ role, icon: Icon, title, desc, highlights }) => (
-              <button
-                key={role}
-                onClick={() => setSelectedRole(role)}
-                className={cn(
-                  "group relative text-left rounded-2xl border p-6 transition-all duration-300 backdrop-blur-sm",
-                  "bg-white/[0.04] hover:bg-white/[0.07] border-white/10 hover:border-primary/40",
-                )}
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors duration-300">
-                    <Icon className="w-6 h-6" />
+            {demoRoles.map(({ role, icon: Icon, title, desc, highlights }, i) => (
+              <Reveal key={role} variant="grow" delay={i * 70}>
+                <button
+                  onClick={() => setSelectedRole(role)}
+                  className={cn(
+                    "group relative text-left w-full rounded-2xl border p-6 transition-all duration-300 backdrop-blur-sm",
+                    "bg-white/[0.04] hover:bg-white/[0.07] border-white/10 hover:border-primary/40",
+                  )}
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors duration-300">
+                      <Icon className="w-6 h-6" />
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-primary group-hover:translate-x-1 transition-all duration-200" />
                   </div>
-                  <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-primary group-hover:translate-x-1 transition-all duration-200" />
-                </div>
-                <h3 className="font-display font-bold text-white text-lg mb-1">{title}</h3>
-                <p className="text-slate-400 text-sm leading-relaxed mb-4">{desc}</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {highlights.map((h) => (
-                    <span
-                      key={h}
-                      className="rounded-full bg-white/5 border border-white/10 px-2.5 py-0.5 text-[11px] font-medium text-slate-300"
-                    >
-                      {h}
-                    </span>
-                  ))}
-                </div>
-              </button>
+                  <h3 className="font-display font-bold text-white text-lg mb-1">{title}</h3>
+                  <p className="text-slate-400 text-sm leading-relaxed mb-4">{desc}</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {highlights.map((h) => (
+                      <span
+                        key={h}
+                        className="rounded-full bg-white/5 border border-white/10 px-2.5 py-0.5 text-[11px] font-medium text-slate-300"
+                      >
+                        {h}
+                      </span>
+                    ))}
+                  </div>
+                </button>
+              </Reveal>
             ))}
           </div>
         ) : (
