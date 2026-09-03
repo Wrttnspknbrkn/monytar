@@ -406,7 +406,11 @@ export function DataProvider({ children }: DataProviderProps) {
       Object.assign(mockSettings, updates)
       return mockSettings as unknown as OrganizationSettings
     }
-    if (!organization?.id) return undefined
+    if (!organization?.id) {
+      // Org hasn't finished loading yet — throw instead of silently no-op'ing
+      // so callers don't report success for a change that never saved.
+      throw new Error("Organization not loaded yet. Please wait a moment and try again.")
+    }
     return await updateOrganizationSettingsRecord(organization.id, updates)
   }, [isDemo, organization])
   

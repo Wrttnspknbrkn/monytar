@@ -42,6 +42,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       .eq("status", "pending")
       // Defense-in-depth: never act on another tenant's data.
       .eq("organization_id", organizationId)
+      // Separation of duties: nobody approves their own request, regardless of role.
+      .neq("employee_id", userId)
 
     // Managers may only approve requests within their own department.
     if (role === "manager") {

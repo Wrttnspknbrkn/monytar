@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { isSupabaseConfigured } from "@/lib/supabase/config"
+import { userSchema } from "@/lib/validations"
 
 export async function GET() {
   if (!isSupabaseConfigured()) {
@@ -48,9 +49,17 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
+    const parsed = userSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid input", details: parsed.error.flatten().fieldErrors },
+        { status: 400 },
+      )
+    }
+
     const { data, error } = await supabase
       .from("users")
-      .insert({ ...body, organization_id: profile.organization_id })
+      .insert({ ...parsed.data, organization_id: profile.organization_id })
       .select()
       .single()
 

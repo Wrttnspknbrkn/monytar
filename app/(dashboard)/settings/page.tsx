@@ -102,6 +102,48 @@ export default function SettingsPage() {
     }
   }
 
+  const [workflowForm, setWorkflowForm] = useState({
+    auto_approve_under_amount: 0,
+    receipt_required_above_amount: 0,
+    approval_threshold_amount: 0,
+    require_manager_approval: true,
+    require_finance_approval: true,
+    require_receipts: true,
+  })
+  const [savingWorkflow, setSavingWorkflow] = useState(false)
+
+  // orgSettings loads asynchronously — sync local form state once it (or a
+  // later update to it) arrives, same pattern as profileForm above.
+  useEffect(() => {
+    if (orgSettings) {
+      setWorkflowForm({
+        auto_approve_under_amount: orgSettings.auto_approve_under_amount ?? 0,
+        receipt_required_above_amount: orgSettings.receipt_required_above_amount ?? 0,
+        approval_threshold_amount: orgSettings.approval_threshold_amount ?? 0,
+        require_manager_approval: orgSettings.require_manager_approval ?? true,
+        require_finance_approval: orgSettings.require_finance_approval ?? true,
+        require_receipts: orgSettings.require_receipts ?? true,
+      })
+    }
+  }, [orgSettings])
+
+  async function handleSaveWorkflow() {
+    if (workflowForm.auto_approve_under_amount < 0 || workflowForm.receipt_required_above_amount < 0 || workflowForm.approval_threshold_amount < 0) {
+      toast.error("Threshold amounts can't be negative.")
+      return
+    }
+    setSavingWorkflow(true)
+    try {
+      await updateOrgSettings(workflowForm)
+      toast.success("Approval workflow settings updated")
+    } catch (err) {
+      console.error("[Settings] workflow update failed:", err)
+      toast.error("Failed to update approval settings. Please try again.")
+    } finally {
+      setSavingWorkflow(false)
+    }
+  }
+
   const [currentPassword, setCurrentPassword] = useState("")
   const [newPassword, setNewPassword] = useState("")
   const [updatingPassword, setUpdatingPassword] = useState(false)
@@ -428,25 +470,81 @@ export default function SettingsPage() {
           <Card className="border-border/60">
             <CardHeader className="pb-4">
               <CardTitle className="font-heading text-base font-bold">Approval Workflow</CardTitle>
-              <CardDescription className="text-xs">Default approval rules for expense requests</CardDescription>
+              <CardDescription className="text-xs">
+                {isAdminOrFinance
+                  ? "Set the thresholds and rules that decide how an expense request gets approved."
+                  : "Your organization's approval rules. Contact an admin or finance user to change these."}
+              </CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-col gap-4">
+            <CardContent className="flex flex-col gap-5">
+              <div className="grid sm:grid-cols-3 gap-4">
+                <div className="flex flex-col gap-2">
+                  <Label className="text-[13px] font-medium">Auto-approve under</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    disabled={!isAdminOrFinance}
+                    value={workflowForm.auto_approve_under_amount}
+                    onChange={(e) => setWorkflowForm({ ...workflowForm, auto_approve_under_amount: e.target.valueAsNumber || 0 })}
+                  />
+                  <p className="text-[11px] text-muted-foreground">Requests below this amount skip approval entirely.</p>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label className="text-[13px] font-medium">Receipt required above</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    disabled={!isAdminOrFinance}
+                    value={workflowForm.receipt_required_above_amount}
+                    onChange={(e) => setWorkflowForm({ ...workflowForm, receipt_required_above_amount: e.target.valueAsNumber || 0 })}
+                  />
+                  <p className="text-[11px] text-muted-foreground">A receipt must be attached above this amount.</p>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label className="text-[13px] font-medium">Finance review above</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    disabled={!isAdminOrFinance}
+                    value={workflowForm.approval_threshold_amount}
+                    onChange={(e) => setWorkflowForm({ ...workflowForm, approval_threshold_amount: e.target.valueAsNumber || 0 })}
+                  />
+                  <p className="text-[11px] text-muted-foreground">Requests at/above this amount always get a finance review.</p>
+                </div>
+              </div>
+
+              <Separator />
+
               <div className="flex flex-col gap-3">
                 {[
-                  { label: "Auto-approve expenses under threshold", description: `Requests under ${formatCurrency(orgSettings?.auto_approve_under_amount || 0, orgSettings?.default_currency || "USD")} are approved automatically`, enabled: true },
-                  { label: "Manager approval required", description: "All requests require direct manager approval", enabled: orgSettings?.require_manager_approval ?? true },
-                  { label: "Finance review for large amounts", description: "Finance team reviews requests above department thresholds", enabled: orgSettings?.require_finance_approval ?? true },
-                  { label: "Receipt requirement", description: `Receipts required for expenses over ${formatCurrency(orgSettings?.receipt_required_above_amount || 0, orgSettings?.default_currency || "USD")}`, enabled: orgSettings?.require_receipts ?? true },
+                  { key: "require_manager_approval" as const, label: "Manager approval required", description: "Requests that don't auto-approve need direct manager sign-off" },
+                  { key: "require_finance_approval" as const, label: "Finance review required", description: "Finance reviews every request that doesn't auto-approve" },
+                  { key: "require_receipts" as const, label: "Receipt requirement", description: "Enforce the receipt threshold set above" },
                 ].map((rule) => (
-                  <div key={rule.label} className="flex items-start justify-between p-4 rounded-xl bg-secondary/40 border border-border/40">
+                  <div key={rule.key} className="flex items-start justify-between p-4 rounded-xl bg-secondary/40 border border-border/40">
                     <div className="flex-1 mr-4">
                       <p className="text-sm font-medium">{rule.label}</p>
                       <p className="text-xs text-muted-foreground mt-0.5">{rule.description}</p>
                     </div>
-                    <Switch checked={rule.enabled} onCheckedChange={() => toast.success("Workflow setting updated")} />
+                    <Switch
+                      checked={workflowForm[rule.key]}
+                      disabled={!isAdminOrFinance}
+                      onCheckedChange={(checked) => setWorkflowForm({ ...workflowForm, [rule.key]: checked })}
+                    />
                   </div>
                 ))}
               </div>
+
+              {isAdminOrFinance && (
+                <div className="flex items-center gap-3">
+                  <Button onClick={handleSaveWorkflow} disabled={savingWorkflow} className="font-semibold shadow-sm shadow-primary/20 w-fit">
+                    <Save className="w-4 h-4 mr-2" /> {savingWorkflow ? "Saving..." : "Save Changes"}
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

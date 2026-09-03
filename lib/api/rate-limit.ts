@@ -67,6 +67,8 @@ const POLICIES: Record<string, WindowSpec> = {
   invitation: { tokens: 20, window: "1 h", windowMs: 60 * 60_000 },
   // Invitation acceptance: 10 per 10 minutes per IP.
   acceptInvitation: { tokens: 10, window: "10 m", windowMs: 10 * 60_000 },
+  // Public demo-lead capture: 8 per 10 minutes per IP.
+  demoLead: { tokens: 8, window: "10 m", windowMs: 10 * 60_000 },
 }
 
 export type RateLimitPolicy = keyof typeof POLICIES
