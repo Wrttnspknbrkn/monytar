@@ -11,12 +11,20 @@ import { PasswordInput } from "@/components/ui/password-input"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
+import { PRODUCTS, type SubscriptionTier } from "@/lib/products"
 
 const steps = [
   { title: "Account Details", description: "Create your personal account" },
   { title: "Organization", description: "Set up your organization" },
+  { title: "Choose Plan", description: "Pick what fits your team" },
   { title: "Get Started", description: "You're all set!" },
 ]
+
+// Enterprise isn't self-serve at signup (no fixed Stripe price — routes to
+// contact sales instead), so only these three are selectable here.
+const selectablePlans = PRODUCTS.filter(
+  (p) => p.interval === "month" && (p.tier === "free" || p.tier === "starter" || p.tier === "professional"),
+)
 
 export default function SignupPage() {
   const router = useRouter()
@@ -30,6 +38,10 @@ export default function SignupPage() {
     orgSize: "",
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [selectedTier, setSelectedTier] = useState<SubscriptionTier>("free")
+  // Whether the signup response left the browser with an authenticated
+  // session (real signup) or no server session applies (demo mode).
+  const [readyForDashboard, setReadyForDashboard] = useState(false)
 
   function validateStep(currentStep: number): boolean {
     const newErrors: Record<string, string> = {}
@@ -51,48 +63,71 @@ export default function SignupPage() {
   }
 
   async function handleNext() {
-    if (step < 2) {
-      if (!validateStep(step)) return
-      if (step === 1) {
-        // Submit registration
-        setLoading(true)
-        try {
-          const res = await fetch("/api/auth/signup", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              fullName: formData.fullName,
-              email: formData.email,
-              password: formData.password,
-              orgName: formData.orgName,
-              orgSize: formData.orgSize,
-            }),
-          })
-
-          const data = await res.json().catch(() => ({}))
-
-          if (res.ok && data.demo) {
-            toast.success("Account created! (Demo Mode)")
-            setStep(2)
-          } else if (res.ok) {
-            toast.success("Account created!")
-            setStep(2)
-          } else {
-            toast.error(data.error || "Registration failed")
-          }
-        } catch {
-          // Network error - demo mode fallback
-          toast.success("Account created! (Demo Mode)")
-          setStep(2)
-        } finally {
-          setLoading(false)
-        }
-      } else {
+    if (step < steps.length - 1) {
+      if (step === 0 || step === 1) {
+        if (!validateStep(step)) return
         setStep(step + 1)
+        return
+      }
+
+      // step === 2: plan chosen — submit registration with the selected tier
+      setLoading(true)
+      try {
+        const res = await fetch("/api/auth/signup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fullName: formData.fullName,
+            email: formData.email,
+            password: formData.password,
+            orgName: formData.orgName,
+            orgSize: formData.orgSize,
+            tier: selectedTier,
+          }),
+        })
+
+        const data = await res.json().catch(() => ({}))
+
+        if (res.ok && data.demo) {
+          toast.success("Account created! (Demo Mode)")
+          setReadyForDashboard(true)
+          setStep(3)
+        } else if (res.ok) {
+          toast.success("Account created!")
+          if (data.requiresCheckout && data.organization?.id) {
+            const productId = selectedTier === "starter" ? "starter-monthly" : "professional-monthly"
+            router.push(`/checkout?plan=${productId}&orgId=${data.organization.id}`)
+            return
+          }
+          if (data.signedIn === false) {
+            // Account + org were created, but the post-signup sign-in
+            // failed server-side (see console for the logged cause) — send
+            // them to log in manually instead of a dead-end dashboard.
+            console.error("[signup] account created but no session was established; sending to /login")
+            toast.error("Account created. Please sign in to continue.")
+          } else {
+            setReadyForDashboard(true)
+          }
+          setStep(3)
+        } else {
+          toast.error(data.error || "Registration failed")
+        }
+      } catch (err) {
+        console.error("[signup] request failed:", err)
+        // Network error - demo mode fallback
+        toast.success("Account created! (Demo Mode)")
+        setReadyForDashboard(true)
+        setStep(3)
+      } finally {
+        setLoading(false)
       }
     } else {
-      // After signup completion, redirect to onboarding for real accounts
-      router.push("/onboarding")
+      try {
+        router.push(readyForDashboard ? "/dashboard" : "/login")
+      } catch (err) {
+        console.error("[signup] navigation failed:", err)
+        toast.error("Couldn't open the dashboard. Please try navigating manually.")
+      }
     }
   }
 
@@ -292,6 +327,54 @@ export default function SignupPage() {
           )}
 
           {step === 2 && (
+            <div className="flex flex-col gap-3">
+              {selectablePlans.map((plan) => {
+                const isSelected = selectedTier === plan.tier
+                return (
+                  <button
+                    key={plan.id}
+                    type="button"
+                    onClick={() => setSelectedTier(plan.tier)}
+                    className={cn(
+                      "text-left rounded-xl border p-4 transition-all",
+                      isSelected ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:border-primary/40",
+                    )}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="font-heading font-bold text-sm">{plan.name}</span>
+                        {plan.popular && (
+                          <span className="text-[10px] font-semibold uppercase tracking-wide text-primary bg-primary/10 rounded-full px-2 py-0.5">
+                            Popular
+                          </span>
+                        )}
+                      </div>
+                      <div
+                        className={cn(
+                          "flex items-center justify-center w-5 h-5 rounded-full border-2 shrink-0",
+                          isSelected ? "border-primary bg-primary" : "border-border",
+                        )}
+                      >
+                        {isSelected && <Check className="w-3 h-3 text-primary-foreground" />}
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">{plan.description}</p>
+                    <p className="text-sm font-semibold mt-2">
+                      {plan.priceInCents === 0 ? "Free" : `$${(plan.priceInCents / 100).toFixed(0)}/mo`}
+                      <span className="text-xs font-normal text-muted-foreground"> · up to {plan.maxUsers} users</span>
+                    </p>
+                  </button>
+                )
+              })}
+              {selectedTier !== "free" && (
+                <p className="text-xs text-muted-foreground text-center">
+                  14-day free trial, no card required. You'll complete payment setup next.
+                </p>
+              )}
+            </div>
+          )}
+
+          {step === 3 && (
             <div className="text-center py-8">
               <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-emerald-100 dark:bg-emerald-900/30 mx-auto mb-5">
                 <Check className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
@@ -308,7 +391,7 @@ export default function SignupPage() {
           )}
 
           <div className="flex items-center gap-3 mt-6">
-            {step > 0 && step < 2 && (
+            {step > 0 && step < steps.length - 1 && (
               <Button variant="outline" onClick={() => setStep(step - 1)} className="flex-1 h-10 bg-transparent font-semibold">
                 <ArrowLeft className="w-4 h-4 mr-2" /> Back
               </Button>
@@ -318,7 +401,13 @@ export default function SignupPage() {
               disabled={loading}
               className="flex-1 h-10 font-semibold shadow-sm shadow-primary/25 hover:shadow-md hover:shadow-primary/30 transition-all"
             >
-              {loading ? "Creating account..." : step === 2 ? "Go to Dashboard" : "Continue"}{" "}
+              {loading
+                ? "Creating account..."
+                : step === steps.length - 1
+                  ? "Go to Dashboard"
+                  : step === 2 && selectedTier !== "free"
+                    ? "Continue to Payment"
+                    : "Continue"}{" "}
               {!loading && <ArrowRight className="w-4 h-4 ml-2" />}
             </Button>
           </div>

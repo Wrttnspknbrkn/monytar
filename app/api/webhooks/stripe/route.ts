@@ -79,14 +79,25 @@ export async function POST(request: NextRequest) {
           const subscription = await stripe.subscriptions.retrieve(session.subscription as string)
           const tier = tierFromSubscription(subscription)
 
-          // Find user by email and update their organization's subscription
-          const { data: user, error: userError } = await supabase
-            .from("users")
-            .select("organization_id")
-            .eq("email", session.customer_email)
-            .single()
+          // Prefer the organization_id embedded at checkout creation time
+          // (see createCheckoutSession in app/actions/stripe.ts) — reliable
+          // regardless of timing or whether the email uniquely resolves to
+          // one org. Fall back to the email lookup for checkout sessions
+          // created before this existed (or without an org context, e.g.
+          // the standalone /pricing -> /checkout upgrade flow).
+          const orgIdFromMetadata = subscription.metadata?.organization_id
+          let organizationId: string | null = orgIdFromMetadata || null
 
-          if (user && !userError) {
+          if (!organizationId) {
+            const { data: user, error: userError } = await supabase
+              .from("users")
+              .select("organization_id")
+              .eq("email", session.customer_email)
+              .single()
+            if (user && !userError) organizationId = user.organization_id
+          }
+
+          if (organizationId) {
             await supabase
               .from("organizations")
               .update({
@@ -96,9 +107,11 @@ export async function POST(request: NextRequest) {
                 stripe_subscription_id: session.subscription as string,
                 updated_at: new Date().toISOString(),
               })
-              .eq("id", user.organization_id)
+              .eq("id", organizationId)
 
-            console.log(`[Webhook] Subscription activated for org ${user.organization_id}: ${tier}`)
+            console.log(`[Webhook] Subscription activated for org ${organizationId}: ${tier}`)
+          } else {
+            console.error(`[Webhook] Could not resolve an organization for checkout session ${session.id} (customer_email: ${session.customer_email})`)
           }
         }
 

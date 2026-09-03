@@ -62,11 +62,41 @@ export async function openBillingPortal() {
 /**
  * Creates a Stripe Checkout session for subscription purchase.
  * Price is always validated server-side to prevent tampering.
+ *
+ * `organizationId`, when provided, is embedded in the subscription's
+ * metadata so the webhook (checkout.session.completed) can attribute the
+ * subscription to the correct org directly, instead of the fragile
+ * fallback of matching by `session.customer_email` against the `users`
+ * table (which breaks for a brand-new signup racing the webhook, or for
+ * any user whose email doesn't uniquely resolve to one org). The caller
+ * must be signed in and belong to that org — checked below — so a
+ * logged-in user can't attach a subscription to someone else's org.
  */
-export async function createCheckoutSession(productId: string, userEmail?: string) {
+export async function createCheckoutSession(productId: string, userEmail?: string, organizationId?: string) {
   // Validate Stripe configuration
   if (!isStripeConfigured()) {
     return { error: "Stripe is not configured. Please add STRIPE_SECRET_KEY and NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY to your environment variables." }
+  }
+
+  if (organizationId) {
+    if (!isSupabaseConfigured()) {
+      return { error: "Checkout is unavailable in demo mode." }
+    }
+    const supabase = await getSupabaseServerClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) return { error: "You must be signed in." }
+
+    const { data: dbUser } = await supabase
+      .from("users")
+      .select("organization_id")
+      .eq("id", user.id)
+      .single()
+
+    if (!dbUser || dbUser.organization_id !== organizationId) {
+      return { error: "You don't have access to that organization." }
+    }
   }
 
   // Validate product exists and get server-defined price
@@ -122,6 +152,7 @@ export async function createCheckoutSession(productId: string, userEmail?: strin
         metadata: {
           product_id: product.id,
           tier: product.name.toLowerCase(),
+          ...(organizationId ? { organization_id: organizationId } : {}),
         },
       },
       // Only ask for a card if Stripe actually needs one (i.e. not during the trial),

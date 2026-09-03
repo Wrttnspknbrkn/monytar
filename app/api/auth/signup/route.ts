@@ -3,6 +3,8 @@ import { signupSchema } from "@/lib/validations"
 import { isSupabaseConfigured, getSupabaseUrl, getSupabaseServiceKey } from "@/lib/supabase/config"
 import { createClient } from "@supabase/supabase-js"
 import { enforceRateLimit, getClientIp } from "@/lib/api/rate-limit"
+import { getSupabaseServerClient } from "@/lib/supabase/server"
+import { getTierLimits } from "@/lib/products"
 
 // Use service role for admin operations
 function getAdminClient() {
@@ -29,7 +31,9 @@ export async function POST(request: Request) {
       )
     }
 
-    const { fullName, email, password, orgName } = parsed.data
+    const { fullName, email, password, orgName, tier } = parsed.data
+    const isPaidTier = tier !== "free"
+    const { maxUsers } = getTierLimits(tier)
 
     if (!isSupabaseConfigured()) {
       return NextResponse.json({ success: true, demo: true, email })
@@ -66,15 +70,20 @@ export async function POST(request: Request) {
       .replace(/(^-|-$)/g, "")
       + "-" + Date.now().toString(36)
 
-    // Create organization
+    // Create organization. Paid tiers land here as "trialing", matching the
+    // 14-day no-card-required trial already configured in
+    // createCheckoutSession (app/actions/stripe.ts) — the org gets that
+    // tier's limits immediately, and the Stripe webhook
+    // (checkout.session.completed) flips subscription_status to "active"
+    // once the trial converts or payment is collected.
     const { data: org, error: orgError } = await supabase
       .from("organizations")
       .insert({
         name: orgName,
         slug,
-        subscription_tier: "free",
-        subscription_status: "active",
-        max_users: 5,
+        subscription_tier: tier,
+        subscription_status: isPaidTier ? "trialing" : "active",
+        max_users: maxUsers,
       })
       .select()
       .single()
@@ -130,10 +139,26 @@ export async function POST(request: Request) {
         is_active: true,
       })
 
-    return NextResponse.json({ 
-      success: true, 
+    // Establish a browser session so the client is authenticated once signup
+    // completes — admin.createUser() above only creates the account, it does
+    // not sign the browser in.
+    const sessionClient = await getSupabaseServerClient()
+    const { error: signInError } = await sessionClient.auth.signInWithPassword({ email, password })
+
+    if (signInError) {
+      console.error("[v0] post-signup sign-in failed:", JSON.stringify({ message: signInError.message, code: signInError.code, status: signInError.status }))
+    }
+
+    return NextResponse.json({
+      success: true,
       user: authData.user,
       organization: org,
+      signedIn: !signInError,
+      tier,
+      // Paid tiers still need to complete Stripe Checkout — the account and
+      // org exist either way, but the client should route to checkout next
+      // instead of straight to the dashboard.
+      requiresCheckout: isPaidTier,
     })
   } catch (error) {
     console.error("[v0] Signup error:", error)
