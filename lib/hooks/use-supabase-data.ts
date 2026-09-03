@@ -276,6 +276,17 @@ export function useDashboardStats(orgId: string | undefined, userId: string | un
 }
 
 // Mutation helpers
+// Race-safe request number, generated atomically server-side (see
+// next_request_number() in supabase/migrations). The client-side fallback
+// used elsewhere for demo mode computes from whatever requests the current
+// user's RLS view happens to include, which can collide across users/roles.
+export async function nextRequestNumber(orgId: string): Promise<string> {
+  const supabase = getSupabaseBrowserClient()
+  const { data, error } = await supabase.rpc("next_request_number", { org: orgId })
+  if (error) throw error
+  return data as string
+}
+
 export async function createExpenseRequest(data: Partial<ExpenseRequest>) {
   const supabase = getSupabaseBrowserClient()
   const { data: result, error } = await supabase
@@ -438,8 +449,96 @@ export async function createNotification(data: Partial<Notification>) {
   const { error } = await supabase
     .from("notifications")
     .insert(data)
-  
+
   if (error) throw error
-  
+
   mutate((key: string) => key?.startsWith("notifications:"))
+}
+
+export async function createDepartment(data: Partial<Department>) {
+  const supabase = getSupabaseBrowserClient()
+  const { data: result, error } = await supabase
+    .from("departments")
+    .insert(data)
+    .select()
+    .single()
+
+  if (error) throw error
+
+  mutate((key: string) => key?.startsWith("departments:"))
+  return result
+}
+
+export async function updateDepartmentRecord(id: string, updates: Partial<Department>) {
+  const supabase = getSupabaseBrowserClient()
+  const { data, error } = await supabase
+    .from("departments")
+    .update(updates)
+    .eq("id", id)
+    .select()
+    .single()
+
+  if (error) throw error
+
+  mutate((key: string) => key?.startsWith("departments:"))
+  return data
+}
+
+export async function createVendor(data: Partial<Vendor>) {
+  const supabase = getSupabaseBrowserClient()
+  const { data: result, error } = await supabase
+    .from("vendors")
+    .insert(data)
+    .select()
+    .single()
+
+  if (error) throw error
+
+  mutate((key: string) => key?.startsWith("vendors:"))
+  return result
+}
+
+export async function updateVendorRecord(id: string, updates: Partial<Vendor>) {
+  const supabase = getSupabaseBrowserClient()
+  const { data, error } = await supabase
+    .from("vendors")
+    .update(updates)
+    .eq("id", id)
+    .select()
+    .single()
+
+  if (error) throw error
+
+  mutate((key: string) => key?.startsWith("vendors:"))
+  return data
+}
+
+export async function updateUserRecord(id: string, updates: Partial<User>) {
+  const supabase = getSupabaseBrowserClient()
+  const { data, error } = await supabase
+    .from("users")
+    .update(updates)
+    .eq("id", id)
+    .select()
+    .single()
+
+  if (error) throw error
+
+  mutate((key: string) => key?.startsWith("users:") || key === "current-user")
+  return data
+}
+
+export async function updateOrganizationSettingsRecord(orgId: string, updates: Partial<OrganizationSettings>) {
+  const supabase = getSupabaseBrowserClient()
+  const { data, error } = await supabase
+    .from("organization_settings")
+    .update(updates)
+    .eq("organization_id", orgId)
+    .select()
+    .single()
+
+  if (error) throw error
+
+  mutate(`organization_settings:${orgId}`)
+  return data
 }

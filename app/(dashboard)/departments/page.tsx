@@ -27,17 +27,27 @@ export default function DepartmentsPage() {
   const canEdit = user?.role === "manager" || user?.role === "finance" || user?.role === "admin"
   const managers = users.filter((u) => u.role === "manager" || u.role === "admin")
 
-  function handleAdd() {
+  const [saving, setSaving] = useState(false)
+
+  async function handleAdd() {
     if (!form.name.trim() || !form.budget_amount) { toast.error("Name and budget are required"); return }
+    setSaving(true)
     const now = new Date().toISOString()
-    addDepartment({
-      id: generateId(), organization_id: organization?.id || user?.organization_id || "", name: form.name, description: form.description || undefined,
-      manager_id: form.manager_id || undefined, budget_amount: Number.parseFloat(form.budget_amount), budget_period: form.budget_period,
-      created_at: now, updated_at: now,
-    })
-    toast.success("Department created")
-    setForm({ name: "", budget_amount: "", budget_period: "monthly", description: "", manager_id: "" })
-    setDialogOpen(false)
+    try {
+      await addDepartment({
+        id: generateId(), organization_id: organization?.id || user?.organization_id || "", name: form.name, description: form.description || undefined,
+        manager_id: form.manager_id || undefined, budget_amount: Number.parseFloat(form.budget_amount), budget_period: form.budget_period,
+        created_at: now, updated_at: now,
+      })
+      toast.success("Department created")
+      setForm({ name: "", budget_amount: "", budget_period: "monthly", description: "", manager_id: "" })
+      setDialogOpen(false)
+    } catch (err) {
+      console.error("[Departments] create failed:", err)
+      toast.error("Failed to create department. Please try again.")
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -80,7 +90,7 @@ export default function DepartmentsPage() {
                   </Select>
                 </div>
               </div>
-              <DialogFooter><Button onClick={handleAdd} className="font-semibold shadow-sm shadow-primary/20">Create Department</Button></DialogFooter>
+              <DialogFooter><Button onClick={handleAdd} disabled={saving} className="font-semibold shadow-sm shadow-primary/20">{saving ? "Creating..." : "Create Department"}</Button></DialogFooter>
             </DialogContent>
           </Dialog>
         )}

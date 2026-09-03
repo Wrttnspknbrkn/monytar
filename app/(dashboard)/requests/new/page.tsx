@@ -7,6 +7,7 @@ import { useData, useAuth } from "@/lib/providers"
 import { generateId } from "@/lib/utils"
 import { isSupabaseConfigured } from "@/lib/supabase/config"
 import { uploadReceipts } from "@/lib/receipts/client"
+import { nextRequestNumber } from "@/lib/hooks/use-supabase-data"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -21,7 +22,7 @@ import Link from "next/link"
 export default function NewRequestPage() {
   const router = useRouter()
   const { dbUser } = useAuth()
-  const { currentUser, vendors, addExpenseRequest, getNextRequestNumber, organization } = useData()
+  const { currentUser, vendors, createRequest, getNextRequestNumber, organization, isDemo } = useData()
   const user = dbUser || currentUser
   const [amount, setAmount] = useState("")
   const [purpose, setPurpose] = useState("")
@@ -42,44 +43,56 @@ export default function NewRequestPage() {
     }
     setSubmitting(true)
     const now = new Date().toISOString()
-    const id = generateId()
-    addExpenseRequest({
-      id,
-      organization_id: organization?.id || user.organization_id,
-      request_number: getNextRequestNumber(),
-      employee_id: user.id,
-      department_id: user.department_id,
-      vendor_id: vendorId || undefined,
-      amount: Number.parseFloat(amount),
-      currency: "USD",
-      purpose,
-      category,
-      status: asDraft ? "draft" : "pending",
-      priority,
-      payment_status: "unpaid",
-      expense_date: expenseDate ? `${expenseDate}T00:00:00Z` : undefined,
-      due_date: dueDate || undefined,
-      submitted_at: asDraft ? undefined : now,
-      finance_notes: notes || undefined,
-      metadata: { receipt_count: files.length },
-      created_at: now,
-      updated_at: now,
-    })
 
-    // Upload receipts to storage when a real backend is connected; otherwise
-    // the validated files are simply captured for the demo flow.
-    if (files.length > 0 && isSupabaseConfigured()) {
-      try {
-        await uploadReceipts(id, files)
-      } catch (err) {
-        console.error("[Receipts] upload failed:", err)
-        toast.warning("Request saved, but some receipts failed to upload. You can re-add them from the request page.")
+    try {
+      const orgId = organization?.id || user.organization_id
+      // Real orgs get a race-safe number from the server (see
+      // next_request_number() migration) — the client-side fallback used in
+      // demo mode computes from whatever this user's RLS view happens to
+      // include, which can collide across users/roles.
+      const requestNumber = isDemo ? getNextRequestNumber() : await nextRequestNumber(orgId)
+      const created = await createRequest({
+        id: generateId(),
+        organization_id: orgId,
+        request_number: requestNumber,
+        employee_id: user.id,
+        department_id: user.department_id,
+        vendor_id: vendorId || undefined,
+        amount: Number.parseFloat(amount),
+        currency: "USD",
+        purpose,
+        category,
+        status: asDraft ? "draft" : "pending",
+        priority,
+        payment_status: "unpaid",
+        expense_date: expenseDate ? `${expenseDate}T00:00:00Z` : undefined,
+        due_date: dueDate || undefined,
+        submitted_at: asDraft ? undefined : now,
+        finance_notes: notes || undefined,
+        metadata: { receipt_count: files.length },
+        created_at: now,
+        updated_at: now,
+      })
+
+      // Upload receipts to storage when a real backend is connected; otherwise
+      // the validated files are simply captured for the demo flow.
+      if (files.length > 0 && isSupabaseConfigured()) {
+        try {
+          await uploadReceipts(created.id, files)
+        } catch (err) {
+          console.error("[Receipts] upload failed:", err)
+          toast.warning("Request saved, but some receipts failed to upload. You can re-add them from the request page.")
+        }
       }
-    }
 
-    setSubmitting(false)
-    toast.success(asDraft ? "Saved as draft" : "Request submitted for approval")
-    router.push("/requests")
+      toast.success(asDraft ? "Saved as draft" : "Request submitted for approval")
+      router.push("/requests")
+    } catch (err) {
+      console.error("[Requests] create failed:", err)
+      toast.error("Failed to save the request. Please try again.")
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (

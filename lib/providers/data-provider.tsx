@@ -18,6 +18,12 @@ import {
   markNotificationAsRead,
   createExpenseRequest,
   updateExpenseRequest,
+  createDepartment,
+  updateDepartmentRecord,
+  createVendor,
+  updateVendorRecord,
+  updateUserRecord,
+  updateOrganizationSettingsRecord,
 } from "@/lib/hooks/use-supabase-data"
 import {
   useExpenseRequestsRealtime,
@@ -81,13 +87,13 @@ interface DataContextValue {
   createRequest: (data: Partial<ExpenseRequest>) => Promise<ExpenseRequest>
   updateRequest: (id: string, updates: Partial<ExpenseRequest>) => Promise<ExpenseRequest>
   addExpenseRequest: (data: ExpenseRequest) => void
-  addDepartment: (data: Department) => void
-  updateDepartment: (id: string, updates: Partial<Department>) => void
-  addVendor: (data: Vendor) => void
-  updateVendor: (id: string, updates: Partial<Vendor>) => void
+  addDepartment: (data: Partial<Department>) => Promise<Department | undefined>
+  updateDepartment: (id: string, updates: Partial<Department>) => Promise<Department | undefined>
+  addVendor: (data: Partial<Vendor>) => Promise<Vendor | undefined>
+  updateVendor: (id: string, updates: Partial<Vendor>) => Promise<Vendor | undefined>
   addUser: (data: User) => void
-  updateUser: (id: string, updates: Partial<User>) => void
-  updateOrgSettings: (updates: Partial<OrganizationSettings>) => void
+  updateUser: (id: string, updates: Partial<User>) => Promise<User | undefined>
+  updateOrgSettings: (updates: Partial<OrganizationSettings>) => Promise<OrganizationSettings | undefined>
   
   // Helpers
   getUserById: (id: string) => User | undefined
@@ -214,10 +220,14 @@ export function DataProvider({ children }: DataProviderProps) {
   
   const handleCreateRequest = useCallback(async (data: Partial<ExpenseRequest>) => {
     if (isDemo) {
-      console.warn("Demo mode: create request simulated")
-      return data as ExpenseRequest
+      const demoRequest = data as ExpenseRequest
+      mockRequests.push(demoRequest)
+      return demoRequest
     }
-    return await createExpenseRequest(data)
+    // The caller may pass a client-generated placeholder id (e.g. for demo
+    // mode); strip it so Postgres assigns a real UUID via the column default.
+    const { id: _clientId, ...payload } = data
+    return await createExpenseRequest(payload)
   }, [isDemo])
   
   const handleUpdateRequest = useCallback(async (id: string, updates: Partial<ExpenseRequest>) => {
@@ -321,63 +331,84 @@ export function DataProvider({ children }: DataProviderProps) {
     // In production, this would be handled by createRequest
   }, [isDemo])
   
-  const addDepartment = useCallback((data: Department) => {
+  const addDepartment = useCallback(async (data: Partial<Department>) => {
     if (isDemo) {
-      mockDepartments.push(data)
+      const demoDept = data as Department
+      mockDepartments.push(demoDept)
+      return demoDept
     }
-    // TODO: Add Supabase insert
+    // Strip any client-generated placeholder id (not a valid UUID) so
+    // Postgres assigns a real one via the column default.
+    const { id: _clientId, ...payload } = data
+    return await createDepartment(payload)
   }, [isDemo])
-  
-  const updateDepartment = useCallback((id: string, updates: Partial<Department>) => {
+
+  const updateDepartment = useCallback(async (id: string, updates: Partial<Department>) => {
     if (isDemo) {
       const idx = mockDepartments.findIndex(d => d.id === id)
       if (idx !== -1) {
         mockDepartments[idx] = { ...mockDepartments[idx], ...updates }
+        return mockDepartments[idx]
       }
+      return undefined
     }
-    // TODO: Add Supabase update
+    return await updateDepartmentRecord(id, updates)
   }, [isDemo])
-  
-  const addVendor = useCallback((data: Vendor) => {
+
+  const addVendor = useCallback(async (data: Partial<Vendor>) => {
     if (isDemo) {
-      mockVendors.push(data)
+      const demoVendor = data as Vendor
+      mockVendors.push(demoVendor)
+      return demoVendor
     }
-    // TODO: Add Supabase insert
+    // Strip any client-generated placeholder id (not a valid UUID) so
+    // Postgres assigns a real one via the column default.
+    const { id: _clientId, ...payload } = data
+    return await createVendor(payload)
   }, [isDemo])
-  
-  const updateVendor = useCallback((id: string, updates: Partial<Vendor>) => {
+
+  const updateVendor = useCallback(async (id: string, updates: Partial<Vendor>) => {
     if (isDemo) {
       const idx = mockVendors.findIndex(v => v.id === id)
       if (idx !== -1) {
         mockVendors[idx] = { ...mockVendors[idx], ...updates }
+        return mockVendors[idx]
       }
+      return undefined
     }
-    // TODO: Add Supabase update
+    return await updateVendorRecord(id, updates)
   }, [isDemo])
-  
+
+  // Creating a real, login-capable user requires a server-side admin call
+  // (see /api/invitations) since it must also create a Supabase Auth
+  // account — that can't be done from the client. This stays demo-only;
+  // the Users page calls the invitations API directly for real orgs.
   const addUser = useCallback((data: User) => {
     if (isDemo) {
       mockUsers.push(data)
     }
-    // TODO: Add Supabase insert
   }, [isDemo])
-  
-  const updateUser = useCallback((id: string, updates: Partial<User>) => {
+
+  const updateUser = useCallback(async (id: string, updates: Partial<User>) => {
     if (isDemo) {
       const idx = mockUsers.findIndex(u => u.id === id)
       if (idx !== -1) {
         mockUsers[idx] = { ...mockUsers[idx], ...updates }
+        return mockUsers[idx]
       }
+      return undefined
     }
-    // TODO: Add Supabase update
+    return await updateUserRecord(id, updates)
   }, [isDemo])
-  
-  const updateOrgSettings = useCallback((updates: Partial<OrganizationSettings>) => {
+
+  const updateOrgSettings = useCallback(async (updates: Partial<OrganizationSettings>) => {
     if (isDemo && mockSettings) {
       Object.assign(mockSettings, updates)
+      return mockSettings as unknown as OrganizationSettings
     }
-    // TODO: Add Supabase update
-  }, [isDemo])
+    if (!organization?.id) return undefined
+    return await updateOrganizationSettingsRecord(organization.id, updates)
+  }, [isDemo, organization])
   
   const value: DataContextValue = {
     isLoading: !isDemo && userLoading,

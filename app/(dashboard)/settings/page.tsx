@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { User, Building2, Bell, Palette, Save, Check, Moon, Sun, Monitor, DollarSign, CreditCard, ArrowRight, ArrowUpRight, Loader2 } from "lucide-react"
 import { useData, useAuth } from "@/lib/providers"
 import { getRoleLabel, formatCurrency, cn } from "@/lib/utils"
@@ -19,6 +19,8 @@ import { useTheme } from "next-themes"
 import Link from "next/link"
 import { PRODUCTS } from "@/lib/products"
 import { openBillingPortal } from "@/app/actions/stripe"
+import { getSupabaseBrowserClient } from "@/lib/supabase/client"
+import { isSupabaseConfigured } from "@/lib/supabase/config"
 
 const SUPPORTED_CURRENCIES = [
   { code: "USD", label: "US Dollar", symbol: "$" },
@@ -50,6 +52,16 @@ export default function SettingsPage() {
     full_name: user?.full_name || "",
     email: user?.email || "",
   })
+
+  // `user` loads asynchronously (SWR), so it's frequently still null on the
+  // render that initializes this state above — without this effect the
+  // fields stay permanently blank even once the user's data arrives.
+  useEffect(() => {
+    if (user) {
+      setProfileForm({ full_name: user.full_name, email: user.email })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id])
   const [saved, setSaved] = useState(false)
   const [currencySaved, setCurrencySaved] = useState(false)
   const [notifSettings, setNotifSettings] = useState({
@@ -60,19 +72,107 @@ export default function SettingsPage() {
     digest_frequency: "daily",
   })
 
-  function handleSaveProfile() {
+  const [savingProfile, setSavingProfile] = useState(false)
+
+  async function handleSaveProfile() {
     if (!user) return
-    updateUser(user.id, { full_name: profileForm.full_name, email: profileForm.email })
-    setSaved(true)
-    toast.success("Profile updated successfully")
-    setTimeout(() => setSaved(false), 2000)
+    setSavingProfile(true)
+    try {
+      await updateUser(user.id, { full_name: profileForm.full_name, email: profileForm.email })
+      setSaved(true)
+      toast.success("Profile updated successfully")
+      setTimeout(() => setSaved(false), 2000)
+    } catch (err) {
+      console.error("[Settings] profile update failed:", err)
+      toast.error("Failed to update profile. Please try again.")
+    } finally {
+      setSavingProfile(false)
+    }
   }
 
-  function handleCurrencyChange(code: string) {
-    updateOrgSettings({ default_currency: code })
-    setCurrencySaved(true)
-    toast.success(`Currency changed to ${code}`)
-    setTimeout(() => setCurrencySaved(false), 2000)
+  async function handleCurrencyChange(code: string) {
+    try {
+      await updateOrgSettings({ default_currency: code })
+      setCurrencySaved(true)
+      toast.success(`Currency changed to ${code}`)
+      setTimeout(() => setCurrencySaved(false), 2000)
+    } catch (err) {
+      console.error("[Settings] currency update failed:", err)
+      toast.error("Failed to update currency. Please try again.")
+    }
+  }
+
+  const [currentPassword, setCurrentPassword] = useState("")
+  const [newPassword, setNewPassword] = useState("")
+  const [updatingPassword, setUpdatingPassword] = useState(false)
+  // This project has Supabase's "secure password change" setting on, which
+  // requires a freshly-issued reauthentication code (emailed one-time code,
+  // not just re-entering the current password) before updateUser({password})
+  // will succeed — confirmed live via the API's `current_password_required`
+  // error. So this is a two-step flow: request a code, then confirm it.
+  const [awaitingReauthCode, setAwaitingReauthCode] = useState(false)
+  const [reauthCode, setReauthCode] = useState("")
+
+  async function handleRequestPasswordChange() {
+    if (!isSupabaseConfigured()) {
+      toast.error("Password changes are not available in demo mode.")
+      return
+    }
+    if (!user?.email) return
+    if (!currentPassword) {
+      toast.error("Enter your current password.")
+      return
+    }
+    if (newPassword.length < 8) {
+      toast.error("New password must be at least 8 characters.")
+      return
+    }
+    setUpdatingPassword(true)
+    try {
+      const supabase = getSupabaseBrowserClient()
+      // Re-verify the current password before requesting a reauth code, so
+      // an open/hijacked session can't trigger this on the real owner.
+      const { error: verifyError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: currentPassword,
+      })
+      if (verifyError) {
+        toast.error("Current password is incorrect.")
+        return
+      }
+      const { error: reauthError } = await supabase.auth.reauthenticate()
+      if (reauthError) throw reauthError
+      setAwaitingReauthCode(true)
+      toast.success("Check your email for a confirmation code.")
+    } catch (err) {
+      console.error("[Settings] password reauth request failed:", err)
+      toast.error("Failed to start the password change. Please try again.")
+    } finally {
+      setUpdatingPassword(false)
+    }
+  }
+
+  async function handleConfirmPasswordChange() {
+    if (!reauthCode) {
+      toast.error("Enter the code from your email.")
+      return
+    }
+    setUpdatingPassword(true)
+    try {
+      const supabase = getSupabaseBrowserClient()
+      const { error: updateError } = await supabase.auth.updateUser({ password: newPassword, nonce: reauthCode })
+      if (updateError) throw updateError
+      toast.success("Password updated successfully")
+      setCurrentPassword("")
+      setNewPassword("")
+      setReauthCode("")
+      setAwaitingReauthCode(false)
+    } catch (err) {
+      console.error("[Settings] password update failed:", err)
+      toast.error("That code didn't work. Please try again.")
+    } finally {
+      setUpdatingPassword(false)
+    }
   }
 
   const [cancelLoading, setCancelLoading] = useState(false)
@@ -189,8 +289,8 @@ export default function SettingsPage() {
               </div>
 
               <div className="flex items-center gap-3">
-                <Button onClick={handleSaveProfile} className="font-semibold shadow-sm shadow-primary/20">
-                  {saved ? <><Check className="w-4 h-4 mr-2" /> Saved</> : <><Save className="w-4 h-4 mr-2" /> Save Changes</>}
+                <Button onClick={handleSaveProfile} disabled={savingProfile} className="font-semibold shadow-sm shadow-primary/20">
+                  {saved ? <><Check className="w-4 h-4 mr-2" /> Saved</> : <><Save className="w-4 h-4 mr-2" /> {savingProfile ? "Saving..." : "Save Changes"}</>}
                 </Button>
               </div>
             </CardContent>
@@ -202,19 +302,43 @@ export default function SettingsPage() {
               <CardDescription className="text-xs">Manage your password and security settings</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div className="flex flex-col gap-2">
+              {!awaitingReauthCode ? (
+                <>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-2">
                       <Label className="text-[13px] font-medium">Current Password</Label>
-                      <PasswordInput placeholder="Enter current password" />
+                      <PasswordInput placeholder="Enter current password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} />
                     </div>
                     <div className="flex flex-col gap-2">
                       <Label className="text-[13px] font-medium">New Password</Label>
-                      <PasswordInput placeholder="Enter new password" />
-                </div>
-              </div>
-              <Button variant="outline" className="w-fit bg-transparent font-semibold" onClick={() => toast.success("Password updated successfully")}>
-                Update Password
-              </Button>
+                      <PasswordInput placeholder="Enter new password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+                    </div>
+                  </div>
+                  <Button variant="outline" disabled={updatingPassword} className="w-fit bg-transparent font-semibold" onClick={handleRequestPasswordChange}>
+                    {updatingPassword ? "Sending code..." : "Update Password"}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <div className="flex flex-col gap-2 max-w-xs">
+                    <Label className="text-[13px] font-medium">Confirmation Code</Label>
+                    <p className="text-xs text-muted-foreground">Enter the code we just emailed you to confirm the change.</p>
+                    <Input placeholder="123456" value={reauthCode} onChange={(e) => setReauthCode(e.target.value)} />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Button variant="outline" disabled={updatingPassword} className="w-fit bg-transparent font-semibold" onClick={handleConfirmPasswordChange}>
+                      {updatingPassword ? "Confirming..." : "Confirm New Password"}
+                    </Button>
+                    <button
+                      type="button"
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                      onClick={() => { setAwaitingReauthCode(false); setReauthCode("") }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
