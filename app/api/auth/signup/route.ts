@@ -51,6 +51,7 @@ export async function POST(request: Request) {
     })
 
     if (authError) {
+      console.error("[v0] auth user creation failed:", JSON.stringify({ message: authError.message, code: authError.code, status: authError.status }))
       return NextResponse.json({ error: authError.message }, { status: 400 })
     }
 
@@ -79,6 +80,10 @@ export async function POST(request: Request) {
       .single()
 
     if (orgError) {
+<<<<<<< HEAD
+=======
+      console.error("[v0] org insert failed:", JSON.stringify({ message: orgError.message, code: orgError.code, details: orgError.details, hint: orgError.hint }))
+>>>>>>> cba3825fbff250fbcd081e686d2b8772435244a7
       // Clean up: delete the auth user if org creation fails
       await supabase.auth.admin.deleteUser(authData.user.id)
       return NextResponse.json({ error: "Failed to create organization" }, { status: 500 })
@@ -110,6 +115,7 @@ export async function POST(request: Request) {
       })
 
     if (userError) {
+      console.error("[v0] user profile insert failed:", JSON.stringify({ message: userError.message, code: userError.code, details: userError.details, hint: userError.hint }))
       // Clean up
       await supabase.from("organizations").delete().eq("id", org.id)
       await supabase.auth.admin.deleteUser(authData.user.id)
