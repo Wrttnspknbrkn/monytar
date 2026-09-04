@@ -80,10 +80,7 @@ export async function POST(request: Request) {
       .single()
 
     if (orgError) {
-<<<<<<< HEAD
-=======
       console.error("[v0] org insert failed:", JSON.stringify({ message: orgError.message, code: orgError.code, details: orgError.details, hint: orgError.hint }))
->>>>>>> cba3825fbff250fbcd081e686d2b8772435244a7
       // Clean up: delete the auth user if org creation fails
       await supabase.auth.admin.deleteUser(authData.user.id)
       return NextResponse.json({ error: "Failed to create organization" }, { status: 500 })
