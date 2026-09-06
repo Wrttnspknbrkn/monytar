@@ -1,7 +1,23 @@
 import { NextResponse } from "next/server"
 import { getSupabaseServerClient } from "@/lib/supabase/server"
-import { isSupabaseConfigured } from "@/lib/supabase/config"
+import { isSupabaseConfigured, getSupabaseUrl, getSupabaseServiceKey } from "@/lib/supabase/config"
+import { enforceRateLimit } from "@/lib/api/rate-limit"
+import { createClient } from "@supabase/supabase-js"
 import { z } from "zod"
+
+// Platform-admin allowlist for reading marketing leads (demo_leads has no
+// organization_id — it's platform-wide, not per-tenant — so gating this on
+// "any org's role=admin" would let one customer's admin read every other
+// customer's leads. Configure a comma-separated PLATFORM_ADMIN_EMAILS env var
+// to grant read access; unset means nobody can read it (fail closed).
+function isPlatformAdminEmail(email: string | undefined | null): boolean {
+  if (!email) return false
+  const allowlist = (process.env.PLATFORM_ADMIN_EMAILS || "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean)
+  return allowlist.includes(email.toLowerCase())
+}
 
 const leadSchema = z.object({
   full_name: z.string().min(1).max(120),
@@ -25,6 +41,9 @@ function getClientIp(request: Request): string | undefined {
 }
 
 export async function POST(request: Request) {
+  const limited = await enforceRateLimit("demoLead", getClientIp(request) || "unknown")
+  if (limited) return limited
+
   let body: unknown
   try {
     body = await request.json()
@@ -100,18 +119,21 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Only platform admins may read demo leads.
-    const { data: dbUser } = await supabase
-      .from("users")
-      .select("role")
-      .eq("id", user.id)
-      .single()
-
-    if (!dbUser || dbUser.role !== "admin") {
+    // Only platform admins may read demo leads — NOT just any org's admin,
+    // since this table has no organization_id and holds every visitor's
+    // contact info across every tenant. See isPlatformAdminEmail() above.
+    if (!isPlatformAdminEmail(user.email)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    const { data: leads, error } = await supabase
+    // demo_leads intentionally has no SELECT RLS policy (nobody should read
+    // it through the normal per-tenant client) — read it with the admin
+    // client now that we've independently verified the caller is a
+    // configured platform admin above.
+    const admin = createClient(getSupabaseUrl(), getSupabaseServiceKey(), {
+      auth: { autoRefreshToken: false, persistSession: false },
+    })
+    const { data: leads, error } = await admin
       .from("demo_leads")
       .select("*")
       .order("created_at", { ascending: false })

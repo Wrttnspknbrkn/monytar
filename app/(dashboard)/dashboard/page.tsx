@@ -17,6 +17,7 @@ import {
 import { useData } from "@/lib/providers"
 import { useAuth } from "@/lib/providers"
 import { formatCurrency, formatRelativeTime, cn } from "@/lib/utils"
+import { monthlyTrend as computeMonthlyTrend } from "@/lib/reports/aggregate"
 import { StatCard } from "@/components/dashboard/stat-card"
 import { RequestStatusBadge } from "@/components/requests/request-status-badge"
 import { Button } from "@/components/ui/button"
@@ -62,29 +63,16 @@ export default function DashboardPage() {
   const user = dbUser || currentUser
   const role = user?.role || "employee"
 
-  if (isLoading || !user) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-      </div>
-    )
-  }
-
+  // Hooks must run unconditionally on every render (Rules of Hooks) — these
+  // used to sit after the loading/no-user early return below, which meant
+  // React saw a different number of hooks between the loading and loaded
+  // renders and threw, crashing the whole dashboard layout (sidebar
+  // included). They're computed here, guarded internally, before any
+  // conditional return.
   const myRequests = useMemo(
-    () => expenseRequests.filter((r) => r.employee_id === user.id),
+    () => (user ? expenseRequests.filter((r) => r.employee_id === user.id) : []),
     [expenseRequests, user],
   )
-  const myPending = myRequests.filter((r) => r.status === "pending").length
-  const myApproved = myRequests.filter((r) => r.status === "approved" || r.status === "paid")
-  const myRejected = myRequests.filter((r) => r.status === "rejected").length
-  const myTotalApproved = myApproved.reduce((s, r) => s + r.amount, 0)
-
-  const pendingApprovals = getPendingApprovals()
-  const pendingTotal = pendingApprovals.reduce((s, r) => s + r.amount, 0)
-  const allApproved = expenseRequests.filter((r) => r.status === "approved" || r.status === "paid")
-  const totalApprovedAmount = allApproved.reduce((s, r) => s + r.amount, 0)
-  const totalPaidAmount = expenseRequests.filter((r) => r.status === "paid").reduce((s, r) => s + r.amount, 0)
-  const awaitingPayment = expenseRequests.filter((r) => r.status === "approved" && r.payment_status === "unpaid")
 
   const categoryData = useMemo(() => {
     const cats: Record<string, number> = {}
@@ -98,14 +86,30 @@ export default function DashboardPage() {
     }))
   }, [expenseRequests, myRequests, role])
 
-  const monthlyTrend = [
-    { month: "Sep", amount: 12400 },
-    { month: "Oct", amount: 15800 },
-    { month: "Nov", amount: 13200 },
-    { month: "Dec", amount: 18500 },
-    { month: "Jan", amount: 16700 },
-    { month: "Feb", amount: 14300 },
-  ]
+  const monthlyTrend = useMemo(
+    () => computeMonthlyTrend(expenseRequests, 6).map((p) => ({ month: p.label, amount: p.submitted })),
+    [expenseRequests],
+  )
+
+  if (isLoading || !user) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    )
+  }
+
+  const myPending = myRequests.filter((r) => r.status === "pending").length
+  const myApproved = myRequests.filter((r) => r.status === "approved" || r.status === "paid")
+  const myRejected = myRequests.filter((r) => r.status === "rejected").length
+  const myTotalApproved = myApproved.reduce((s, r) => s + r.amount, 0)
+
+  const pendingApprovals = getPendingApprovals()
+  const pendingTotal = pendingApprovals.reduce((s, r) => s + r.amount, 0)
+  const allApproved = expenseRequests.filter((r) => r.status === "approved" || r.status === "paid")
+  const totalApprovedAmount = allApproved.reduce((s, r) => s + r.amount, 0)
+  const totalPaidAmount = expenseRequests.filter((r) => r.status === "paid").reduce((s, r) => s + r.amount, 0)
+  const awaitingPayment = expenseRequests.filter((r) => r.status === "approved" && r.payment_status === "unpaid")
 
   const deptBudgets = departments.map((d) => {
     const spend = getDepartmentSpend(d.id)

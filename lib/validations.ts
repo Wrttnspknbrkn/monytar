@@ -11,6 +11,9 @@ export const signupSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters"),
   orgName: z.string().min(2, "Organization name is required"),
   orgSize: z.string().optional(),
+  // Enterprise isn't self-serve (no Stripe price, routes to contact sales
+  // instead), so it's not a valid signup-time selection.
+  tier: z.enum(["free", "starter", "professional"]).optional().default("free"),
 })
 
 export const expenseRequestSchema = z.object({

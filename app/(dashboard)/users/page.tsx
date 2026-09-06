@@ -24,11 +24,12 @@ const roleColors: Record<UserRole, string> = {
 
 export default function UsersPage() {
   const { dbUser } = useAuth()
-  const { currentUser, users, departments, addUser, updateUser } = useData()
+  const { currentUser, users, departments, addUser, updateUser, isDemo, organization } = useData()
   const user = dbUser || currentUser
   const [search, setSearch] = useState("")
   const [roleFilter, setRoleFilter] = useState<string>("all")
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [inviting, setInviting] = useState(false)
   const [form, setForm] = useState({ full_name: "", email: "", role: "employee" as UserRole, department_id: "" })
 
   const isAdmin = user?.role === "admin"
@@ -43,16 +44,57 @@ export default function UsersPage() {
     return result
   }, [users, roleFilter, search])
 
-  function handleAdd() {
+  async function handleAdd() {
     if (!form.full_name || !form.email) { toast.error("Name and email are required"); return }
-    const now = new Date().toISOString()
-    addUser({
-      id: generateId(), organization_id: "org-1", full_name: form.full_name, email: form.email,
-      role: form.role, department_id: form.department_id || undefined, status: "active", created_at: now, updated_at: now,
-    })
-    toast.success("User added")
-    setForm({ full_name: "", email: "", role: "employee", department_id: "" })
-    setDialogOpen(false)
+
+    if (isDemo) {
+      const now = new Date().toISOString()
+      addUser({
+        id: generateId(), organization_id: organization?.id || "demo-org", full_name: form.full_name, email: form.email,
+        role: form.role, department_id: form.department_id || undefined, status: "active", created_at: now, updated_at: now,
+      })
+      toast.success("User added")
+      setForm({ full_name: "", email: "", role: "employee", department_id: "" })
+      setDialogOpen(false)
+      return
+    }
+
+    // Real orgs can't add a login-capable user directly from the client —
+    // this sends an email invitation instead (accepted via /signup?invitation=...).
+    setInviting(true)
+    try {
+      const res = await fetch("/api/invitations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: form.email,
+          role: form.role,
+          department_id: form.department_id || undefined,
+        }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        toast.error(data.error || "Failed to send invitation")
+        return
+      }
+      toast.success(`Invitation sent to ${form.email}`)
+      setForm({ full_name: "", email: "", role: "employee", department_id: "" })
+      setDialogOpen(false)
+    } catch (err) {
+      console.error("[Users] invitation failed:", err)
+      toast.error("Failed to send invitation. Please try again.")
+    } finally {
+      setInviting(false)
+    }
+  }
+
+  async function handleStatusChange(userId: string, status: "active" | "inactive") {
+    try {
+      await updateUser(userId, { status })
+    } catch (err) {
+      console.error("[Users] status update failed:", err)
+      toast.error("Failed to update user status. Please try again.")
+    }
   }
 
   if (!isAdmin) {
@@ -104,7 +146,7 @@ export default function UsersPage() {
                 </div>
               </div>
             </div>
-            <DialogFooter><Button onClick={handleAdd} className="font-semibold shadow-sm shadow-primary/20">Add User</Button></DialogFooter>
+            <DialogFooter><Button onClick={handleAdd} disabled={inviting} className="font-semibold shadow-sm shadow-primary/20">{inviting ? "Sending..." : isDemo ? "Add User" : "Send Invitation"}</Button></DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
@@ -172,7 +214,7 @@ export default function UsersPage() {
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground tabular-nums">{formatDate(user.created_at)}</TableCell>
                       <TableCell>
-                        <Select value={user.status} onValueChange={(v) => updateUser(user.id, { status: v as "active" | "inactive" })}>
+                        <Select value={user.status} onValueChange={(v) => handleStatusChange(user.id, v as "active" | "inactive")}>
                           <SelectTrigger className="w-28 h-8 text-xs"><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="active">Active</SelectItem>

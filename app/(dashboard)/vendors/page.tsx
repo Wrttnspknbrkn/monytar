@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react"
 import { Plus, Search, Store, CheckCircle2, XCircle, Mail, Phone, MapPin } from "lucide-react"
-import { useData } from "@/lib/providers"
+import { useData, useAuth } from "@/lib/providers"
 import { generateId, cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,9 +14,14 @@ import { Switch } from "@/components/ui/switch"
 import { toast } from "sonner"
 
 export default function VendorsPage() {
-  const { vendors, addVendor, updateVendor } = useData()
+  const { vendors, addVendor, updateVendor, organization, currentUser } = useData()
+  const { dbUser } = useAuth()
+  // Matches the "Finance/admin can manage vendors" RLS policy: only these
+  // roles can actually toggle vendor approval, so only they get the control.
+  const canManageVendors = ["admin", "finance", "manager"].includes((dbUser || currentUser)?.role ?? "")
   const [search, setSearch] = useState("")
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({ name: "", category: "", contact_email: "", contact_phone: "", address: "", payment_terms: "", notes: "" })
 
   const filtered = useMemo(() => {
@@ -25,18 +30,35 @@ export default function VendorsPage() {
     return vendors.filter((v) => v.name.toLowerCase().includes(q) || v.category?.toLowerCase().includes(q))
   }, [vendors, search])
 
-  function handleAdd() {
+  async function handleAdd() {
     if (!form.name.trim()) { toast.error("Vendor name is required"); return }
+    setSaving(true)
     const now = new Date().toISOString()
-    addVendor({
-      id: generateId(), organization_id: "org-1", name: form.name, category: form.category || undefined,
-      contact_email: form.contact_email || undefined, contact_phone: form.contact_phone || undefined,
-      address: form.address || undefined, payment_terms: form.payment_terms || undefined, notes: form.notes || undefined,
-      is_approved: true, approval_required: false, created_at: now, updated_at: now,
-    })
-    toast.success("Vendor added successfully")
-    setForm({ name: "", category: "", contact_email: "", contact_phone: "", address: "", payment_terms: "", notes: "" })
-    setDialogOpen(false)
+    try {
+      await addVendor({
+        id: generateId(), organization_id: organization?.id || currentUser?.organization_id || "", name: form.name, category: form.category || undefined,
+        contact_email: form.contact_email || undefined, contact_phone: form.contact_phone || undefined,
+        address: form.address || undefined, payment_terms: form.payment_terms || undefined, notes: form.notes || undefined,
+        is_approved: true, approval_required: false, created_at: now, updated_at: now,
+      })
+      toast.success("Vendor added successfully")
+      setForm({ name: "", category: "", contact_email: "", contact_phone: "", address: "", payment_terms: "", notes: "" })
+      setDialogOpen(false)
+    } catch (err) {
+      console.error("[Vendors] create failed:", err)
+      toast.error("Failed to add vendor. Please try again.")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleToggleApproved(vendorId: string, checked: boolean) {
+    try {
+      await updateVendor(vendorId, { is_approved: checked })
+    } catch (err) {
+      console.error("[Vendors] update failed:", err)
+      toast.error("Failed to update vendor status. Please try again.")
+    }
   }
 
   return (
@@ -68,7 +90,7 @@ export default function VendorsPage() {
               <div className="flex flex-col gap-2"><Label className="text-[13px] font-medium">Payment Terms</Label><Input placeholder="e.g. Net 30" value={form.payment_terms} onChange={(e) => setForm({ ...form, payment_terms: e.target.value })} /></div>
               <div className="flex flex-col gap-2"><Label className="text-[13px] font-medium">Notes</Label><Textarea placeholder="Additional notes..." value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} /></div>
             </div>
-            <DialogFooter><Button onClick={handleAdd} className="font-semibold shadow-sm shadow-primary/20">Add Vendor</Button></DialogFooter>
+            <DialogFooter><Button onClick={handleAdd} disabled={saving} className="font-semibold shadow-sm shadow-primary/20">{saving ? "Adding..." : "Add Vendor"}</Button></DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
@@ -120,7 +142,11 @@ export default function VendorsPage() {
                 )}
                 <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/50">
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Approved</span>
-                  <Switch checked={vendor.is_approved} onCheckedChange={(checked) => updateVendor(vendor.id, { is_approved: checked })} />
+                  {canManageVendors ? (
+                    <Switch checked={vendor.is_approved} onCheckedChange={(checked) => handleToggleApproved(vendor.id, checked)} />
+                  ) : (
+                    <span className="text-xs font-medium text-muted-foreground">{vendor.is_approved ? "Yes" : "No"}</span>
+                  )}
                 </div>
               </CardContent>
             </Card>

@@ -6,10 +6,10 @@ import { Sidebar } from "@/components/layout/sidebar"
 import { Header } from "@/components/layout/header"
 import { MobileNav } from "@/components/layout/mobile-nav"
 import { DemoBanner } from "@/components/layout/demo-banner"
-import { useAuth } from "@/lib/providers/auth-provider"
+import { useData } from "@/lib/providers"
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { isDemo } = useAuth()
+  const { isDemo } = useData()
 
   return (
     <div className="dashboard-layout flex min-h-screen overflow-x-hidden bg-background">

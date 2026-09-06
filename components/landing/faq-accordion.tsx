@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
 const faqs = [
   {
     q: "How long does it take to set up Monytar?",
-    a: "Most teams are up and running in under 5 minutes. Create your organization, invite your team, and set your first approval rule — no implementation project, no IT ticket required.",
+    a: "Most teams are up and running in under 5 minutes. Create your organization, invite your team, and set your first approval rule. No implementation project, no IT ticket required.",
   },
   {
     q: "Do I need a credit card to start?",
@@ -15,7 +15,7 @@ const faqs = [
   },
   {
     q: "Can I customize the approval workflow?",
-    a: "Yes. You can route expenses automatically based on amount, category, or department, and add multiple approval levels — for example manager first, then finance above a threshold.",
+    a: "Yes. You can route expenses automatically based on amount, category, or department, and add multiple approval levels: manager first, then finance above a threshold.",
   },
   {
     q: "Does Monytar support multiple currencies?",

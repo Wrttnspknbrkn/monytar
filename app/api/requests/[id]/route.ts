@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { isSupabaseConfigured } from "@/lib/supabase/config"
 import { getSupabaseServerClient } from "@/lib/supabase/server"
 import { serverError } from "@/lib/api/errors"
+import { expenseRequestSchema } from "@/lib/validations"
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -28,6 +29,14 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   }
 }
 
+// Business-field edits only — status transitions (approve/reject/pay/resubmit)
+// must go through their dedicated endpoints, which apply the real workflow
+// rules (department scoping, no self-approval, valid status transitions).
+// RLS also scopes this to the caller's own draft or an admin/finance/manager
+// in their org, but that alone doesn't stop a privileged role from writing
+// straight to `status: "approved"` here — the allowlist below closes that.
+const patchableFields = expenseRequestSchema.partial().omit({ receipt_urls: true })
+
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
@@ -37,13 +46,21 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       return NextResponse.json({ demo: true, success: true })
     }
 
+    const parsed = patchableFields.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid input", details: parsed.error.flatten().fieldErrors },
+        { status: 400 },
+      )
+    }
+
     const supabase = await getSupabaseServerClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
     const { data, error } = await supabase
       .from("expense_requests")
-      .update(body)
+      .update(parsed.data)
       .eq("id", id)
       .select()
       .single()
@@ -67,8 +84,12 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-    const { error } = await supabase.from("expense_requests").delete().eq("id", id)
+    // No RLS DELETE policy exists for expense_requests by design (deleting a
+    // request is unsupported product-wise) — report that honestly instead of
+    // claiming success when RLS silently affects 0 rows.
+    const { data, error } = await supabase.from("expense_requests").delete().eq("id", id).select().maybeSingle()
     if (error) return serverError(error, { route: "requests.[id].DELETE", id })
+    if (!data) return NextResponse.json({ error: "Request not found or you are not authorized to delete it" }, { status: 404 })
 
     return NextResponse.json({ success: true })
   } catch (err) {

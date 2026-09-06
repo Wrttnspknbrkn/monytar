@@ -27,7 +27,7 @@ export async function loadApprovalSettings(
   const { data } = await supabase
     .from("organization_settings")
     .select(
-      "auto_approve_under_amount, require_manager_approval, require_finance_approval, require_receipts, receipt_required_above_amount",
+      "auto_approve_under_amount, require_manager_approval, require_finance_approval, require_receipts, receipt_required_above_amount, approval_threshold_amount",
     )
     .eq("organization_id", organizationId)
     .single()
@@ -41,8 +41,8 @@ export async function loadApprovalSettings(
       boolOr(data.require_manager_approval, DEFAULT_APPROVAL_SETTINGS.require_manager_approval),
     require_finance_approval:
       boolOr(data.require_finance_approval, DEFAULT_APPROVAL_SETTINGS.require_finance_approval),
-    // Not a column on the current settings table — use the safe default.
-    approval_threshold_amount: DEFAULT_APPROVAL_SETTINGS.approval_threshold_amount,
+    approval_threshold_amount:
+      numberOr(data.approval_threshold_amount, DEFAULT_APPROVAL_SETTINGS.approval_threshold_amount),
     require_receipts: boolOr(data.require_receipts, DEFAULT_APPROVAL_SETTINGS.require_receipts),
     receipt_required_above_amount: numberOr(
       data.receipt_required_above_amount,

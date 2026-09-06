@@ -14,18 +14,19 @@ import { Suspense } from "react"
 function CheckoutContent() {
   const searchParams = useSearchParams()
   const productId = searchParams.get("plan") || "professional-monthly"
+  const orgId = searchParams.get("orgId") || undefined
   const [error, setError] = useState<string | null>(null)
 
   const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
 
   const fetchClientSecret = useCallback(async () => {
-    const result = await createCheckoutSession(productId)
+    const result = await createCheckoutSession(productId, undefined, orgId)
     if (result.error) {
       setError(result.error)
       throw new Error(result.error)
     }
     return result.clientSecret!
-  }, [productId])
+  }, [productId, orgId])
 
   if (!stripePublishableKey) {
     return (

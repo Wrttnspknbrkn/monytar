@@ -38,9 +38,6 @@ export function BlogShowcase() {
       <div className="max-w-6xl mx-auto">
         <Reveal className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-12">
           <div>
-            <span className="inline-block rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-bold uppercase tracking-widest text-primary mb-4">
-              From the blog
-            </span>
             <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold text-slate-900 tracking-tight mb-3">
               Ideas for modern finance teams
             </h2>

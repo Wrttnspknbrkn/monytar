@@ -10,12 +10,12 @@ import {
   Bell,
   ShieldCheck,
   ArrowRight,
-  ChevronRight,
   Check,
 } from "lucide-react"
 import { LandingHeader } from "@/components/landing/landing-header"
 import { LandingFooter } from "@/components/landing/landing-footer"
 import { Reveal } from "@/components/landing/reveal"
+import { cn } from "@/lib/utils"
 
 export const metadata: Metadata = {
   title: "Features",
@@ -131,63 +131,113 @@ const features = [
 ]
 
 export default function FeaturesPage() {
+  const [core, ...rest] = features
+
   return (
     <div className="min-h-screen bg-white">
       <LandingHeader />
 
       {/* HERO */}
-      <section className="relative pt-28 pb-20 md:pb-28 overflow-hidden">
+      <section className="relative pt-28 pb-20 md:pb-24 overflow-hidden">
         <div className="absolute inset-0 bg-slate-950" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_100%_70%_at_60%_-10%,rgba(99,102,241,0.3),transparent)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_90%_60%_at_15%_-10%,rgba(99,102,241,0.28),transparent)]" />
         <div className="absolute inset-0 bg-[url('/images/dot-grid.svg')] opacity-[0.06]" />
 
-        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 pt-10 text-center">
-          <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/8 px-4 py-1.5 text-sm text-primary/90 mb-8 backdrop-blur-sm">
-            <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-            Everything you need to manage expenses
-            <ChevronRight className="w-3.5 h-3.5 opacity-50" />
+        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 pt-10">
+          <div className="grid md:grid-cols-[1.3fr_1fr] gap-10 md:gap-16 items-end">
+            <div>
+              <h1 className="font-display text-4xl sm:text-5xl md:text-[56px] font-bold text-white leading-[1.05] tracking-tight mb-6">
+                Every part of the expense
+                <br />
+                workflow, covered
+              </h1>
+              <p className="text-slate-400 text-lg leading-relaxed max-w-xl">
+                From submission to reimbursement, Monytar gives your team the tools to control
+                spending, streamline approvals, and stay on top of financial visibility.
+              </p>
+            </div>
+            <div className="border-l border-white/10 pl-8 flex flex-col gap-4">
+              {features.slice(0, 4).map((f) => (
+                <a
+                  key={f.title}
+                  href={`#${f.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
+                  className="text-sm text-slate-400 hover:text-white transition-colors flex items-center gap-2 group"
+                >
+                  <f.icon className="w-4 h-4 text-primary shrink-0" strokeWidth={1.75} />
+                  {f.title}
+                  <ArrowRight className="w-3 h-3 opacity-0 -translate-x-1 group-hover:opacity-60 group-hover:translate-x-0 transition-all" />
+                </a>
+              ))}
+            </div>
           </div>
-          <h1 className="font-display text-4xl sm:text-5xl md:text-6xl font-bold text-white leading-[1.05] tracking-tight mb-6">
-            Powerful features for
-            <br />
-            <span className="bg-gradient-to-r from-indigo-300 via-primary to-cyan-400 bg-clip-text text-transparent">
-              modern expense management
-            </span>
-          </h1>
-          <p className="text-slate-400 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
-            From submission to reimbursement, Monytar gives your team the tools they need to control
-            spending, streamline approvals, and gain complete financial visibility.
-          </p>
         </div>
       </section>
 
-      {/* FEATURES GRID */}
+      {/* CORE FEATURE — featured */}
+      <section id={core.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")} className="py-20 md:py-28 px-4 sm:px-6 bg-white">
+        <div className="max-w-6xl mx-auto">
+          <Reveal variant="rise">
+            <div className="grid md:grid-cols-[0.9fr_1.1fr] gap-10 md:gap-16 items-start rounded-2xl border border-slate-200 p-8 md:p-12">
+              <div>
+                <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-primary text-white mb-6">
+                  <core.icon className="w-6 h-6" strokeWidth={1.75} />
+                </div>
+                <h2 className="font-display text-2xl md:text-3xl font-bold text-slate-900 mb-3">{core.title}</h2>
+                <p className="text-slate-500 leading-relaxed">{core.description}</p>
+              </div>
+              <ul className="grid sm:grid-cols-2 gap-x-6 gap-y-3">
+                {core.items.map((item) => (
+                  <li key={item} className="flex items-start gap-2.5 text-sm pt-3 border-t border-slate-100">
+                    <Check className="w-4 h-4 text-primary shrink-0 mt-0.5" strokeWidth={2.5} />
+                    <span className="text-slate-600">{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* REMAINING FEATURES — compact index */}
       <section className="py-20 md:py-28 px-4 sm:px-6 bg-slate-50">
         <div className="max-w-6xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-5">
-            {features.map((feature, i) => {
+          <Reveal variant="rise" className="max-w-xl mb-12">
+            <h2 className="font-display text-2xl md:text-3xl font-bold text-slate-900 tracking-tight mb-3">
+              The rest of the toolkit
+            </h2>
+            <p className="text-slate-500 leading-relaxed">
+              Every one of these ships today, not on a roadmap.
+            </p>
+          </Reveal>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 rounded-2xl border border-slate-200 overflow-hidden bg-white">
+            {rest.map((feature, i) => {
               const Icon = feature.icon
+              const col = i % 3
+              const row = Math.floor(i / 3)
               return (
-                <Reveal key={feature.title} delay={(i % 2) * 80}>
-                  <div className="group h-full rounded-2xl bg-white border border-slate-100 p-7 hover:border-primary/20 hover:shadow-[0_8px_32px_rgba(0,0,0,0.08)] transition-all duration-300">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-primary/5 border border-primary/10 group-hover:bg-primary group-hover:text-white transition-colors duration-300">
-                        <Icon className="w-5 h-5 text-primary group-hover:text-white transition-colors duration-300" strokeWidth={1.75} />
-                      </div>
-                      <h3 className="font-display text-lg font-bold text-slate-900">{feature.title}</h3>
-                    </div>
-                    <p className="text-slate-500 text-sm leading-relaxed mb-5">{feature.description}</p>
-                    <ul className="flex flex-col gap-2.5">
-                      {feature.items.map((item) => (
-                        <li key={item} className="flex items-start gap-2.5 text-sm">
-                          <div className="w-5 h-5 rounded-full bg-primary/8 border border-primary/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                            <Check className="w-3 h-3 text-primary" strokeWidth={2.5} />
-                          </div>
-                          <span className="text-slate-600">{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                <Reveal
+                  key={feature.title}
+                  id={feature.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}
+                  variant="grow"
+                  delay={i * 60}
+                  className={cn(
+                    "p-7",
+                    col > 0 && "sm:border-l border-slate-100",
+                    row > 0 && "border-t sm:border-t border-slate-100"
+                  )}
+                >
+                  <Icon className="w-5 h-5 text-primary mb-4" strokeWidth={1.75} />
+                  <h3 className="font-display text-base font-bold text-slate-900 mb-2">{feature.title}</h3>
+                  <p className="text-slate-500 text-sm leading-relaxed mb-4">{feature.description}</p>
+                  <ul className="flex flex-col gap-1.5">
+                    {feature.items.slice(0, 3).map((item) => (
+                      <li key={item} className="flex items-start gap-2 text-xs text-slate-500">
+                        <Check className="w-3 h-3 text-primary shrink-0 mt-0.5" strokeWidth={2.5} />
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
                 </Reveal>
               )
             })}
