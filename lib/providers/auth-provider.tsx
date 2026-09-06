@@ -6,9 +6,17 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 import { isSupabaseConfigured } from "@/lib/supabase/config"
 import type { User as SupabaseUser, Session } from "@supabase/supabase-js"
 import type { User, UserRole } from "@/lib/types"
+import { toast } from "sonner"
 
 // Demo mode imports
 import { users as mockUsers } from "@/lib/mock-data"
+
+// PGRST116 means the query's .single() found 0 rows — here, a valid auth
+// session with no matching `users` profile row (an orphaned account, or a
+// signup that failed partway through creating the profile).
+function isOrphanedProfileError(error: unknown): boolean {
+  return typeof error === "object" && error !== null && (error as { code?: string }).code === "PGRST116"
+}
 
 interface AuthContextValue {
   isLoading: boolean
@@ -102,6 +110,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setDbUser(data)
     } catch (error) {
       console.error("Error fetching user:", error)
+      // Otherwise the user is left stuck "authenticated" (authUser/session
+      // set) with no profile data anywhere in the app — sign them out so
+      // onAuthStateChange's SIGNED_OUT branch redirects to /login instead.
+      if (isOrphanedProfileError(error)) {
+        toast.error("We couldn't find your account. Please sign in again.")
+        const supabase = getSupabaseBrowserClient()
+        await supabase.auth.signOut()
+      }
     } finally {
       setIsLoading(false)
     }
