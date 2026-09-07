@@ -12,8 +12,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { toast } from "sonner"
-import type { UserRole } from "@/lib/types"
+import type { User, UserRole } from "@/lib/types"
 
 const roleColors: Record<UserRole, string> = {
   employee: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800",
@@ -31,6 +41,8 @@ export default function UsersPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [inviting, setInviting] = useState(false)
   const [form, setForm] = useState({ full_name: "", email: "", role: "employee" as UserRole, department_id: "" })
+  // Deactivating revokes access — confirm before firing, unlike reactivating.
+  const [pendingDeactivation, setPendingDeactivation] = useState<User | null>(null)
 
   const isAdmin = user?.role === "admin"
 
@@ -77,7 +89,19 @@ export default function UsersPage() {
         toast.error(data.error || "Failed to send invitation")
         return
       }
-      toast.success(`Invitation sent to ${form.email}`)
+      // The API honestly reports whether the email actually sent (it no-ops
+      // without RESEND_API_KEY configured) — surface that instead of always
+      // claiming success, and hand the admin the link to share manually.
+      if (data.emailSent) {
+        toast.success(`Invitation sent to ${form.email}`)
+      } else {
+        try {
+          await navigator.clipboard.writeText(data.inviteUrl)
+          toast.warning(`Invitation created, but the email couldn't be sent. Link copied — share it with ${form.email} directly.`, { duration: 8000 })
+        } catch {
+          toast.warning(`Invitation created, but the email couldn't be sent. Share this link with ${form.email}: ${data.inviteUrl}`, { duration: 10000 })
+        }
+      }
       setForm({ full_name: "", email: "", role: "employee", department_id: "" })
       setDialogOpen(false)
     } catch (err) {
@@ -91,10 +115,17 @@ export default function UsersPage() {
   async function handleStatusChange(userId: string, status: "active" | "inactive") {
     try {
       await updateUser(userId, { status })
+      toast.success(status === "active" ? "User reactivated" : "User deactivated")
     } catch (err) {
       console.error("[Users] status update failed:", err)
       toast.error("Failed to update user status. Please try again.")
     }
+  }
+
+  async function confirmDeactivation() {
+    if (!pendingDeactivation) return
+    await handleStatusChange(pendingDeactivation.id, "inactive")
+    setPendingDeactivation(null)
   }
 
   if (!isAdmin) {
@@ -214,7 +245,13 @@ export default function UsersPage() {
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground tabular-nums">{formatDate(user.created_at)}</TableCell>
                       <TableCell>
-                        <Select value={user.status} onValueChange={(v) => handleStatusChange(user.id, v as "active" | "inactive")}>
+                        <Select
+                          value={user.status}
+                          onValueChange={(v) => {
+                            if (v === "inactive") setPendingDeactivation(user)
+                            else handleStatusChange(user.id, "active")
+                          }}
+                        >
                           <SelectTrigger className="w-28 h-8 text-xs"><SelectValue /></SelectTrigger>
                           <SelectContent>
                             <SelectItem value="active">Active</SelectItem>
@@ -230,6 +267,23 @@ export default function UsersPage() {
           </div>
         </CardContent>
       </Card>
+
+      <AlertDialog open={!!pendingDeactivation} onOpenChange={(open) => !open && setPendingDeactivation(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Deactivate {pendingDeactivation?.full_name}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              They will immediately lose access to this organization. You can reactivate them at any time from this page.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeactivation} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Deactivate
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

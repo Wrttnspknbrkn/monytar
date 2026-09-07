@@ -16,7 +16,8 @@ import {
 } from "lucide-react"
 import { useData } from "@/lib/providers"
 import { useAuth } from "@/lib/providers"
-import { formatCurrency, formatRelativeTime, cn } from "@/lib/utils"
+import { formatRelativeTime, cn } from "@/lib/utils"
+import { getCurrencySymbol } from "@/lib/currency"
 import { monthlyTrend as computeMonthlyTrend } from "@/lib/reports/aggregate"
 import { StatCard } from "@/components/dashboard/stat-card"
 import { RequestStatusBadge } from "@/components/requests/request-status-badge"
@@ -58,6 +59,8 @@ export default function DashboardPage() {
     getPendingApprovals,
     budgetAlerts,
     isLoading,
+    formatAmount,
+    currencyCode,
   } = useData()
 
   const user = dbUser || currentUser
@@ -103,6 +106,14 @@ export default function DashboardPage() {
   const myApproved = myRequests.filter((r) => r.status === "approved" || r.status === "paid")
   const myRejected = myRequests.filter((r) => r.status === "rejected").length
   const myTotalApproved = myApproved.reduce((s, r) => s + r.amount, 0)
+  const now = new Date()
+  const myThisMonthTotal = myRequests
+    .filter((r) => {
+      if (r.status === "draft") return false
+      const created = new Date(r.created_at)
+      return created.getFullYear() === now.getFullYear() && created.getMonth() === now.getMonth()
+    })
+    .reduce((s, r) => s + r.amount, 0)
 
   const pendingApprovals = getPendingApprovals()
   const pendingTotal = pendingApprovals.reduce((s, r) => s + r.amount, 0)
@@ -144,11 +155,11 @@ export default function DashboardPage() {
       {role === "employee" ? (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard title="Pending" value={String(myPending)} icon={Clock} href="/requests?status=pending" />
-          <StatCard title="Approved" value={formatCurrency(myTotalApproved)} icon={CheckCircle2} trend={{ value: "+12%", positive: true }} href="/requests?status=approved" />
+          <StatCard title="Approved" value={formatAmount(myTotalApproved)} icon={CheckCircle2} href="/requests?status=approved" />
           <StatCard title="Rejected" value={String(myRejected)} icon={XCircle} href="/requests?status=rejected" />
           <StatCard
             title="This Month"
-            value={formatCurrency(myRequests.filter((r) => r.status !== "draft").reduce((s, r) => s + r.amount, 0))}
+            value={formatAmount(myThisMonthTotal)}
             icon={DollarSign}
             href="/requests"
           />
@@ -159,11 +170,11 @@ export default function DashboardPage() {
             title="Pending"
             value={String(pendingApprovals.length)}
             icon={Clock}
-            trend={pendingApprovals.length > 0 ? { value: formatCurrency(pendingTotal), positive: false } : undefined}
+            trend={pendingApprovals.length > 0 ? { value: formatAmount(pendingTotal), positive: false } : undefined}
             href="/approvals"
           />
-          <StatCard title="Approved" value={formatCurrency(totalApprovedAmount)} icon={CheckCircle2} trend={{ value: "+8.5%", positive: true }} href="/requests?status=approved" />
-          <StatCard title="Paid" value={formatCurrency(totalPaidAmount)} icon={CreditCard} href="/requests?status=paid" />
+          <StatCard title="Approved" value={formatAmount(totalApprovedAmount)} icon={CheckCircle2} href="/requests?status=approved" />
+          <StatCard title="Paid" value={formatAmount(totalPaidAmount)} icon={CreditCard} href="/requests?status=paid" />
           {role === "admin" ? (
             <StatCard title="Users" value={String(users.filter((u) => u.status === "active").length)} icon={Users} href="/settings/team" />
           ) : role === "finance" ? (
@@ -192,10 +203,10 @@ export default function DashboardPage() {
                 <LineChart data={monthlyTrend}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="month" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v / 1000}k`} />
+                  <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${getCurrencySymbol(currencyCode)}${v / 1000}k`} />
                   <Tooltip
                     contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "10px", fontSize: "13px", color: "hsl(var(--foreground))", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)" }}
-                    formatter={(value: number) => [formatCurrency(value), "Amount"]}
+                    formatter={(value: number) => [formatAmount(value), "Amount"]}
                   />
                   <Line type="monotone" dataKey="amount" stroke="hsl(221, 83%, 53%)" strokeWidth={2.5}
                     dot={{ r: 4, fill: "hsl(var(--card))", stroke: "hsl(221, 83%, 53%)", strokeWidth: 2 }}
@@ -223,7 +234,7 @@ export default function DashboardPage() {
                   </Pie>
                   <Tooltip
                     contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "10px", fontSize: "13px", color: "hsl(var(--foreground))" }}
-                    formatter={(value: number) => [formatCurrency(value), "Amount"]}
+                    formatter={(value: number) => [formatAmount(value), "Amount"]}
                   />
                 </PieChart>
               </ResponsiveContainer>
@@ -270,7 +281,7 @@ export default function DashboardPage() {
                       </p>
                     </div>
                     <div className="flex flex-col items-end gap-1 shrink-0 ml-1">
-                      <span className="text-sm font-heading font-bold tabular-nums whitespace-nowrap">{formatCurrency(req.amount)}</span>
+                      <span className="text-sm font-heading font-bold tabular-nums whitespace-nowrap">{formatAmount(req.amount)}</span>
                       <RequestStatusBadge status={req.status} />
                     </div>
                   </div>
@@ -294,7 +305,7 @@ export default function DashboardPage() {
                     <div className="flex items-center justify-between gap-2 min-w-0">
                       <span className="text-sm font-medium truncate">{dept.name}</span>
                       <span className="text-xs text-muted-foreground tabular-nums whitespace-nowrap shrink-0">
-                        {formatCurrency(dept.spend)} / {formatCurrency(dept.budget_amount)}
+                        {formatAmount(dept.spend)} / {formatAmount(dept.budget_amount)}
                       </span>
                     </div>
                     <Progress value={Math.min(dept.pct, 100)} className="h-2" />
@@ -367,11 +378,11 @@ export default function DashboardPage() {
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={data} layout="vertical">
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
-                        <XAxis type="number" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v}`} />
+                        <XAxis type="number" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${getCurrencySymbol(currencyCode)}${v}`} />
                         <YAxis type="category" dataKey="name" width={90} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} axisLine={false} tickLine={false} />
                         <Tooltip
                           contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "10px", fontSize: "13px", color: "hsl(var(--foreground))" }}
-                          formatter={(value: number) => [formatCurrency(value), "Spent"]}
+                          formatter={(value: number) => [formatAmount(value), "Spent"]}
                         />
                         <Bar dataKey="amount" fill="hsl(221, 83%, 53%)" radius={[0, 6, 6, 0]} />
                       </BarChart>
@@ -414,7 +425,7 @@ export default function DashboardPage() {
                           by {emp?.full_name || "Unknown"} · {formatRelativeTime(req.submitted_at || req.created_at)}
                         </p>
                       </div>
-                      <span className="text-sm font-heading font-bold tabular-nums whitespace-nowrap shrink-0 ml-1">{formatCurrency(req.amount)}</span>
+                      <span className="text-sm font-heading font-bold tabular-nums whitespace-nowrap shrink-0 ml-1">{formatAmount(req.amount)}</span>
                     </div>
                   </Link>
                 )

@@ -11,7 +11,8 @@ import {
   PieChart as PieChartIcon,
 } from "lucide-react"
 import { useData, useAuth } from "@/lib/providers"
-import { formatCurrency, cn, getCategoryLabel } from "@/lib/utils"
+import { cn, getCategoryLabel } from "@/lib/utils"
+import { getCurrencySymbol } from "@/lib/currency"
 import {
   computeTotals,
   spendByCategory,
@@ -58,7 +59,7 @@ const CHART_COLORS = [
 
 export default function ReportsPage() {
   const { dbUser } = useAuth()
-  const { currentUser, expenseRequests, departments, vendors, users, organization } = useData()
+  const { currentUser, expenseRequests, departments, vendors, users, organization, formatAmount, currencyCode } = useData()
 
   const user = dbUser || currentUser
   const isRestricted = user?.role === "employee" || user?.role === "manager"
@@ -168,10 +169,10 @@ export default function ReportsPage() {
 
       {/* Summary Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Total Submitted" value={formatCurrency(totalAmount)} icon={FileText} trend={{ value: "+14%", positive: true }} />
-        <StatCard title="Total Approved" value={formatCurrency(approvedAmount)} icon={TrendingUp} trend={{ value: "+8.5%", positive: true }} />
-        <StatCard title="Total Paid" value={formatCurrency(paidAmount)} icon={DollarSign} />
-        <StatCard title="Avg. Request" value={formatCurrency(avgRequestAmount)} icon={BarChart3} />
+        <StatCard title="Total Submitted" value={formatAmount(totalAmount)} icon={FileText} />
+        <StatCard title="Total Approved" value={formatAmount(approvedAmount)} icon={TrendingUp} />
+        <StatCard title="Total Paid" value={formatAmount(paidAmount)} icon={DollarSign} />
+        <StatCard title="Avg. Request" value={formatAmount(avgRequestAmount)} icon={BarChart3} />
       </div>
 
       <Tabs defaultValue="overview" className="w-full">
@@ -206,10 +207,10 @@ export default function ReportsPage() {
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis dataKey="month" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} axisLine={false} tickLine={false} />
-                      <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v / 1000}k`} />
+                      <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${getCurrencySymbol(currencyCode)}${v / 1000}k`} />
                       <Tooltip
                         contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "10px", fontSize: "13px", color: "hsl(var(--foreground))", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)" }}
-                        formatter={(value: number) => [formatCurrency(value)]}
+                        formatter={(value: number) => [formatAmount(value)]}
                       />
                       <Legend wrapperStyle={{ fontSize: "12px" }} />
                       <Area type="monotone" dataKey="submitted" stroke="hsl(221, 83%, 53%)" fill="url(#submitted)" strokeWidth={2} />
@@ -266,9 +267,9 @@ export default function ReportsPage() {
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={categoryBreakdown} layout="vertical">
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
-                      <XAxis type="number" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v / 1000}k`} />
+                      <XAxis type="number" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${getCurrencySymbol(currencyCode)}${v / 1000}k`} />
                       <YAxis type="category" dataKey="name" width={120} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} axisLine={false} tickLine={false} />
-                      <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "10px", fontSize: "13px", color: "hsl(var(--foreground))" }} formatter={(value: number) => [formatCurrency(value), "Amount"]} />
+                      <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "10px", fontSize: "13px", color: "hsl(var(--foreground))" }} formatter={(value: number) => [formatAmount(value), "Amount"]} />
                       <Bar dataKey="amount" radius={[0, 6, 6, 0]}>
                         {categoryBreakdown.map((_, index) => (
                           <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
@@ -294,7 +295,7 @@ export default function ReportsPage() {
                         </div>
                         <div className="flex items-center gap-3 text-sm">
                           <span className="text-muted-foreground tabular-nums">{cat.count} requests</span>
-                          <span className="font-heading font-bold tabular-nums">{formatCurrency(cat.amount)}</span>
+                          <span className="font-heading font-bold tabular-nums">{formatAmount(cat.amount)}</span>
                         </div>
                       </div>
                       <Progress value={cat.pct} className="h-1.5" />
@@ -319,8 +320,8 @@ export default function ReportsPage() {
                     <BarChart data={deptData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis dataKey="name" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} />
-                      <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v / 1000}k`} />
-                      <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "10px", fontSize: "13px", color: "hsl(var(--foreground))" }} formatter={(value: number) => [formatCurrency(value)]} />
+                      <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${getCurrencySymbol(currencyCode)}${v / 1000}k`} />
+                      <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "10px", fontSize: "13px", color: "hsl(var(--foreground))" }} formatter={(value: number) => [formatAmount(value)]} />
                       <Legend wrapperStyle={{ fontSize: "12px" }} />
                       <Bar dataKey="spend" name="Spent" fill="hsl(221, 83%, 53%)" radius={[4, 4, 0, 0]} />
                       <Bar dataKey="budget" name="Budget" fill="hsl(var(--border))" radius={[4, 4, 0, 0]} />
@@ -339,7 +340,7 @@ export default function ReportsPage() {
                     <div key={dept.name} className="flex flex-col gap-2">
                       <div className="flex items-center justify-between text-sm">
                         <span className="font-medium">{dept.name}</span>
-                        <span className="text-xs text-muted-foreground tabular-nums">{formatCurrency(dept.spend)} / {formatCurrency(dept.budget)}</span>
+                        <span className="text-xs text-muted-foreground tabular-nums">{formatAmount(dept.spend)} / {formatAmount(dept.budget)}</span>
                       </div>
                       <Progress value={Math.min(dept.pct, 100)} className="h-2" />
                       <span className={cn("text-xs font-semibold", dept.pct >= 90 ? "text-red-600 dark:text-red-400" : dept.pct >= 75 ? "text-amber-600 dark:text-amber-400" : "text-emerald-600 dark:text-emerald-400")}>
@@ -380,7 +381,7 @@ export default function ReportsPage() {
                         </TableCell>
                         <TableCell className="text-sm font-medium">{v.name}</TableCell>
                         <TableCell className="text-right text-sm tabular-nums">{v.count}</TableCell>
-                        <TableCell className="text-right font-heading font-bold text-sm tabular-nums">{formatCurrency(v.amount)}</TableCell>
+                        <TableCell className="text-right font-heading font-bold text-sm tabular-nums">{formatAmount(v.amount)}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Progress value={totalAmount > 0 ? (v.amount / totalAmount) * 100 : 0} className="h-1.5 w-16" />

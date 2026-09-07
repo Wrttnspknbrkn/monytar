@@ -231,8 +231,8 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
                       className="text-sm"
                     />
                     <div className="flex items-center gap-3">
-                      <Button onClick={handleApprove} className="flex-1 font-semibold shadow-sm shadow-primary/20">
-                        <CheckCircle2 className="w-4 h-4 mr-2" /> Approve
+                      <Button onClick={handleApprove} disabled={isProcessing} className="flex-1 font-semibold shadow-sm shadow-primary/20">
+                        <CheckCircle2 className="w-4 h-4 mr-2" /> {isProcessing ? "Approving..." : "Approve"}
                       </Button>
                       <Dialog>
                         <DialogTrigger asChild>
@@ -252,8 +252,8 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
                             rows={3}
                           />
                           <DialogFooter>
-                            <Button variant="destructive" onClick={handleReject} className="font-semibold">
-                              Confirm Rejection
+                            <Button variant="destructive" onClick={handleReject} disabled={isProcessing} className="font-semibold">
+                              {isProcessing ? "Rejecting..." : "Confirm Rejection"}
                             </Button>
                           </DialogFooter>
                         </DialogContent>
@@ -292,8 +292,8 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
                         </div>
                       </div>
                       <DialogFooter>
-                        <Button onClick={handlePay} className="font-semibold shadow-sm shadow-primary/20">
-                          Confirm Payment
+                        <Button onClick={handlePay} disabled={isProcessing} className="font-semibold shadow-sm shadow-primary/20">
+                          {isProcessing ? "Processing..." : "Confirm Payment"}
                         </Button>
                       </DialogFooter>
                     </DialogContent>

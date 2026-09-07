@@ -11,6 +11,12 @@ export interface CurrencyMeta {
   decimals: number
 }
 
+// This is the single source of truth for which currencies Monytar supports —
+// every currency picker in the app (Settings, onboarding, etc.) must render
+// from this list, not a separate local copy. A previous bug let Settings
+// offer 8 currencies this file didn't know about; selecting one of those
+// silently fell back to USD everywhere `formatMoney`/`getCurrencyMeta` was
+// called, with no error.
 export const SUPPORTED_CURRENCIES: CurrencyMeta[] = [
   { code: "USD", symbol: "$", name: "US Dollar", decimals: 2 },
   { code: "EUR", symbol: "€", name: "Euro", decimals: 2 },
@@ -18,8 +24,16 @@ export const SUPPORTED_CURRENCIES: CurrencyMeta[] = [
   { code: "CAD", symbol: "CA$", name: "Canadian Dollar", decimals: 2 },
   { code: "AUD", symbol: "A$", name: "Australian Dollar", decimals: 2 },
   { code: "JPY", symbol: "¥", name: "Japanese Yen", decimals: 0 },
-  { code: "INR", symbol: "₹", name: "Indian Rupee", decimals: 2 },
+  { code: "CHF", symbol: "CHF", name: "Swiss Franc", decimals: 2 },
   { code: "NGN", symbol: "₦", name: "Nigerian Naira", decimals: 2 },
+  { code: "GHS", symbol: "GH₵", name: "Ghanaian Cedi", decimals: 2 },
+  { code: "KES", symbol: "KSh", name: "Kenyan Shilling", decimals: 2 },
+  { code: "ZAR", symbol: "R", name: "South African Rand", decimals: 2 },
+  { code: "INR", symbol: "₹", name: "Indian Rupee", decimals: 2 },
+  { code: "BRL", symbol: "R$", name: "Brazilian Real", decimals: 2 },
+  { code: "MXN", symbol: "MX$", name: "Mexican Peso", decimals: 2 },
+  { code: "SGD", symbol: "S$", name: "Singapore Dollar", decimals: 2 },
+  { code: "AED", symbol: "AED", name: "UAE Dirham", decimals: 2 },
 ]
 
 const CURRENCY_BY_CODE = new Map(SUPPORTED_CURRENCIES.map((c) => [c.code, c]))
@@ -32,8 +46,16 @@ const USD_RATES: Record<string, number> = {
   CAD: 1.36,
   AUD: 1.52,
   JPY: 156,
-  INR: 83,
+  CHF: 0.88,
   NGN: 1550,
+  GHS: 15.2,
+  KES: 129,
+  ZAR: 18.3,
+  INR: 83,
+  BRL: 5.4,
+  MXN: 17.1,
+  SGD: 1.34,
+  AED: 3.67,
 }
 
 export function isSupportedCurrency(code: string): boolean {

@@ -38,7 +38,7 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   // Protected routes — redirect unauthenticated users
-  const protectedPaths = ["/dashboard", "/requests", "/approvals", "/vendors", "/departments", "/users", "/reports", "/settings", "/notifications"]
+  const protectedPaths = ["/dashboard", "/requests", "/approvals", "/vendors", "/departments", "/users", "/reports", "/settings", "/notifications", "/demo-leads"]
   const isProtected = protectedPaths.some((p) => request.nextUrl.pathname.startsWith(p))
 
   // Demo mode is always accessible without auth

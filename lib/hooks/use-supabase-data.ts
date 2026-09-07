@@ -287,21 +287,16 @@ export async function nextRequestNumber(orgId: string): Promise<string> {
   return data as string
 }
 
-export async function createExpenseRequest(data: Partial<ExpenseRequest>) {
-  const supabase = getSupabaseBrowserClient()
-  const { data: result, error } = await supabase
-    .from("expense_requests")
-    .insert(data)
-    .select()
-    .single()
-  
-  if (error) throw error
-  
-  // Revalidate requests cache
-  mutate((key: string) => key?.startsWith("expense-requests:"))
-  
-  return result
-}
+// Request creation, approval, rejection, and mark-paid all go through their
+// dedicated API routes (app/api/requests, .../approve, .../reject,
+// .../mark-paid) instead of a raw client insert/update — those routes are
+// where the real business rules live (auto-approve threshold, no
+// self-approval, department scoping, status-transition guards, notification/
+// budget-alert side effects). A prior audit found equivalent raw-write
+// functions here being called directly by the client with none of that
+// enforcement, since RLS alone doesn't model the full state machine. Do not
+// re-add createExpenseRequest/approveExpenseRequest/rejectExpenseRequest/
+// markRequestAsPaid as direct-write functions — call the API routes instead.
 
 export async function updateExpenseRequest(id: string, updates: Partial<ExpenseRequest>) {
   const supabase = getSupabaseBrowserClient()
@@ -315,115 +310,6 @@ export async function updateExpenseRequest(id: string, updates: Partial<ExpenseR
   if (error) throw error
   
   // Revalidate caches
-  mutate((key: string) => key?.startsWith("expense-request"))
-  
-  return data
-}
-
-export async function approveExpenseRequest(
-  id: string, 
-  approverId: string, 
-  comment?: string
-) {
-  const supabase = getSupabaseBrowserClient()
-  const now = new Date().toISOString()
-  
-  const { data, error } = await supabase
-    .from("expense_requests")
-    .update({
-      status: "approved",
-      approved_by: approverId,
-      approved_at: now,
-      manager_comment: comment,
-      updated_at: now,
-    })
-    .eq("id", id)
-    .select()
-    .single()
-  
-  if (error) throw error
-  
-  // Update approval workflow
-  await supabase
-    .from("approval_workflows")
-    .update({
-      status: "approved",
-      comment,
-      actioned_at: now,
-    })
-    .eq("expense_request_id", id)
-    .eq("status", "pending")
-  
-  // Revalidate caches
-  mutate((key: string) => key?.startsWith("expense-request"))
-  
-  return data
-}
-
-export async function rejectExpenseRequest(
-  id: string, 
-  rejectorId: string, 
-  comment: string
-) {
-  const supabase = getSupabaseBrowserClient()
-  const now = new Date().toISOString()
-  
-  const { data, error } = await supabase
-    .from("expense_requests")
-    .update({
-      status: "rejected",
-      rejected_by: rejectorId,
-      rejected_at: now,
-      manager_comment: comment,
-      updated_at: now,
-    })
-    .eq("id", id)
-    .select()
-    .single()
-  
-  if (error) throw error
-  
-  // Update approval workflow
-  await supabase
-    .from("approval_workflows")
-    .update({
-      status: "rejected",
-      comment,
-      actioned_at: now,
-    })
-    .eq("expense_request_id", id)
-    .eq("status", "pending")
-  
-  // Revalidate caches
-  mutate((key: string) => key?.startsWith("expense-request"))
-  
-  return data
-}
-
-export async function markRequestAsPaid(
-  id: string,
-  paymentRef: string,
-  paymentMethod: string
-) {
-  const supabase = getSupabaseBrowserClient()
-  const now = new Date().toISOString()
-  
-  const { data, error } = await supabase
-    .from("expense_requests")
-    .update({
-      status: "paid",
-      payment_status: "paid",
-      payment_date: now,
-      payment_reference: paymentRef,
-      payment_method: paymentMethod,
-      updated_at: now,
-    })
-    .eq("id", id)
-    .select()
-    .single()
-  
-  if (error) throw error
-  
   mutate((key: string) => key?.startsWith("expense-request"))
   
   return data

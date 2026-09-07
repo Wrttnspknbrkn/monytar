@@ -3,7 +3,8 @@
 import Link from "next/link"
 import { FileText, Clock, CheckCircle2, XCircle, CreditCard, ChevronRight } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
-import { formatCurrency, formatDate, cn, getCategoryLabel } from "@/lib/utils"
+import { formatDate, cn, getCategoryLabel } from "@/lib/utils"
+import { useData } from "@/lib/providers"
 import type { ExpenseRequest } from "@/lib/types"
 
 const statusConfig = {
@@ -22,6 +23,7 @@ interface RequestCardProps {
 }
 
 export function RequestCard({ request, employeeName, showEmployee = false }: RequestCardProps) {
+  const { formatAmount } = useData()
   const config = statusConfig[request.status]
   const StatusIcon = config.icon
 
@@ -51,7 +53,7 @@ export function RequestCard({ request, employeeName, showEmployee = false }: Req
               )}
             </div>
             <div className="flex flex-col items-end gap-2">
-              <p className="font-heading font-bold text-base tabular-nums">{formatCurrency(request.amount)}</p>
+              <p className="font-heading font-bold text-base tabular-nums">{formatAmount(request.amount)}</p>
               <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
             </div>
           </div>

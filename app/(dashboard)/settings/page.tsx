@@ -21,25 +21,7 @@ import { PRODUCTS } from "@/lib/products"
 import { openBillingPortal } from "@/app/actions/stripe"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 import { isSupabaseConfigured } from "@/lib/supabase/config"
-
-const SUPPORTED_CURRENCIES = [
-  { code: "USD", label: "US Dollar", symbol: "$" },
-  { code: "EUR", label: "Euro", symbol: "\u20AC" },
-  { code: "GBP", label: "British Pound", symbol: "\u00A3" },
-  { code: "CAD", label: "Canadian Dollar", symbol: "CA$" },
-  { code: "AUD", label: "Australian Dollar", symbol: "A$" },
-  { code: "JPY", label: "Japanese Yen", symbol: "\u00A5" },
-  { code: "CHF", label: "Swiss Franc", symbol: "CHF" },
-  { code: "NGN", label: "Nigerian Naira", symbol: "\u20A6" },
-  { code: "GHS", label: "Ghanaian Cedi", symbol: "GH\u20B5" },
-  { code: "KES", label: "Kenyan Shilling", symbol: "KSh" },
-  { code: "ZAR", label: "South African Rand", symbol: "R" },
-  { code: "INR", label: "Indian Rupee", symbol: "\u20B9" },
-  { code: "BRL", label: "Brazilian Real", symbol: "R$" },
-  { code: "MXN", label: "Mexican Peso", symbol: "MX$" },
-  { code: "SGD", label: "Singapore Dollar", symbol: "S$" },
-  { code: "AED", label: "UAE Dirham", symbol: "AED" },
-]
+import { SUPPORTED_CURRENCIES } from "@/lib/currency"
 
 export default function SettingsPage() {
   const { dbUser } = useAuth()
@@ -441,7 +423,7 @@ export default function SettingsPage() {
                         <SelectItem key={c.code} value={c.code}>
                           <span className="flex items-center gap-2">
                             <span className="font-mono text-xs text-muted-foreground w-8">{c.code}</span>
-                            <span>{c.label}</span>
+                            <span>{c.name}</span>
                             <span className="text-muted-foreground ml-1">({c.symbol})</span>
                           </span>
                         </SelectItem>
