@@ -56,9 +56,9 @@ function buildPlans(interval: BillingInterval): PlanView[] {
       return {
         tier,
         name: product.name,
-        description: "For large organizations with custom requirements.",
-        priceLabel: "Custom",
-        periodLabel: "",
+        description: "For large organizations that need unlimited seats and hands-on onboarding.",
+        priceLabel: formatPrice(product.priceInCents),
+        periodLabel: "/mo",
         users,
         features: product.features,
         cta: "Contact sales",
@@ -90,25 +90,24 @@ function buildPlans(interval: BillingInterval): PlanView[] {
 }
 
 const comparisonFeatures = [
-  { name: "Users", free: "5", starter: "25", pro: "100", enterprise: "Unlimited" },
+  { name: "Users", free: "3", starter: "10", pro: "50", enterprise: "Unlimited" },
   { name: "Expense Requests", free: "50/mo", starter: "Unlimited", pro: "Unlimited", enterprise: "Unlimited" },
   { name: "Departments", free: "1", starter: "5", pro: "Unlimited", enterprise: "Unlimited" },
-  { name: "Approval Workflows", free: "Basic", starter: "Multi-level", pro: "Advanced", enterprise: "Custom" },
-  { name: "Budget Management", free: false, starter: false, pro: true, enterprise: true },
+  { name: "Approval Workflows", free: "Basic", starter: "Multi-level", pro: "Advanced", enterprise: "Advanced" },
+  { name: "Multi-Currency Reporting", free: false, starter: true, pro: true, enterprise: true },
+  { name: "Custom Expense Categories", free: false, starter: true, pro: true, enterprise: true },
   { name: "Vendor Management", free: false, starter: true, pro: true, enterprise: true },
-  { name: "Advanced Analytics", free: false, starter: false, pro: true, enterprise: true },
-  { name: "API Access", free: false, starter: false, pro: true, enterprise: true },
-  { name: "SSO / SAML", free: false, starter: false, pro: true, enterprise: true },
-  { name: "Audit Trail", free: false, starter: false, pro: true, enterprise: true },
-  { name: "Custom Branding", free: false, starter: false, pro: false, enterprise: true },
-  { name: "On-Premise Deploy", free: false, starter: false, pro: false, enterprise: true },
-  { name: "SLA Guarantee", free: false, starter: false, pro: false, enterprise: true },
+  { name: "Budget Management & Alerts", free: false, starter: false, pro: true, enterprise: true },
+  { name: "Full Request & Approval History", free: false, starter: false, pro: true, enterprise: true },
+  { name: "Dedicated Onboarding & Training", free: false, starter: false, pro: false, enterprise: true },
+  { name: "Custom Integrations", free: false, starter: false, pro: false, enterprise: true },
+  { name: "Single Sign-On", free: "Coming soon", starter: "Coming soon", pro: "Coming soon", enterprise: "Coming soon" },
 ]
 
 const faqs = [
   {
     q: "Can I try Monytar before committing?",
-    a: "Yes. All paid plans come with a 14-day free trial. No credit card required. You can also use our Free plan indefinitely for up to 5 users.",
+    a: "Yes. All paid plans come with a 14-day free trial. No credit card required. You can also use our Free plan indefinitely for up to 3 users.",
   },
   {
     q: "How does the interactive demo work?",
@@ -116,7 +115,7 @@ const faqs = [
   },
   {
     q: "How is billing structured?",
-    a: "Monytar uses organization-based pricing, not per-user pricing. Each plan includes a set number of users (5, 25, or 100+) for a flat monthly fee. This makes costs predictable as your team grows within your plan limits.",
+    a: "Monytar uses organization-based pricing, not per-user pricing. Each plan includes a set number of users (3, 10, 50, or unlimited on Enterprise) for a flat monthly fee. This makes costs predictable as your team grows within your plan limits.",
   },
   {
     q: "Can I upgrade or downgrade at any time?",
@@ -124,7 +123,7 @@ const faqs = [
   },
   {
     q: "What about enterprise deployment?",
-    a: "Enterprise customers can choose between our cloud-hosted solution or an on-premise deployment. We provide full support for custom integrations, SSO/SAML, dedicated infrastructure, and SLA guarantees.",
+    a: "Enterprise is $199/mo flat for unlimited seats, plus dedicated onboarding and custom integration work scoped to your finance stack. Talk to our team and we'll walk through what that looks like for you.",
   },
   {
     q: "Is my data secure?",

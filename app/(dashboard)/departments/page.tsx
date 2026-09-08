@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { Plus, Building2, Users, AlertTriangle } from "lucide-react"
+import { useMemo, useState } from "react"
+import { Plus, Building2, Users, AlertTriangle, Archive, ArchiveRestore } from "lucide-react"
 import { useData, useAuth } from "@/lib/providers"
 import { formatCurrency, generateId, cn, getInitials } from "@/lib/utils"
 import { computeBudgetStatus } from "@/lib/budgets/calc"
@@ -13,6 +13,7 @@ import { Progress } from "@/components/ui/progress"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
 import { toast } from "sonner"
 import type { BudgetPeriod } from "@/lib/types"
 
@@ -28,6 +29,25 @@ export default function DepartmentsPage() {
   const managers = users.filter((u) => u.role === "manager" || u.role === "admin")
 
   const [saving, setSaving] = useState(false)
+  const [showArchived, setShowArchived] = useState(false)
+  const [archivingId, setArchivingId] = useState<string | null>(null)
+
+  const archivedCount = useMemo(() => departments.filter((d) => d.is_active === false).length, [departments])
+  const visibleDepartments = showArchived ? departments : departments.filter((d) => d.is_active !== false)
+
+  async function handleToggleArchived(deptId: string, name: string, archive: boolean) {
+    if (archive && !window.confirm(`Archive "${name}"? It stays on past requests and reports, but won't be selectable for new ones.`)) return
+    setArchivingId(deptId)
+    try {
+      await updateDepartment(deptId, { is_active: !archive })
+      toast.success(archive ? `${name} archived` : `${name} restored`)
+    } catch (err) {
+      console.error("[Departments] archive toggle failed:", err)
+      toast.error("Failed to update department. Please try again.")
+    } finally {
+      setArchivingId(null)
+    }
+  }
 
   async function handleAdd() {
     if (!form.name.trim() || !form.budget_amount) { toast.error("Name and budget are required"); return }
@@ -55,8 +75,15 @@ export default function DepartmentsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="font-heading text-2xl font-extrabold tracking-tight">Departments</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">{departments.length} departments with budget tracking</p>
+          <p className="text-muted-foreground text-sm mt-0.5">{visibleDepartments.length} departments with budget tracking</p>
         </div>
+        <div className="flex items-center gap-4">
+          {archivedCount > 0 && (
+            <label className="flex items-center gap-2 text-xs font-medium text-muted-foreground cursor-pointer">
+              <Switch checked={showArchived} onCheckedChange={setShowArchived} />
+              Show archived ({archivedCount})
+            </label>
+          )}
         {canEdit && (
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
@@ -94,26 +121,46 @@ export default function DepartmentsPage() {
             </DialogContent>
           </Dialog>
         )}
+        </div>
       </div>
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {departments.map((dept) => {
+        {visibleDepartments.map((dept) => {
+          const archived = dept.is_active === false
           const spend = getDepartmentSpend(dept.id)
           const budgetStatus = computeBudgetStatus(spend, dept.budget_amount, orgSettings?.budget_alert_thresholds)
           const pct = budgetStatus.percentage
           const manager = dept.manager_id ? users.find((u) => u.id === dept.manager_id) : undefined
           const memberCount = users.filter((u) => u.department_id === dept.id).length
           return (
-            <Card key={dept.id} className="border-border/60 hover:border-primary/20 transition-all duration-200 hover:shadow-md hover:shadow-foreground/[0.03] hover:-translate-y-0.5">
+            <Card key={dept.id} className={cn("border-border/60 hover:border-primary/20 transition-all duration-200 hover:shadow-md hover:shadow-foreground/[0.03] hover:-translate-y-0.5 group", archived && "opacity-60")}>
               <CardContent className="p-5">
                 <div className="flex items-start gap-3 mb-4">
                   <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-secondary">
                     <Building2 className="w-5 h-5 text-muted-foreground" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-heading font-bold text-sm">{dept.name}</h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-heading font-bold text-sm">{dept.name}</h3>
+                      {archived && (
+                        <span className="inline-flex px-1.5 py-0.5 rounded-md border text-[9px] font-semibold uppercase tracking-wider bg-secondary text-muted-foreground border-border">
+                          Archived
+                        </span>
+                      )}
+                    </div>
                     {dept.description && <p className="text-xs text-muted-foreground truncate">{dept.description}</p>}
                   </div>
+                  {canEdit && (
+                    <button
+                      type="button"
+                      onClick={() => handleToggleArchived(dept.id, dept.name, !archived)}
+                      disabled={archivingId === dept.id}
+                      className="text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100 shrink-0"
+                      aria-label={archived ? `Restore ${dept.name}` : `Archive ${dept.name}`}
+                    >
+                      {archived ? <ArchiveRestore className="w-3.5 h-3.5" /> : <Archive className="w-3.5 h-3.5" />}
+                    </button>
+                  )}
                 </div>
 
                 {/* Budget progress */}

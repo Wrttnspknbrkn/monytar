@@ -2,8 +2,11 @@ import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { z } from "zod"
 import { enforceRateLimit, getClientIp } from "@/lib/api/rate-limit"
-import { getTierLimits } from "@/lib/products"
+import { getTierLimits, normalizeLimit } from "@/lib/products"
 import { getSupabaseUrl, getSupabaseServiceKey } from "@/lib/supabase/config"
+import { getSupabaseServerClient } from "@/lib/supabase/server"
+import { sendEmail } from "@/lib/notifications/email"
+import { confirmEmailEmail } from "@/lib/notifications/templates"
 import type { SubscriptionTier } from "@/lib/types"
 
 const acceptSchema = z.object({
@@ -19,6 +22,47 @@ function getAdminClient() {
       persistSession: false,
     },
   })
+}
+
+// Read-only preview so the acceptance page can show "join {org} as {role}"
+// before the invitee fills in a name/password. Never mutates the invitation.
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const token = searchParams.get("token")
+    if (!token) {
+      return NextResponse.json({ error: "Missing token" }, { status: 400 })
+    }
+
+    const supabase = getAdminClient()
+    const { data: invitation, error } = await supabase
+      .from("user_invitations")
+      .select("email, role, status, expires_at, organization:organizations(name)")
+      .eq("token", token)
+      .single()
+
+    if (error || !invitation) {
+      return NextResponse.json({ error: "Invalid or expired invitation" }, { status: 404 })
+    }
+    if (invitation.status !== "pending") {
+      return NextResponse.json({ error: "This invitation has already been used or revoked" }, { status: 400 })
+    }
+    if (new Date(invitation.expires_at) < new Date()) {
+      return NextResponse.json({ error: "This invitation has expired" }, { status: 400 })
+    }
+
+    const org = invitation.organization as unknown as { name: string } | { name: string }[] | null
+    const organizationName = Array.isArray(org) ? org[0]?.name : org?.name
+
+    return NextResponse.json({
+      email: invitation.email,
+      role: invitation.role,
+      organizationName: organizationName || "your organization",
+    })
+  } catch (error) {
+    console.error("Invitation preview error:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  }
 }
 
 export async function POST(request: Request) {
@@ -72,8 +116,11 @@ export async function POST(request: Request) {
       .eq("organization_id", invitation.organization_id)
       .eq("is_active", true)
 
-    const tierMax = getTierLimits((org?.subscription_tier as SubscriptionTier) || "free").maxUsers
-    const seatLimit = Math.min(tierMax, org?.max_users ?? tierMax)
+    // -1 means "unlimited" on both the tier definition and the stored column —
+    // normalize before Math.min (see the identical fix in app/api/invitations/route.ts).
+    const tierMax = normalizeLimit(getTierLimits((org?.subscription_tier as SubscriptionTier) || "free").maxUsers)
+    const storedMax = org?.max_users != null ? normalizeLimit(org.max_users) : tierMax
+    const seatLimit = Math.min(tierMax, storedMax)
 
     if (userCount !== null && userCount >= seatLimit) {
       return NextResponse.json(
@@ -84,19 +131,28 @@ export async function POST(request: Request) {
 
     // Server creates the auth account using the invitation's email — this is
     // what guarantees the new user id can only be bound to the invited email.
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+    // Uses generateLink rather than admin.createUser + email_confirm: true —
+    // see the identical change (and the reasoning) in app/api/auth/signup/route.ts.
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+    const { data: linkData, error: authError } = await supabase.auth.admin.generateLink({
+      type: "signup",
       email: invitation.email,
       password,
-      email_confirm: true,
-      user_metadata: { full_name: fullName },
+      options: {
+        data: { full_name: fullName },
+        redirectTo: `${appUrl}/verify-email`,
+      },
     })
 
-    if (authError || !authData.user) {
+    if (authError || !linkData?.user) {
       return NextResponse.json(
         { error: authError?.message || "Failed to create account" },
         { status: 400 },
       )
     }
+
+    const authData = { user: linkData.user }
+    const confirmationUrl = linkData.properties?.action_link
 
     // Create the organization-scoped profile row.
     const { error: userError } = await supabase.from("users").insert({
@@ -122,10 +178,28 @@ export async function POST(request: Request) {
       .update({ status: "accepted", accepted_at: new Date().toISOString() })
       .eq("id", invitation.id)
 
+    // Best-effort confirmation email (no-ops without RESEND_API_KEY — see
+    // confirmationUrl fallback below, matching the invitation-send route).
+    const emailResult = confirmationUrl
+      ? await sendEmail(invitation.email, confirmEmailEmail({ fullName, url: confirmationUrl }))
+      : { sent: false }
+
+    // Best-effort sign-in, same as signup: succeeds immediately if the
+    // Supabase project doesn't enforce email confirmation, fails gracefully
+    // (and the client falls back to the "check your email" step) if it does.
+    const sessionClient = await getSupabaseServerClient()
+    const { error: signInError } = await sessionClient.auth.signInWithPassword({
+      email: invitation.email,
+      password,
+    })
+
     return NextResponse.json({
       success: true,
       organization_id: invitation.organization_id,
       email: invitation.email,
+      signedIn: !signInError,
+      emailSent: emailResult.sent,
+      confirmationUrl: !emailResult.sent ? confirmationUrl : undefined,
     })
   } catch (error) {
     console.error("Accept invitation error:", error)

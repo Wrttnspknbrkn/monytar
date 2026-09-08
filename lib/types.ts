@@ -4,7 +4,19 @@ export type UserRole = "employee" | "manager" | "finance" | "admin"
 export type RequestStatus = "draft" | "pending" | "approved" | "rejected" | "paid" | "cancelled"
 export type PaymentStatus = "unpaid" | "processing" | "paid" | "failed"
 export type Priority = "low" | "medium" | "high" | "urgent"
-export type ExpenseCategory = "travel" | "meals" | "supplies" | "software" | "equipment" | "other"
+// Free-form now that organizations can add their own custom categories
+// (see expense_categories table, migration 022) — no longer a fixed union.
+// DEFAULT_EXPENSE_CATEGORIES below are the 6 system-wide defaults every org
+// starts with; getCategoryLabel() in lib/utils.ts still special-cases them.
+export type ExpenseCategory = string
+export const DEFAULT_EXPENSE_CATEGORIES = ["travel", "meals", "supplies", "software", "equipment", "other"] as const
+
+export interface ExpenseCategoryOption {
+  id: string
+  organization_id: string | null
+  name: string
+  is_active: boolean
+}
 export type PaymentMethod = "cash" | "bank_transfer" | "credit_card" | "check"
 export type BudgetPeriod = "monthly" | "quarterly" | "yearly"
 export type SubscriptionTier = "free" | "starter" | "professional" | "enterprise"
@@ -33,6 +45,7 @@ export interface Organization {
   subscription_status: SubscriptionStatus
   stripe_customer_id?: string
   stripe_subscription_id?: string
+  billing_interval?: "month" | "year"
   max_users: number
   current_period_start?: string
   current_period_end?: string
@@ -67,6 +80,7 @@ export interface Department {
   budget_amount: number
   budget_period: BudgetPeriod
   parent_department_id?: string
+  is_active?: boolean
   created_at: string
   updated_at: string
 }
@@ -82,6 +96,7 @@ export interface Vendor {
   tax_id?: string
   is_approved: boolean
   approval_required: boolean
+  is_active?: boolean
   payment_terms?: string
   notes?: string
   created_by?: string

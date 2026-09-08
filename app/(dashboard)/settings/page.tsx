@@ -1,9 +1,11 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { User, Building2, Bell, Palette, Save, Check, Moon, Sun, Monitor, DollarSign, CreditCard, ArrowRight, ArrowUpRight, Loader2 } from "lucide-react"
+import { useState, useEffect, type FormEvent, type ChangeEvent } from "react"
+import { User, Building2, Bell, Palette, Save, Check, Moon, Sun, Monitor, DollarSign, CreditCard, ArrowRight, ArrowUpRight, Loader2, Tag, Plus, Trash2, Lock, ImageIcon, X } from "lucide-react"
 import { useData, useAuth } from "@/lib/providers"
-import { getRoleLabel, formatCurrency, cn } from "@/lib/utils"
+import { getRoleLabel, formatCurrency, getCategoryLabel, cn } from "@/lib/utils"
+import { useExpenseCategories } from "@/lib/hooks/use-categories"
+import { uploadOrgLogo, removeOrgLogo, validateLogoFile } from "@/lib/logo/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { PasswordInput } from "@/components/ui/password-input"
@@ -17,8 +19,9 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { toast } from "sonner"
 import { useTheme } from "next-themes"
 import Link from "next/link"
-import { PRODUCTS } from "@/lib/products"
-import { openBillingPortal } from "@/app/actions/stripe"
+import { mutate } from "swr"
+import { PRODUCTS, type Product } from "@/lib/products"
+import { openBillingPortal, createSubscriptionUpdateSession, cancelSubscription } from "@/app/actions/stripe"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 import { isSupabaseConfigured } from "@/lib/supabase/config"
 import { SUPPORTED_CURRENCIES } from "@/lib/currency"
@@ -201,9 +204,100 @@ export default function SettingsPage() {
 
   const [cancelLoading, setCancelLoading] = useState(false)
   const [portalLoading, setPortalLoading] = useState(false)
+  const [changingPlanId, setChangingPlanId] = useState<string | null>(null)
 
-  // Current plan detection based on org subscription tier
-  const currentPlanId = `${organization?.subscription_tier || "free"}-monthly`
+  const [logoUploading, setLogoUploading] = useState(false)
+
+  async function handleLogoChange(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ""
+    if (!file) return
+    const validationError = validateLogoFile(file)
+    if (validationError) {
+      toast.error(validationError)
+      return
+    }
+    setLogoUploading(true)
+    try {
+      await uploadOrgLogo(file)
+      toast.success("Logo updated")
+      if (organization?.id) mutate(`organization:${organization.id}`)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to upload logo")
+    } finally {
+      setLogoUploading(false)
+    }
+  }
+
+  async function handleLogoRemove() {
+    if (!window.confirm("Remove your organization logo?")) return
+    setLogoUploading(true)
+    try {
+      await removeOrgLogo()
+      toast.success("Logo removed")
+      if (organization?.id) mutate(`organization:${organization.id}`)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to remove logo")
+    } finally {
+      setLogoUploading(false)
+    }
+  }
+
+  const { categories, mutate: mutateCategories } = useExpenseCategories()
+  const [newCategoryName, setNewCategoryName] = useState("")
+  const [addingCategory, setAddingCategory] = useState(false)
+  const [deletingCategoryId, setDeletingCategoryId] = useState<string | null>(null)
+
+  async function handleAddCategory(e: FormEvent) {
+    e.preventDefault()
+    if (!newCategoryName.trim()) return
+    setAddingCategory(true)
+    try {
+      const res = await fetch("/api/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newCategoryName.trim() }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        toast.error(data.error || "Couldn't add category")
+        return
+      }
+      toast.success(`"${newCategoryName.trim()}" added`)
+      setNewCategoryName("")
+      mutateCategories()
+    } catch {
+      toast.error("Couldn't add category. Please try again.")
+    } finally {
+      setAddingCategory(false)
+    }
+  }
+
+  async function handleDeleteCategory(id: string, name: string) {
+    if (!window.confirm(`Remove "${name}"? Existing requests keep it, but it won't be selectable for new ones.`)) return
+    setDeletingCategoryId(id)
+    try {
+      const res = await fetch(`/api/categories?id=${id}`, { method: "DELETE" })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        toast.error(data.error || "Couldn't remove category")
+        return
+      }
+      mutateCategories()
+    } catch {
+      toast.error("Couldn't remove category. Please try again.")
+    } finally {
+      setDeletingCategoryId(null)
+    }
+  }
+
+  // Current plan detection based on org subscription tier + billing interval.
+  // Free and Enterprise only ever have one row each; Starter/Professional
+  // each have a separate monthly/yearly product row, so the interval matters.
+  const tier = organization?.subscription_tier || "free"
+  const billingInterval = organization?.billing_interval === "year" ? "yearly" : "monthly"
+  const currentPlanId =
+    tier === "free" ? "free" : tier === "enterprise" ? "enterprise-monthly" : `${tier}-${billingInterval}`
   const currentPlan = PRODUCTS.find((p) => p.id === currentPlanId) || PRODUCTS[0]
 
   async function handleManageBilling() {
@@ -221,6 +315,61 @@ export default function SettingsPage() {
       toast.error("Failed to open billing portal. Please try again.")
     } finally {
       setPortalLoading(false)
+    }
+  }
+
+  function refreshOrganization() {
+    if (organization?.id) mutate(`organization:${organization.id}`)
+  }
+
+  async function handleChangePlan(product: Product) {
+    if (product.id === currentPlanId || !isAdminOrFinance) return
+
+    // Enterprise has no self-serve checkout — the card below links to /contact instead.
+    if (product.tier === "enterprise") return
+
+    setChangingPlanId(product.id)
+    try {
+      if (product.priceInCents === 0) {
+        // Downgrading to Free = cancelling the paid subscription.
+        if (!organization?.stripe_subscription_id) {
+          toast.error("No active subscription to cancel.")
+          return
+        }
+        if (!window.confirm("You'll move to the Free plan at the end of your current billing period, and keep paid features until then. Continue?")) {
+          return
+        }
+        const result = await cancelSubscription(organization.stripe_subscription_id)
+        if (result.error) {
+          toast.error(result.error)
+          return
+        }
+        toast.success("Your subscription will end at the close of the current billing period, then you'll move to Free.")
+        return
+      }
+
+      if (currentPlan.priceInCents === 0) {
+        // Free -> paid: no existing subscription to update, so this needs a
+        // real Checkout session. Return to Settings afterward, not /pricing.
+        window.location.href = `/checkout?plan=${product.id}&returnTo=${encodeURIComponent("/settings")}`
+        return
+      }
+
+      // Paid -> paid (upgrade, downgrade, or interval switch): update the
+      // existing subscription in place with proration, no new checkout.
+      const result = await createSubscriptionUpdateSession(product.id)
+      if (result.error) {
+        toast.error(result.error)
+        return
+      }
+      toast.success(`Plan updated to ${product.name}. This can take a few seconds to reflect here.`)
+      // The DB row itself is only updated once the Stripe webhook fires;
+      // give it a moment before refetching so we don't just re-show stale data.
+      setTimeout(refreshOrganization, 3000)
+    } catch {
+      toast.error("Failed to change plan. Please try again.")
+    } finally {
+      setChangingPlanId(null)
     }
   }
 
@@ -393,6 +542,46 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
+          {/* Logo */}
+          <Card className="border-border/60">
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-2">
+                <ImageIcon className="w-4 h-4 text-primary" />
+                <CardTitle className="font-heading text-base font-bold">Logo</CardTitle>
+              </div>
+              <CardDescription className="text-xs">
+                {user?.role === "admin" ? "Shown wherever your organization is identified in the product." : "Only admins can change the organization logo."}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center justify-center w-16 h-16 rounded-xl bg-secondary border border-border/60 overflow-hidden shrink-0">
+                  {organization?.logo_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={organization.logo_url} alt={`${organization?.name || "Organization"} logo`} className="w-full h-full object-contain" />
+                  ) : (
+                    <ImageIcon className="w-6 h-6 text-muted-foreground/40" />
+                  )}
+                </div>
+                {user?.role === "admin" && (
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="logo-upload" className={cn("inline-flex items-center h-9 px-4 rounded-lg border text-xs font-semibold cursor-pointer hover:bg-secondary/60 transition-colors", logoUploading && "opacity-50 pointer-events-none")}>
+                      {logoUploading ? <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" /> : null}
+                      {organization?.logo_url ? "Replace" : "Upload"}
+                    </Label>
+                    <input id="logo-upload" type="file" accept="image/jpeg,image/png,image/webp,image/svg+xml" onChange={handleLogoChange} disabled={logoUploading} className="sr-only" />
+                    {organization?.logo_url && (
+                      <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-destructive" onClick={handleLogoRemove} disabled={logoUploading}>
+                        <X className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-3">JPG, PNG, WEBP, or SVG. Up to 2 MB.</p>
+            </CardContent>
+          </Card>
+
           {/* Currency Selector */}
           <Card className="border-border/60">
             <CardHeader className="pb-4">
@@ -446,6 +635,73 @@ export default function SettingsPage() {
                   <span className="font-mono font-semibold">{formatCurrency(1234.56, orgSettings?.default_currency || "USD")}</span>
                 </p>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Expense Categories */}
+          <Card className="border-border/60">
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-2">
+                <Tag className="w-4 h-4 text-primary" />
+                <CardTitle className="font-heading text-base font-bold">Expense Categories</CardTitle>
+              </div>
+              <CardDescription className="text-xs">
+                {organization?.subscription_tier === "free"
+                  ? "Add your own categories alongside the built-in six on the Starter plan or higher."
+                  : "The built-in six categories, plus any your organization has added."}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+              <div className="flex flex-wrap gap-2">
+                {categories.map((c) => {
+                  const isCustom = c.organization_id !== null
+                  return (
+                    <span
+                      key={c.id}
+                      className={cn(
+                        "inline-flex items-center gap-1.5 pl-3 pr-2 py-1.5 rounded-full text-xs font-medium border",
+                        isCustom ? "bg-primary/5 border-primary/20 text-foreground" : "bg-secondary/50 border-border/60 text-muted-foreground",
+                      )}
+                    >
+                      {getCategoryLabel(c.name)}
+                      {isCustom && isAdminOrFinance && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteCategory(c.id, c.name)}
+                          disabled={deletingCategoryId === c.id}
+                          className="hover:text-destructive transition-colors"
+                          aria-label={`Remove ${c.name}`}
+                        >
+                          {deletingCategoryId === c.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                        </button>
+                      )}
+                    </span>
+                  )
+                })}
+              </div>
+
+              {isAdminOrFinance && organization?.subscription_tier !== "free" && (
+                <form onSubmit={handleAddCategory} className="flex items-center gap-2">
+                  <Input
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    placeholder="e.g. Marketing"
+                    maxLength={50}
+                    className="h-9 max-w-xs"
+                  />
+                  <Button type="submit" size="sm" variant="outline" disabled={addingCategory || !newCategoryName.trim()} className="h-9 font-semibold bg-transparent">
+                    {addingCategory ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                    Add
+                  </Button>
+                </form>
+              )}
+
+              {isAdminOrFinance && organization?.subscription_tier === "free" && (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground p-3 rounded-lg bg-secondary/40 border border-border/40">
+                  <Lock className="w-3.5 h-3.5 shrink-0" />
+                  Upgrade to Starter or higher to add your own categories.
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -643,8 +899,12 @@ export default function SettingsPage() {
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">{currentPlan.description}</p>
                   <p className="text-2xl font-extrabold mt-2 tracking-tight">
-                    {currentPlan.priceInCents === 0 ? "Custom" : `$${(currentPlan.priceInCents / 100).toFixed(0)}`}
-                    {currentPlan.priceInCents > 0 && <span className="text-sm font-normal text-muted-foreground">/month</span>}
+                    {currentPlan.priceInCents === 0 ? "Free" : `$${(currentPlan.priceInCents / 100).toFixed(0)}`}
+                    {currentPlan.priceInCents > 0 && (
+                      <span className="text-sm font-normal text-muted-foreground">
+                        /{currentPlan.interval === "year" ? "year" : "month"}
+                      </span>
+                    )}
                   </p>
                 </div>
               </div>
@@ -714,8 +974,10 @@ export default function SettingsPage() {
                       )}
                       <h4 className="font-heading font-bold text-sm">{product.name}</h4>
                       <p className="text-xl font-extrabold mt-1 tracking-tight">
-                        {product.priceInCents === 0 ? "Custom" : `$${(product.priceInCents / 100).toFixed(0)}`}
-                        {product.priceInCents > 0 && <span className="text-xs font-normal text-muted-foreground">/mo</span>}
+                        {product.priceInCents === 0 ? "Free" : `$${(product.priceInCents / 100).toFixed(0)}`}
+                        {product.priceInCents > 0 && (
+                          <span className="text-xs font-normal text-muted-foreground">/{product.interval === "year" ? "yr" : "mo"}</span>
+                        )}
                       </p>
                       <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{product.description}</p>
                       <div className="mt-3">
@@ -723,23 +985,29 @@ export default function SettingsPage() {
                           <Button variant="outline" size="sm" className="w-full text-xs font-semibold bg-transparent" disabled>
                             Current Plan
                           </Button>
-                        ) : product.priceInCents === 0 ? (
+                        ) : product.tier === "enterprise" ? (
                           <Link href="/contact">
                             <Button variant="outline" size="sm" className="w-full text-xs font-semibold bg-transparent">
                               Contact Sales <ArrowUpRight className="w-3 h-3 ml-1" />
                             </Button>
                           </Link>
                         ) : (
-                          <Link href={`/checkout?plan=${product.id}`}>
-                            <Button
-                              variant={isUpgrade ? "default" : "outline"}
-                              size="sm"
-                              className={cn("w-full text-xs font-semibold", !isUpgrade && "bg-transparent")}
-                            >
-                              {isUpgrade ? "Upgrade" : isDowngrade ? "Downgrade" : "Select"}
-                              <ArrowRight className="w-3 h-3 ml-1" />
-                            </Button>
-                          </Link>
+                          <Button
+                            variant={isUpgrade ? "default" : "outline"}
+                            size="sm"
+                            disabled={!isAdminOrFinance || changingPlanId !== null}
+                            onClick={() => handleChangePlan(product)}
+                            className={cn("w-full text-xs font-semibold", !isUpgrade && "bg-transparent")}
+                          >
+                            {changingPlanId === product.id ? (
+                              <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Working...</>
+                            ) : (
+                              <>
+                                {isUpgrade ? "Upgrade" : isDowngrade ? "Downgrade" : "Select"}
+                                <ArrowRight className="w-3 h-3 ml-1" />
+                              </>
+                            )}
+                          </Button>
                         )}
                       </div>
                     </div>
@@ -761,13 +1029,13 @@ export default function SettingsPage() {
               <Button
                 variant="outline"
                 onClick={handleCancelSubscription}
-                disabled={cancelLoading || currentPlan.name === "Starter"}
+                disabled={cancelLoading || !isAdminOrFinance || currentPlan.tier === "free"}
                 className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive font-semibold bg-transparent"
               >
                 {cancelLoading ? (
                   <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Cancelling...</>
-                ) : currentPlan.name === "Starter" ? (
-                  "Already on the lowest plan"
+                ) : currentPlan.tier === "free" ? (
+                  "Already on the Free plan"
                 ) : (
                   "Cancel Subscription"
                 )}

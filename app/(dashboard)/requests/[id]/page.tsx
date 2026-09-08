@@ -2,8 +2,7 @@
 
 import { use, useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { ArrowLeft, Clock, CheckCircle2, XCircle, FileText, DollarSign, User, Building2, MessageSquare, CreditCard } from "lucide-react"
+import { ArrowLeft, Clock, CheckCircle2, XCircle, FileText, DollarSign, User, Building2, MessageSquare, CreditCard, Pencil } from "lucide-react"
 import { useData, useAuth } from "@/lib/providers"
 import { formatCurrency, formatDateTime, formatRelativeTime, getCategoryLabel, getRoleLabel, cn } from "@/lib/utils"
 import { RequestStatusBadge } from "@/components/requests/request-status-badge"
@@ -21,9 +20,8 @@ import { toast } from "sonner"
 
 export default function RequestDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
-  const router = useRouter()
   const { dbUser } = useAuth()
-  const { currentUser, getRequestWithRelations, approveRequest, rejectRequest, markPaid, canUserApprove, orgSettings, updateRequest } = useData()
+  const { currentUser, getRequestWithRelations, approveRequest, rejectRequest, markPaid, submitRequest, canUserApprove, orgSettings } = useData()
   const [comment, setComment] = useState("")
   const [rejectComment, setRejectComment] = useState("")
   const [payRef, setPayRef] = useState("")
@@ -53,25 +51,28 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
   const canPay = user && (user.role === "finance" || user.role === "admin") && request.status === "approved"
   // The requester may revise and resubmit a rejected request.
   const canResubmit = user && request.employee_id === user.id && request.status === "rejected"
+  // The requester may edit and submit their own still-draft request — this
+  // used to be a dead end (audit P2-10): no edit form, no submit action,
+  // "Save as Draft" was permanent once clicked.
+  const isOwnDraft = user && request.employee_id === user.id && request.status === "draft"
 
-  async function handleResubmit() {
+  async function handleSubmitForApproval() {
     if (isProcessing) return
     setIsProcessing(true)
     try {
-      await updateRequest(id, {
-        status: "pending",
-        rejected_by: undefined,
-        rejected_at: undefined,
-        manager_comment: undefined,
-        submitted_at: new Date().toISOString(),
-      })
-      toast.success("Request resubmitted for approval")
-    } catch {
-      toast.error("Failed to resubmit request")
+      const { autoApproved } = await submitRequest(id)
+      toast.success(autoApproved ? "Submitted and auto-approved" : "Submitted for approval")
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to submit request")
     } finally {
       setIsProcessing(false)
     }
   }
+
+  // Resubmitting a rejected request goes through the same server-side path
+  // as submitting a draft — real auto-approve/receipt-threshold checks,
+  // instead of a raw client update straight to "pending".
+  const handleResubmit = handleSubmitForApproval
 
   async function handleApprove() {
     if (isProcessing) return
@@ -195,7 +196,7 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
           </Card>
 
           {/* Receipts */}
-          <RequestReceipts requestId={id} fallbackReceipts={request.receipts} />
+          <RequestReceipts requestId={id} fallbackReceipts={request.receipts} requestStatus={request.status} />
 
           {/* Resubmit (owner of a rejected request) */}
           {canResubmit && (
@@ -207,9 +208,40 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
                 <p className="text-sm text-muted-foreground">
                   This request was rejected. Address the reviewer&apos;s comment above, then resubmit it for approval.
                 </p>
-                <Button onClick={handleResubmit} disabled={isProcessing} className="font-semibold shadow-sm shadow-primary/20">
-                  <Clock className="w-4 h-4 mr-2" /> {isProcessing ? "Resubmitting..." : "Resubmit for Approval"}
-                </Button>
+                <div className="flex items-center gap-3">
+                  <Link href={`/requests/new?edit=${id}`} className="flex-1">
+                    <Button variant="outline" className="w-full font-semibold bg-transparent">
+                      <Pencil className="w-4 h-4 mr-2" /> Edit
+                    </Button>
+                  </Link>
+                  <Button onClick={handleResubmit} disabled={isProcessing} className="flex-1 font-semibold shadow-sm shadow-primary/20">
+                    <Clock className="w-4 h-4 mr-2" /> {isProcessing ? "Resubmitting..." : "Resubmit"}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Edit / submit (owner of a still-draft request) */}
+          {isOwnDraft && (
+            <Card className="border-border/60">
+              <CardHeader className="pb-3">
+                <CardTitle className="font-heading text-base font-bold">Draft</CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-3">
+                <p className="text-sm text-muted-foreground">
+                  This request hasn&apos;t been submitted yet. Finish editing it, then submit it for approval.
+                </p>
+                <div className="flex items-center gap-3">
+                  <Link href={`/requests/new?edit=${id}`} className="flex-1">
+                    <Button variant="outline" className="w-full font-semibold bg-transparent">
+                      <Pencil className="w-4 h-4 mr-2" /> Edit
+                    </Button>
+                  </Link>
+                  <Button onClick={handleSubmitForApproval} disabled={isProcessing} className="flex-1 font-semibold shadow-sm shadow-primary/20">
+                    <Clock className="w-4 h-4 mr-2" /> {isProcessing ? "Submitting..." : "Submit for Approval"}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           )}

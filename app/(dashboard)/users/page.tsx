@@ -172,7 +172,7 @@ export default function UsersPage() {
                 <div className="flex flex-col gap-2"><Label className="text-[13px] font-medium">Department</Label>
                   <Select value={form.department_id} onValueChange={(v) => setForm({ ...form, department_id: v })}>
                     <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
-                    <SelectContent>{departments.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent>
+                    <SelectContent>{departments.filter((d) => d.is_active !== false).map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
               </div>

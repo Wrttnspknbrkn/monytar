@@ -11,7 +11,7 @@ const faqs = [
   },
   {
     q: "Do I need a credit card to start?",
-    a: "No. The Free plan supports up to 5 users with no card required, forever. You only add billing details when you choose to upgrade to a paid plan.",
+    a: "No. The Free plan supports up to 3 users with no card required, forever. You only add billing details when you choose to upgrade to a paid plan.",
   },
   {
     q: "Can I customize the approval workflow?",

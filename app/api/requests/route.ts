@@ -78,6 +78,22 @@ export async function POST(request: Request) {
     const { data: dbUser } = await supabase.from("users").select("organization_id, department_id").eq("id", user.id).single()
     if (!dbUser) return NextResponse.json({ error: "User not found" }, { status: 404 })
 
+    // category is free-form now that orgs can add custom ones (migration
+    // 022) — zod can't statically enumerate a per-org set, so validate it
+    // against the real table here: the 6 system defaults plus this org's own.
+    const { data: validCategory } = await supabase
+      .from("expense_categories")
+      .select("id")
+      .eq("name", parsed.data.category)
+      .eq("is_active", true)
+      .or(`organization_id.is.null,organization_id.eq.${dbUser.organization_id}`)
+      .limit(1)
+      .maybeSingle()
+
+    if (!validCategory) {
+      return NextResponse.json({ error: "Invalid category" }, { status: 400 })
+    }
+
     // Race-safe, per-org request number via the atomic RPC (migration 008).
     // Falls back to a count-based number if the function isn't present yet.
     let requestNumber: string

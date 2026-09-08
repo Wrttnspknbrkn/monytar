@@ -81,7 +81,7 @@ describe("getProductByTier", () => {
 describe("getTierLimits", () => {
   it("returns the free tier limits", () => {
     expect(getTierLimits("free")).toEqual({
-      maxUsers: 5,
+      maxUsers: 3,
       maxDepartments: 1,
       maxRequestsPerMonth: 50,
     })
@@ -96,7 +96,7 @@ describe("getTierLimits", () => {
 
   it("falls back to free limits for an invalid tier", () => {
     expect(getTierLimits("nonsense" as SubscriptionTier)).toEqual({
-      maxUsers: 5,
+      maxUsers: 3,
       maxDepartments: 1,
       maxRequestsPerMonth: 50,
     })

@@ -20,6 +20,7 @@ import { formatRelativeTime, cn } from "@/lib/utils"
 import { getCurrencySymbol } from "@/lib/currency"
 import { monthlyTrend as computeMonthlyTrend } from "@/lib/reports/aggregate"
 import { StatCard } from "@/components/dashboard/stat-card"
+import { GettingStartedChecklist } from "@/components/dashboard/getting-started-checklist"
 import { RequestStatusBadge } from "@/components/requests/request-status-badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -122,7 +123,7 @@ export default function DashboardPage() {
   const totalPaidAmount = expenseRequests.filter((r) => r.status === "paid").reduce((s, r) => s + r.amount, 0)
   const awaitingPayment = expenseRequests.filter((r) => r.status === "approved" && r.payment_status === "unpaid")
 
-  const deptBudgets = departments.map((d) => {
+  const deptBudgets = departments.filter((d) => d.is_active !== false).map((d) => {
     const spend = getDepartmentSpend(d.id)
     return { ...d, spend, pct: d.budget_amount > 0 ? Math.round((spend / d.budget_amount) * 100) : 0 }
   })
@@ -150,6 +151,8 @@ export default function DashboardPage() {
           </Link>
         )}
       </div>
+
+      {role === "admin" && <GettingStartedChecklist />}
 
       {/* Stats */}
       {role === "employee" ? (

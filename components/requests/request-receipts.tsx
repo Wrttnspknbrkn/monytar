@@ -1,9 +1,13 @@
 "use client"
 
+import { useState } from "react"
 import useSWR from "swr"
-import { FileText, ImageIcon, ExternalLink } from "lucide-react"
+import { FileText, ImageIcon, ExternalLink, Trash2, Loader2 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { isSupabaseConfigured } from "@/lib/supabase/config"
+import { useAuth } from "@/lib/providers"
+import { toast } from "sonner"
 import type { Receipt } from "@/lib/types"
 
 type ReceiptWithUrl = Receipt & { signed_url?: string | null }
@@ -19,18 +23,45 @@ function formatKb(bytes?: number): string {
 interface RequestReceiptsProps {
   requestId: string
   fallbackReceipts?: Receipt[]
+  /** The request's status — receipts stop being deletable once it's left draft/pending, matching the audit trail expectation. */
+  requestStatus?: string
 }
 
-export function RequestReceipts({ requestId, fallbackReceipts = [] }: RequestReceiptsProps) {
+export function RequestReceipts({ requestId, fallbackReceipts = [], requestStatus }: RequestReceiptsProps) {
   const connected = isSupabaseConfigured()
+  const { dbUser } = useAuth()
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   // Only hit the API when a real backend is connected.
-  const { data } = useSWR<{ receipts?: ReceiptWithUrl[] }>(
+  const { data, mutate } = useSWR<{ receipts?: ReceiptWithUrl[] }>(
     connected ? `/api/receipts?request_id=${requestId}` : null,
     fetcher,
   )
 
   const receipts: ReceiptWithUrl[] = connected ? data?.receipts ?? [] : fallbackReceipts
+
+  // Once a request has left draft/pending (approved, rejected, paid), its
+  // receipts are the audit record — editable while the request is still
+  // being assembled or under review, frozen after a decision is made.
+  const canDelete = connected && (requestStatus === "draft" || requestStatus === "pending" || !requestStatus)
+
+  async function handleDelete(receiptId: string, fileName: string) {
+    if (!window.confirm(`Remove "${fileName}"? This can't be undone.`)) return
+    setDeletingId(receiptId)
+    try {
+      const res = await fetch(`/api/receipts/${receiptId}`, { method: "DELETE" })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        toast.error(json.error || "Couldn't remove receipt")
+        return
+      }
+      mutate()
+    } catch {
+      toast.error("Couldn't remove receipt. Please try again.")
+    } finally {
+      setDeletingId(null)
+    }
+  }
 
   if (receipts.length === 0) return null
 
@@ -68,6 +99,19 @@ export function RequestReceipts({ requestId, fallbackReceipts = [] }: RequestRec
                   >
                     View <ExternalLink className="w-3 h-3" />
                   </a>
+                )}
+                {canDelete && (receipt.uploaded_by === dbUser?.id || dbUser?.role === "admin" || dbUser?.role === "finance") && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                    disabled={deletingId === receipt.id}
+                    onClick={() => handleDelete(receipt.id, receipt.file_name)}
+                    aria-label={`Remove ${receipt.file_name}`}
+                  >
+                    {deletingId === receipt.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                  </Button>
                 )}
               </li>
             )
