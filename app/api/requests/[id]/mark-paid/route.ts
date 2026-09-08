@@ -24,7 +24,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     // Only finance and admins may mark a request as paid.
     const { actor, response } = await authorize(["finance", "admin"])
     if (response) return response
-    const { supabase, organizationId } = actor
+    const { supabase, organizationId, userId } = actor
 
     const now = new Date().toISOString()
 
@@ -41,6 +41,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       .eq("status", "approved")
       // Defense-in-depth: never act on another tenant's data.
       .eq("organization_id", organizationId)
+      // Separation of duties: nobody pays out their own request, regardless of role.
+      .neq("employee_id", userId)
       .select()
       .single()
 

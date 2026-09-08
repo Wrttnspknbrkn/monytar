@@ -5,7 +5,7 @@ import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { Plus, Search, FileText, SlidersHorizontal, Loader2 } from "lucide-react"
 import { useData, useAuth } from "@/lib/providers"
-import { formatCurrency, formatDate, getCategoryLabel } from "@/lib/utils"
+import { formatDate, getCategoryLabel } from "@/lib/utils"
 import { RequestStatusBadge } from "@/components/requests/request-status-badge"
 import { RequestCard } from "@/components/requests/request-card"
 import { Button } from "@/components/ui/button"
@@ -18,7 +18,7 @@ import type { ExpenseCategory } from "@/lib/types"
 
 function RequestsPageContent() {
   const { dbUser } = useAuth()
-  const { currentUser, expenseRequests, getMyRequests, getUserById, getVendorById } = useData()
+  const { currentUser, expenseRequests, getMyRequests, getUserById, getVendorById, formatAmount } = useData()
   const searchParams = useSearchParams()
   
   const [search, setSearch] = useState("")
@@ -188,7 +188,7 @@ function RequestsPageContent() {
                         <TableCell className="text-sm text-muted-foreground">{getCategoryLabel(req.category)}</TableCell>
                         <TableCell className="text-sm">{vendor?.name || "-"}</TableCell>
                         <TableCell className="text-right font-heading font-bold text-sm tabular-nums">
-                          {formatCurrency(req.amount)}
+                          {formatAmount(req.amount)}
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground whitespace-nowrap tabular-nums">
                           {formatDate(req.expense_date || req.created_at)}

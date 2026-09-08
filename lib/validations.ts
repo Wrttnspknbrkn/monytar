@@ -16,16 +16,24 @@ export const signupSchema = z.object({
   tier: z.enum(["free", "starter", "professional"]).optional().default("free"),
 })
 
+// Matches the fields the New Request form (app/(dashboard)/requests/new)
+// actually collects — `purpose` supersedes the legacy `title`/`description`
+// columns (see migration 012), which are nullable and unused by current UI.
 export const expenseRequestSchema = z.object({
-  title: z.string().min(3, "Title must be at least 3 characters").max(200),
-  description: z.string().min(10, "Description must be at least 10 characters").max(2000),
+  purpose: z.string().min(3, "Purpose must be at least 3 characters").max(500),
   amount: z.number().positive("Amount must be positive").max(1000000, "Amount too large"),
+  currency: z.string().length(3).optional(),
   category: z.enum(["travel", "meals", "supplies", "software", "equipment", "other"]),
-  vendor_id: z.string().optional(),
-  department_id: z.string().optional(),
+  vendor_id: z.string().uuid().optional(),
+  department_id: z.string().uuid().optional(),
   priority: z.enum(["low", "medium", "high", "urgent"]).default("medium"),
-  receipt_urls: z.array(z.string().url()).optional(),
-  business_justification: z.string().min(5).max(1000).optional(),
+  expense_date: z.string().optional(),
+  due_date: z.string().optional(),
+  finance_notes: z.string().max(2000).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+  // Save as draft skips submission/auto-approval entirely — the server still
+  // decides real status transitions, this only signals draft intent.
+  as_draft: z.boolean().optional(),
 })
 
 export const vendorSchema = z.object({

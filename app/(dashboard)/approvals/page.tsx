@@ -4,7 +4,7 @@ import { useMemo, useState, useCallback } from "react"
 import Link from "next/link"
 import { Clock, CheckCircle2, XCircle, AlertTriangle, Search, Inbox, Loader2 } from "lucide-react"
 import { useData, useAuth } from "@/lib/providers"
-import { formatCurrency, formatRelativeTime, getCategoryLabel, getInitials } from "@/lib/utils"
+import { formatRelativeTime, getCategoryLabel, getInitials } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
@@ -19,7 +19,7 @@ type ActionState = {
 
 export default function ApprovalsPage() {
   const { dbUser } = useAuth()
-  const { currentUser, getPendingApprovals, getUserById, getVendorById, approveRequest, rejectRequest, isDemo } = useData()
+  const { currentUser, getPendingApprovals, getUserById, getVendorById, approveRequest, rejectRequest, isDemo, formatAmount } = useData()
   
   const user = dbUser || currentUser
   const [search, setSearch] = useState("")
@@ -188,7 +188,7 @@ export default function ApprovalsPage() {
                             <span className="capitalize">{req.priority} priority</span>
                           </div>
                         </div>
-                        <p className="font-heading text-xl font-extrabold tracking-tight tabular-nums shrink-0">{formatCurrency(req.amount)}</p>
+                        <p className="font-heading text-xl font-extrabold tracking-tight tabular-nums shrink-0">{formatAmount(req.amount)}</p>
                       </div>
                       
                       {/* Action Buttons with Status Feedback */}

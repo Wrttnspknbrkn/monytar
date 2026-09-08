@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server"
 import { isSupabaseConfigured } from "@/lib/supabase/config"
-import { userSchema } from "@/lib/validations"
 
 export async function GET() {
   if (!isSupabaseConfigured()) {
@@ -32,41 +31,10 @@ export async function GET() {
   }
 }
 
-export async function POST(request: Request) {
-  if (!isSupabaseConfigured()) {
-    return NextResponse.json({ demo: true, message: "Demo mode - users managed client-side" })
-  }
-
-  try {
-    const { getSupabaseServerClient } = await import("@/lib/supabase/server")
-    const supabase = await getSupabaseServerClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-
-    const { data: profile } = await supabase.from("users").select("organization_id, role").eq("id", user.id).single()
-    if (!profile || profile.role !== "admin") {
-      return NextResponse.json({ error: "Only admins can create users" }, { status: 403 })
-    }
-
-    const body = await request.json()
-    const parsed = userSchema.safeParse(body)
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Invalid input", details: parsed.error.flatten().fieldErrors },
-        { status: 400 },
-      )
-    }
-
-    const { data, error } = await supabase
-      .from("users")
-      .insert({ ...parsed.data, organization_id: profile.organization_id })
-      .select()
-      .single()
-
-    if (error) throw error
-    return NextResponse.json(data, { status: 201 })
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Internal error"
-    return NextResponse.json({ error: message }, { status: 500 })
-  }
-}
+// There is deliberately no POST here. A real, login-capable user can only be
+// created via a Supabase Auth admin call (service-role), which a plain insert
+// into `users` can't do — `users.id` is a foreign key into `auth.users` with
+// no default, so this always failed with an FK violation and was never
+// reachable from any UI. Real user creation goes through /api/invitations
+// (creates an invitation, the invitee accepts via /api/auth/accept-invitation,
+// which does the actual auth.admin.createUser() call).

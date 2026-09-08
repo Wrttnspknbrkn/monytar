@@ -35,7 +35,7 @@ function rawRequest(url: string, body: string): Request {
 describe("POST /api/requests", () => {
   it("rejects invalid payloads with 400 and field details", async () => {
     const { POST } = await import("@/app/api/requests/route")
-    const res = await POST(jsonRequest("http://test/api/requests", { title: "no" }))
+    const res = await POST(jsonRequest("http://test/api/requests", { purpose: "no" }))
     expect(res.status).toBe(400)
     const json = await res.json()
     expect(json.error).toBe("Invalid input")
@@ -46,8 +46,7 @@ describe("POST /api/requests", () => {
     const { POST } = await import("@/app/api/requests/route")
     const res = await POST(
       jsonRequest("http://test/api/requests", {
-        title: "Team lunch",
-        description: "Quarterly team lunch meeting",
+        purpose: "Quarterly team lunch meeting",
         amount: -50,
         category: "meals",
       }),
@@ -59,8 +58,7 @@ describe("POST /api/requests", () => {
     const { POST } = await import("@/app/api/requests/route")
     const res = await POST(
       jsonRequest("http://test/api/requests", {
-        title: "New laptop",
-        description: "Replacement laptop for engineering",
+        purpose: "Replacement laptop for engineering",
         amount: 1800,
         category: "equipment",
         priority: "high",

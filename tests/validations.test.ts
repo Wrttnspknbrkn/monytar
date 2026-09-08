@@ -54,8 +54,7 @@ describe("signupSchema", () => {
 
 describe("expenseRequestSchema", () => {
   const base = {
-    title: "Team lunch",
-    description: "Quarterly team lunch with the whole squad",
+    purpose: "Quarterly team lunch with the whole squad",
     amount: 120.5,
     category: "meals" as const,
   }
@@ -79,11 +78,13 @@ describe("expenseRequestSchema", () => {
     expect(expenseRequestSchema.safeParse({ ...base, category: "crypto" }).success).toBe(false)
   })
 
-  it("rejects non-URL receipt entries", () => {
-    expect(expenseRequestSchema.safeParse({ ...base, receipt_urls: ["not-a-url"] }).success).toBe(false)
-    expect(
-      expenseRequestSchema.safeParse({ ...base, receipt_urls: ["https://cdn.test/r.png"] }).success,
-    ).toBe(true)
+  it("rejects a too-short purpose", () => {
+    expect(expenseRequestSchema.safeParse({ ...base, purpose: "no" }).success).toBe(false)
+  })
+
+  it("accepts an optional as_draft flag and finance_notes", () => {
+    const res = expenseRequestSchema.safeParse({ ...base, as_draft: true, finance_notes: "Needs manager sign-off" })
+    expect(res.success).toBe(true)
   })
 })
 

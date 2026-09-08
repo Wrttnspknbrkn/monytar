@@ -1,7 +1,9 @@
 "use client"
 
 import { createContext, useContext, useCallback, useMemo, type ReactNode } from "react"
+import { mutate } from "swr"
 import { isSupabaseConfigured } from "@/lib/supabase/config"
+import { formatCurrency } from "@/lib/utils"
 import {
   useCurrentUser,
   useOrganization,
@@ -12,11 +14,7 @@ import {
   useDepartments,
   useNotifications,
   useDashboardStats,
-  approveExpenseRequest,
-  rejectExpenseRequest,
-  markRequestAsPaid,
   markNotificationAsRead,
-  createExpenseRequest,
   updateExpenseRequest,
   createDepartment,
   updateDepartmentRecord,
@@ -106,6 +104,13 @@ interface DataContextValue {
   getUnreadNotificationCount: () => number
   getNextRequestNumber: () => string
   canUserApprove: (request: ExpenseRequest) => boolean
+
+  // Currency — always use these instead of calling formatCurrency/formatMoney
+  // directly with no currency argument. A prior audit found ~24 of 29 call
+  // sites across the app doing exactly that, silently defaulting to USD
+  // regardless of the organization's configured currency.
+  currencyCode: string
+  formatAmount: (amount: number) => string
 }
 
 const DataContext = createContext<DataContextValue | undefined>(undefined)
@@ -147,6 +152,9 @@ export function DataProvider({ children }: DataProviderProps) {
   const departments = isDemo ? mockDepartments : supabaseDepts
   const notifications = isDemo ? mockNotifications : supabaseNotifs
   const budgetAlerts = isDemo ? mockBudgetAlerts : [] // TODO: Fetch from Supabase when implemented
+
+  const currencyCode = orgSettings?.default_currency || organization?.currency || "USD"
+  const formatAmount = useCallback((amount: number) => formatCurrency(amount, currencyCode), [currencyCode])
   
   const dashboardStats = useMemo(() => {
     if (!isDemo && supabaseStats) return supabaseStats
@@ -184,32 +192,67 @@ export function DataProvider({ children }: DataProviderProps) {
   }, [isDemo, supabaseStats, expenseRequests])
   
   // Actions
+  //
+  // Approve/reject/mark-paid/create all go through the API routes (not a
+  // direct Supabase call from the browser) — those routes are where the real
+  // business rules live: no self-approval, department scoping for managers,
+  // status-transition guards, auto-approve threshold, and the notification/
+  // budget-alert side effects. A prior audit found the client was calling
+  // lib/hooks/use-supabase-data.ts functions that wrote straight to Supabase
+  // with none of that — RLS alone allowed a finance/admin/manager to
+  // self-approve and self-pay their own request via nothing more than their
+  // own legitimate session. Do not reintroduce a direct-write path here.
+  async function parseApiError(res: Response, fallback: string): Promise<never> {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(body.error || fallback)
+  }
+
+  const invalidateRequestCaches = () => {
+    mutate((key: unknown) => typeof key === "string" && key.startsWith("expense-request"))
+  }
+
   const handleApproveRequest = useCallback(async (id: string, comment?: string) => {
     if (isDemo) {
       console.warn("Demo mode: approve action simulated")
       return
     }
-    if (!currentUser) throw new Error("Not authenticated")
-    await approveExpenseRequest(id, currentUser.id, comment)
-  }, [isDemo, currentUser])
-  
+    const res = await fetch(`/api/requests/${id}/approve`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ comment }),
+    })
+    if (!res.ok) await parseApiError(res, "Failed to approve request")
+    invalidateRequestCaches()
+  }, [isDemo])
+
   const handleRejectRequest = useCallback(async (id: string, comment: string) => {
     if (isDemo) {
       console.warn("Demo mode: reject action simulated")
       return
     }
-    if (!currentUser) throw new Error("Not authenticated")
-    await rejectExpenseRequest(id, currentUser.id, comment)
-  }, [isDemo, currentUser])
-  
+    const res = await fetch(`/api/requests/${id}/reject`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ comment }),
+    })
+    if (!res.ok) await parseApiError(res, "Failed to reject request")
+    invalidateRequestCaches()
+  }, [isDemo])
+
   const handleMarkPaid = useCallback(async (id: string, paymentRef: string, paymentMethod: string) => {
     if (isDemo) {
       console.warn("Demo mode: mark paid action simulated")
       return
     }
-    await markRequestAsPaid(id, paymentRef, paymentMethod)
+    const res = await fetch(`/api/requests/${id}/mark-paid`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ payment_reference: paymentRef, payment_method: paymentMethod }),
+    })
+    if (!res.ok) await parseApiError(res, "Failed to mark request as paid")
+    invalidateRequestCaches()
   }, [isDemo])
-  
+
   const handleMarkNotificationRead = useCallback(async (id: string) => {
     if (isDemo) {
       console.warn("Demo mode: notification read simulated")
@@ -217,7 +260,7 @@ export function DataProvider({ children }: DataProviderProps) {
     }
     await markNotificationAsRead(id)
   }, [isDemo])
-  
+
   const handleCreateRequest = useCallback(async (data: Partial<ExpenseRequest>) => {
     if (isDemo) {
       const demoRequest = data as ExpenseRequest
@@ -227,14 +270,27 @@ export function DataProvider({ children }: DataProviderProps) {
     // The caller may pass a client-generated placeholder id (e.g. for demo
     // mode); strip it so Postgres assigns a real UUID via the column default.
     const { id: _clientId, ...payload } = data
-    return await createExpenseRequest(payload)
+    const res = await fetch("/api/requests", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    })
+    const body = await res.json().catch(() => ({}))
+    if (!res.ok) throw new Error(body.error || "Failed to create request")
+    invalidateRequestCaches()
+    return body.data as ExpenseRequest
   }, [isDemo])
-  
+
   const handleUpdateRequest = useCallback(async (id: string, updates: Partial<ExpenseRequest>) => {
     if (isDemo) {
       console.warn("Demo mode: update request simulated")
       return { id, ...updates } as ExpenseRequest
     }
+    // Only the resubmit-a-rejected-request flow reaches this path (status,
+    // rejected_by, rejected_at, manager_comment, submitted_at) — it stays on
+    // the direct-Supabase path deliberately, since RLS already scopes it to
+    // "your own row, while status is draft/rejected" and the API route's
+    // PATCH allowlist intentionally excludes status/approval fields.
     return await updateExpenseRequest(id, updates)
   }, [isDemo])
   
@@ -451,6 +507,8 @@ export function DataProvider({ children }: DataProviderProps) {
     getUnreadNotificationCount,
     getNextRequestNumber,
     canUserApprove,
+    currencyCode,
+    formatAmount,
   }
   
   return (

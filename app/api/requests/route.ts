@@ -94,14 +94,26 @@ export async function POST(request: Request) {
       requestNumber = `REQ-${new Date().getFullYear()}-${String((count || 0) + 1).padStart(5, "0")}`
     }
 
-    // receipt_urls is not a column on expense_requests — receipts are stored as
-    // separate rows via /api/receipts. Strip it from the insert payload.
-    const { receipt_urls, ...requestFields } = parsed.data
-
-    // Apply the org's auto-approval policy: sub-threshold amounts skip review.
-    const settings = await loadApprovalSettings(supabase, dbUser.organization_id)
-    const autoApprove = shouldAutoApprove(parsed.data.amount, settings)
+    // as_draft is a client intent signal, not a column — the server alone
+    // decides the real status.
+    const { as_draft, ...requestFields } = parsed.data
     const now = new Date().toISOString()
+
+    let status: string
+    let approvedAt: string | null = null
+    let managerComment: string | null = null
+    let autoApprove = false
+
+    if (as_draft) {
+      status = "draft"
+    } else {
+      // Apply the org's auto-approval policy: sub-threshold amounts skip review.
+      const settings = await loadApprovalSettings(supabase, dbUser.organization_id)
+      autoApprove = shouldAutoApprove(parsed.data.amount, settings)
+      status = autoApprove ? "approved" : "pending"
+      approvedAt = autoApprove ? now : null
+      managerComment = autoApprove ? "Auto-approved: amount below approval threshold." : null
+    }
 
     const { data, error } = await supabase.from("expense_requests").insert({
       ...requestFields,
@@ -109,9 +121,11 @@ export async function POST(request: Request) {
       employee_id: user.id,
       department_id: parsed.data.department_id || dbUser.department_id,
       request_number: requestNumber,
-      status: autoApprove ? "approved" : "pending",
-      approved_at: autoApprove ? now : null,
-      manager_comment: autoApprove ? "Auto-approved: amount below approval threshold." : null,
+      status,
+      approved_at: approvedAt,
+      manager_comment: managerComment,
+      submitted_at: as_draft ? null : now,
+      payment_status: "unpaid",
     }).select().single()
 
     if (error) return serverError(error, { route: "requests.POST" })

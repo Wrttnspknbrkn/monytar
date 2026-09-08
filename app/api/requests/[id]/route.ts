@@ -35,7 +35,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
 // RLS also scopes this to the caller's own draft or an admin/finance/manager
 // in their org, but that alone doesn't stop a privileged role from writing
 // straight to `status: "approved"` here — the allowlist below closes that.
-const patchableFields = expenseRequestSchema.partial().omit({ receipt_urls: true })
+const patchableFields = expenseRequestSchema.partial().omit({ as_draft: true })
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {

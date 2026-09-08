@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { ArrowLeft, Upload, DollarSign, FileText } from "lucide-react"
 import { useData, useAuth } from "@/lib/providers"
 import { generateId } from "@/lib/utils"
+import { getCurrencySymbol } from "@/lib/currency"
 import { isSupabaseConfigured } from "@/lib/supabase/config"
 import { uploadReceipts } from "@/lib/receipts/client"
 import { nextRequestNumber } from "@/lib/hooks/use-supabase-data"
@@ -22,7 +23,7 @@ import Link from "next/link"
 export default function NewRequestPage() {
   const router = useRouter()
   const { dbUser } = useAuth()
-  const { currentUser, vendors, createRequest, getNextRequestNumber, organization, isDemo } = useData()
+  const { currentUser, vendors, createRequest, getNextRequestNumber, organization, isDemo, currencyCode } = useData()
   const user = dbUser || currentUser
   const [amount, setAmount] = useState("")
   const [purpose, setPurpose] = useState("")
@@ -59,7 +60,7 @@ export default function NewRequestPage() {
         department_id: user.department_id,
         vendor_id: vendorId || undefined,
         amount: Number.parseFloat(amount),
-        currency: "USD",
+        currency: currencyCode,
         purpose,
         category,
         status: asDraft ? "draft" : "pending",
@@ -72,6 +73,10 @@ export default function NewRequestPage() {
         metadata: { receipt_count: files.length },
         created_at: now,
         updated_at: now,
+        // Real (non-demo) submissions go through /api/requests, which reads
+        // this flag instead of `status` — the server alone decides real
+        // status transitions (draft vs. pending vs. auto-approved).
+        ...({ as_draft: asDraft } as Record<string, unknown>),
       })
 
       // Upload receipts to storage when a real backend is connected; otherwise
@@ -120,9 +125,9 @@ export default function NewRequestPage() {
         <CardContent className="pt-5 flex flex-col gap-4">
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="flex flex-col gap-2">
-              <Label htmlFor="amount" className="text-[13px] font-medium">Amount (USD) *</Label>
+              <Label htmlFor="amount" className="text-[13px] font-medium">Amount ({currencyCode}) *</Label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium">$</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium">{getCurrencySymbol(currencyCode)}</span>
                 <Input
                   id="amount"
                   type="number"
