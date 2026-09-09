@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { Plus, Search, Store, CheckCircle2, XCircle, Mail, Phone, MapPin } from "lucide-react"
+import { Plus, Search, Store, CheckCircle2, XCircle, Mail, Phone, MapPin, Archive, ArchiveRestore } from "lucide-react"
 import { useData, useAuth } from "@/lib/providers"
 import { generateId, cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -20,15 +20,20 @@ export default function VendorsPage() {
   // roles can actually toggle vendor approval, so only they get the control.
   const canManageVendors = ["admin", "finance", "manager"].includes((dbUser || currentUser)?.role ?? "")
   const [search, setSearch] = useState("")
+  const [showArchived, setShowArchived] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [archivingId, setArchivingId] = useState<string | null>(null)
   const [form, setForm] = useState({ name: "", category: "", contact_email: "", contact_phone: "", address: "", payment_terms: "", notes: "" })
 
+  const archivedCount = useMemo(() => vendors.filter((v) => v.is_active === false).length, [vendors])
+
   const filtered = useMemo(() => {
-    if (!search) return vendors
+    const base = showArchived ? vendors : vendors.filter((v) => v.is_active !== false)
+    if (!search) return base
     const q = search.toLowerCase()
-    return vendors.filter((v) => v.name.toLowerCase().includes(q) || v.category?.toLowerCase().includes(q))
-  }, [vendors, search])
+    return base.filter((v) => v.name.toLowerCase().includes(q) || v.category?.toLowerCase().includes(q))
+  }, [vendors, search, showArchived])
 
   async function handleAdd() {
     if (!form.name.trim()) { toast.error("Vendor name is required"); return }
@@ -58,6 +63,20 @@ export default function VendorsPage() {
     } catch (err) {
       console.error("[Vendors] update failed:", err)
       toast.error("Failed to update vendor status. Please try again.")
+    }
+  }
+
+  async function handleToggleArchived(vendorId: string, name: string, archive: boolean) {
+    if (archive && !window.confirm(`Archive "${name}"? It won't be selectable on new expense requests, but stays on past ones.`)) return
+    setArchivingId(vendorId)
+    try {
+      await updateVendor(vendorId, { is_active: !archive })
+      toast.success(archive ? `${name} archived` : `${name} restored`)
+    } catch (err) {
+      console.error("[Vendors] archive toggle failed:", err)
+      toast.error("Failed to update vendor. Please try again.")
+    } finally {
+      setArchivingId(null)
     }
   }
 
@@ -95,9 +114,17 @@ export default function VendorsPage() {
         </Dialog>
       </div>
 
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-        <Input placeholder="Search vendors..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-9 text-sm" />
+      <div className="flex items-center gap-4 flex-wrap">
+        <div className="relative max-w-sm flex-1 min-w-[200px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+          <Input placeholder="Search vendors..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-9 text-sm" />
+        </div>
+        {archivedCount > 0 && (
+          <label className="flex items-center gap-2 text-xs font-medium text-muted-foreground cursor-pointer">
+            <Switch checked={showArchived} onCheckedChange={setShowArchived} />
+            Show archived ({archivedCount})
+          </label>
+        )}
       </div>
 
       {filtered.length === 0 ? (
@@ -108,8 +135,10 @@ export default function VendorsPage() {
         </div>
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map((vendor) => (
-            <Card key={vendor.id} className="border-border/60 hover:border-primary/20 transition-all duration-200 hover:shadow-md hover:shadow-foreground/[0.03] hover:-translate-y-0.5 group">
+          {filtered.map((vendor) => {
+            const archived = vendor.is_active === false
+            return (
+            <Card key={vendor.id} className={cn("border-border/60 hover:border-primary/20 transition-all duration-200 hover:shadow-md hover:shadow-foreground/[0.03] hover:-translate-y-0.5 group", archived && "opacity-60")}>
               <CardContent className="p-5">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
@@ -121,13 +150,31 @@ export default function VendorsPage() {
                       {vendor.category && <p className="text-xs text-muted-foreground">{vendor.category}</p>}
                     </div>
                   </div>
-                  <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[10px] font-semibold uppercase tracking-wider",
-                    vendor.is_approved
-                      ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800"
-                      : "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800"
-                  )}>
-                    {vendor.is_approved ? <><CheckCircle2 className="w-3 h-3" /> Approved</> : <><XCircle className="w-3 h-3" /> Pending</>}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    {archived && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[10px] font-semibold uppercase tracking-wider bg-secondary text-muted-foreground border-border">
+                        Archived
+                      </span>
+                    )}
+                    <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[10px] font-semibold uppercase tracking-wider",
+                      vendor.is_approved
+                        ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800"
+                        : "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800"
+                    )}>
+                      {vendor.is_approved ? <><CheckCircle2 className="w-3 h-3" /> Approved</> : <><XCircle className="w-3 h-3" /> Pending</>}
+                    </span>
+                    {canManageVendors && (
+                      <button
+                        type="button"
+                        onClick={() => handleToggleArchived(vendor.id, vendor.name, !archived)}
+                        disabled={archivingId === vendor.id}
+                        className="text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100"
+                        aria-label={archived ? `Restore ${vendor.name}` : `Archive ${vendor.name}`}
+                      >
+                        {archived ? <ArchiveRestore className="w-3.5 h-3.5" /> : <Archive className="w-3.5 h-3.5" />}
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div className="flex flex-col gap-1.5 text-xs text-muted-foreground">
                   {vendor.contact_email && <div className="flex items-center gap-2"><Mail className="w-3 h-3" /><span>{vendor.contact_email}</span></div>}
@@ -150,7 +197,7 @@ export default function VendorsPage() {
                 </div>
               </CardContent>
             </Card>
-          ))}
+          )})}
         </div>
       )}
     </div>

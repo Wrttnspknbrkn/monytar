@@ -23,7 +23,11 @@ export const expenseRequestSchema = z.object({
   purpose: z.string().min(3, "Purpose must be at least 3 characters").max(500),
   amount: z.number().positive("Amount must be positive").max(1000000, "Amount too large"),
   currency: z.string().length(3).optional(),
-  category: z.enum(["travel", "meals", "supplies", "software", "equipment", "other"]),
+  // Free-form now that organizations can add custom categories (migration
+  // 022) — the fixed set no longer applies. The API route validates the
+  // value against expense_categories (system defaults ∪ the org's own),
+  // since that set is per-organization and zod can't express it statically.
+  category: z.string().trim().min(1, "Category is required").max(50),
   vendor_id: z.string().uuid().optional(),
   department_id: z.string().uuid().optional(),
   priority: z.enum(["low", "medium", "high", "urgent"]).default("medium"),
@@ -100,6 +104,27 @@ export const receiptRecordSchema = z.object({
   file_name: z.string().min(1).max(255),
   file_type: z.enum(RECEIPT_MIME_TYPES),
   file_size: z.number().int().positive().max(MAX_RECEIPT_BYTES),
+})
+
+const LOGO_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/svg+xml"] as const
+const MAX_LOGO_BYTES = 2 * 1024 * 1024 // 2 MB
+
+// Requests a signed upload target for the caller's organization logo.
+export const logoUploadUrlSchema = z.object({
+  file_name: z.string().min(1, "File name is required").max(255),
+  file_type: z.enum(LOGO_MIME_TYPES, {
+    errorMap: () => ({ message: "Unsupported file type. Use JPG, PNG, WEBP, or SVG." }),
+  }),
+  file_size: z
+    .number()
+    .int()
+    .positive("File size must be positive")
+    .max(MAX_LOGO_BYTES, "File exceeds the 2 MB limit"),
+})
+
+// Finalizes a logo upload: records the storage path after the file has landed.
+export const logoRecordSchema = z.object({
+  file_path: z.string().min(1).max(500),
 })
 
 export type LoginInput = z.infer<typeof loginSchema>

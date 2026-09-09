@@ -23,7 +23,8 @@ export const organization: Organization = {
   settings: {},
   subscription_tier: "professional",
   subscription_status: "active",
-  max_users: 100,
+  billing_interval: "month",
+  max_users: 50,
   created_at: "2024-01-15T08:00:00Z",
   updated_at: "2026-01-15T08:00:00Z",
 }

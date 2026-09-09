@@ -15,7 +15,6 @@ import {
   useNotifications,
   useDashboardStats,
   markNotificationAsRead,
-  updateExpenseRequest,
   createDepartment,
   updateDepartmentRecord,
   createVendor,
@@ -84,6 +83,8 @@ interface DataContextValue {
   markNotificationRead: (id: string) => Promise<void>
   createRequest: (data: Partial<ExpenseRequest>) => Promise<ExpenseRequest>
   updateRequest: (id: string, updates: Partial<ExpenseRequest>) => Promise<ExpenseRequest>
+  /** Moves a draft or rejected request into the real workflow (pending, or auto-approved). */
+  submitRequest: (id: string) => Promise<{ autoApproved: boolean }>
   addExpenseRequest: (data: ExpenseRequest) => void
   addDepartment: (data: Partial<Department>) => Promise<Department | undefined>
   updateDepartment: (id: string, updates: Partial<Department>) => Promise<Department | undefined>
@@ -286,12 +287,34 @@ export function DataProvider({ children }: DataProviderProps) {
       console.warn("Demo mode: update request simulated")
       return { id, ...updates } as ExpenseRequest
     }
-    // Only the resubmit-a-rejected-request flow reaches this path (status,
-    // rejected_by, rejected_at, manager_comment, submitted_at) — it stays on
-    // the direct-Supabase path deliberately, since RLS already scopes it to
-    // "your own row, while status is draft/rejected" and the API route's
-    // PATCH allowlist intentionally excludes status/approval fields.
-    return await updateExpenseRequest(id, updates)
+    // Editing a draft's business fields (audit P2-10 — drafts used to be a
+    // dead end). Goes through the validated PATCH route rather than a raw
+    // client write, same reasoning as create/approve/reject/mark-paid: RLS
+    // scopes WHICH rows you can touch (your own draft/rejected row), but the
+    // route's field allowlist is what stops a status/approval field from
+    // being smuggled in here. Status transitions themselves go through
+    // /api/requests/[id]/submit instead — this never touches status.
+    const res = await fetch(`/api/requests/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updates),
+    })
+    const body = await res.json().catch(() => ({}))
+    if (!res.ok) throw new Error(body.error || "Failed to update request")
+    invalidateRequestCaches()
+    return body.data as ExpenseRequest
+  }, [isDemo])
+
+  const handleSubmitRequest = useCallback(async (id: string) => {
+    if (isDemo) {
+      console.warn("Demo mode: submit action simulated")
+      return { autoApproved: false }
+    }
+    const res = await fetch(`/api/requests/${id}/submit`, { method: "POST" })
+    const body = await res.json().catch(() => ({}))
+    if (!res.ok) throw new Error(body.error || "Failed to submit request")
+    invalidateRequestCaches()
+    return { autoApproved: Boolean(body.auto_approved) }
   }, [isDemo])
   
   // Helpers
@@ -489,6 +512,7 @@ export function DataProvider({ children }: DataProviderProps) {
     markNotificationRead: handleMarkNotificationRead,
     createRequest: handleCreateRequest,
     updateRequest: handleUpdateRequest,
+    submitRequest: handleSubmitRequest,
     addExpenseRequest,
     addDepartment,
     updateDepartment,

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { getSupabaseServerClient } from "@/lib/supabase/server"
 import { isSupabaseConfigured } from "@/lib/supabase/config"
 import { enforceRateLimit, getClientIp } from "@/lib/api/rate-limit"
-import { getTierLimits } from "@/lib/products"
+import { getTierLimits, normalizeLimit } from "@/lib/products"
 import type { SubscriptionTier } from "@/lib/types"
 import { sendEmail } from "@/lib/notifications/email"
 import { invitationEmail } from "@/lib/notifications/templates"
@@ -116,9 +116,13 @@ export async function POST(request: Request) {
 
     const totalUsers = (currentUsers || 0) + (pendingInvites || 0)
 
-    const tierMax = getTierLimits((org?.subscription_tier as SubscriptionTier) || "free").maxUsers
+    // -1 means "unlimited" on both the tier definition and the stored column —
+    // normalize before Math.min, otherwise -1 would win every comparison and
+    // block ALL invitations on unlimited-seat tiers (e.g. Enterprise).
+    const tierMax = normalizeLimit(getTierLimits((org?.subscription_tier as SubscriptionTier) || "free").maxUsers)
+    const storedMax = org?.max_users != null ? normalizeLimit(org.max_users) : tierMax
     // Respect the stricter of tier limit and any stored override.
-    const seatLimit = Math.min(tierMax, org?.max_users ?? tierMax)
+    const seatLimit = Math.min(tierMax, storedMax)
 
     if (totalUsers >= seatLimit) {
       return NextResponse.json({
@@ -174,7 +178,12 @@ export async function POST(request: Request) {
     if (error) throw error
 
     // Send the invitation email (best-effort; gracefully no-ops without RESEND_API_KEY).
-    const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL}/signup?invitation=${token}`
+    // Points at /accept-invitation, NOT /signup — the two are different flows
+    // (accepting a pre-scoped invite vs. creating a brand-new organization),
+    // and /signup never read an "invitation" param, so this used to land
+    // every invitee on the generic org-creation wizard with no actual way to
+    // accept their invite. Found while wiring up P2-3/P2-14's email verification.
+    const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL}/accept-invitation?token=${token}`
     const emailResult = await sendEmail(
       email,
       invitationEmail({

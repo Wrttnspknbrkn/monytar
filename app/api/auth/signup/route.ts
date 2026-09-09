@@ -5,6 +5,8 @@ import { createClient } from "@supabase/supabase-js"
 import { enforceRateLimit, getClientIp } from "@/lib/api/rate-limit"
 import { getSupabaseServerClient } from "@/lib/supabase/server"
 import { getTierLimits } from "@/lib/products"
+import { sendEmail } from "@/lib/notifications/email"
+import { confirmEmailEmail } from "@/lib/notifications/templates"
 
 // Use service role for admin operations
 function getAdminClient() {
@@ -44,13 +46,24 @@ export async function POST(request: Request) {
     // clear, actionable error below if it's missing or misconfigured).
     const supabase = getAdminClient()
 
-    // Create auth user
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+
+    // Create the auth user via generateLink rather than admin.createUser with
+    // email_confirm: true. That flag used to auto-confirm every signup
+    // regardless of whether the caller actually owns the address — anyone
+    // could occupy any email (users.email is UNIQUE, so the real owner is
+    // then permanently locked out of signing up with their own address).
+    // generateLink both creates the (unconfirmed) user AND returns the exact
+    // confirmation link Supabase would otherwise only email on its own via
+    // the client-side signUp() path — we send it ourselves below so it goes
+    // through the same Resend transport as invitations.
+    const { data: linkData, error: authError } = await supabase.auth.admin.generateLink({
+      type: "signup",
       email,
       password,
-      email_confirm: true, // Auto-confirm for now
-      user_metadata: {
-        full_name: fullName,
+      options: {
+        data: { full_name: fullName },
+        redirectTo: `${appUrl}/verify-email`,
       },
     })
 
@@ -59,9 +72,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: authError.message }, { status: 400 })
     }
 
-    if (!authData.user) {
+    if (!linkData?.user) {
       return NextResponse.json({ error: "Failed to create user" }, { status: 500 })
     }
+
+    const authData = { user: linkData.user }
+    const confirmationUrl = linkData.properties?.action_link
 
     // Generate organization slug from name
     const slug = orgName
@@ -139,14 +155,23 @@ export async function POST(request: Request) {
         is_active: true,
       })
 
-    // Establish a browser session so the client is authenticated once signup
-    // completes — admin.createUser() above only creates the account, it does
-    // not sign the browser in.
+    // Send the confirmation email (best-effort; gracefully no-ops without
+    // RESEND_API_KEY, same as invitations — see emailSent/confirmationUrl below).
+    const emailResult = confirmationUrl
+      ? await sendEmail(email, confirmEmailEmail({ fullName, url: confirmationUrl }))
+      : { sent: false }
+
+    // Attempt to establish a browser session immediately. Whether this
+    // actually succeeds now depends on the Supabase project's "Confirm
+    // email" setting (Authentication → Providers → Email): if it's on,
+    // sign-in correctly fails until the link above is clicked; if it's off,
+    // the account is usable right away regardless of what this route does —
+    // that enforcement lives in Supabase project config, not here.
     const sessionClient = await getSupabaseServerClient()
     const { error: signInError } = await sessionClient.auth.signInWithPassword({ email, password })
 
     if (signInError) {
-      console.error("[v0] post-signup sign-in failed:", JSON.stringify({ message: signInError.message, code: signInError.code, status: signInError.status }))
+      console.error("[v0] post-signup sign-in pending (likely awaiting email confirmation):", JSON.stringify({ message: signInError.message, code: signInError.code, status: signInError.status }))
     }
 
     return NextResponse.json({
@@ -154,6 +179,10 @@ export async function POST(request: Request) {
       user: authData.user,
       organization: org,
       signedIn: !signInError,
+      emailSent: emailResult.sent,
+      // Returned for development so signup works end-to-end before email is
+      // configured — never expose this in a real deployment's response.
+      confirmationUrl: !emailResult.sent ? confirmationUrl : undefined,
       tier,
       // Paid tiers still need to complete Stripe Checkout — the account and
       // org exist either way, but the client should route to checkout next

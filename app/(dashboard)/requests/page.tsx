@@ -14,10 +14,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent } from "@/components/ui/card"
-import type { ExpenseCategory } from "@/lib/types"
+import { useExpenseCategories } from "@/lib/hooks/use-categories"
 
 function RequestsPageContent() {
   const { dbUser } = useAuth()
+  const { categories } = useExpenseCategories()
   const { currentUser, expenseRequests, getMyRequests, getUserById, getVendorById, formatAmount } = useData()
   const searchParams = useSearchParams()
   
@@ -114,9 +115,9 @@ function RequestsPageContent() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Categories</SelectItem>
-            {(["travel", "meals", "supplies", "software", "equipment", "other"] as ExpenseCategory[]).map((c) => (
-              <SelectItem key={c} value={c}>
-                {getCategoryLabel(c)}
+            {categories.map((c) => (
+              <SelectItem key={c.id} value={c.name}>
+                {getCategoryLabel(c.name)}
               </SelectItem>
             ))}
           </SelectContent>

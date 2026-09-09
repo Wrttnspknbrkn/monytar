@@ -53,7 +53,7 @@ export function getPriorityColor(priority: Priority): string {
 }
 
 export function getCategoryLabel(category: ExpenseCategory): string {
-  const labels: Record<ExpenseCategory, string> = {
+  const labels: Record<string, string> = {
     travel: "Travel",
     meals: "Meals & Entertainment",
     supplies: "Office Supplies",
@@ -61,7 +61,9 @@ export function getCategoryLabel(category: ExpenseCategory): string {
     equipment: "Equipment",
     other: "Other",
   }
-  return labels[category]
+  // Custom, org-added categories aren't in this map — their stored name IS
+  // already the intended display text, so fall back to it as-is.
+  return labels[category] ?? category
 }
 
 export function getRoleLabel(role: UserRole): string {

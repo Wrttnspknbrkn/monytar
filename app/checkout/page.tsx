@@ -15,6 +15,12 @@ function CheckoutContent() {
   const searchParams = useSearchParams()
   const productId = searchParams.get("plan") || "professional-monthly"
   const orgId = searchParams.get("orgId") || undefined
+  // Where "Back"/error-state links should go. Defaults to the public pricing
+  // page (new-visitor flow); Settings' "Change Plan" passes returnTo=/dashboard/settings
+  // so an existing user lands back in the app, not on the marketing site.
+  const returnToParam = searchParams.get("returnTo")
+  const backHref = returnToParam && returnToParam.startsWith("/") ? returnToParam : "/pricing"
+  const backLabel = backHref === "/pricing" ? "Back to Pricing" : "Back to Settings"
   const [error, setError] = useState<string | null>(null)
 
   const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
@@ -44,8 +50,8 @@ function CheckoutContent() {
               <p>NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_...</p>
             </div>
           </div>
-          <Link href="/pricing" className="inline-flex items-center gap-2 mt-6 text-sm text-primary hover:underline font-medium">
-            <ArrowLeft className="w-4 h-4" /> Back to Pricing
+          <Link href={backHref} className="inline-flex items-center gap-2 mt-6 text-sm text-primary hover:underline font-medium">
+            <ArrowLeft className="w-4 h-4" /> {backLabel}
           </Link>
         </div>
       </div>
@@ -62,8 +68,8 @@ function CheckoutContent() {
             <h2 className="font-heading font-bold text-lg mb-2">Checkout Error</h2>
             <p className="text-sm text-muted-foreground">{error}</p>
           </div>
-          <Link href="/pricing" className="inline-flex items-center gap-2 mt-6 text-sm text-primary hover:underline font-medium">
-            <ArrowLeft className="w-4 h-4" /> Back to Pricing
+          <Link href={backHref} className="inline-flex items-center gap-2 mt-6 text-sm text-primary hover:underline font-medium">
+            <ArrowLeft className="w-4 h-4" /> {backLabel}
           </Link>
         </div>
       </div>
@@ -77,9 +83,9 @@ function CheckoutContent() {
       <div className="border-b border-border">
         <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
           <Logo size="md" />
-          <Link href="/pricing">
+          <Link href={backHref}>
             <Button variant="ghost" size="sm" className="text-sm font-medium">
-              <ArrowLeft className="w-4 h-4 mr-2" /> Back
+              <ArrowLeft className="w-4 h-4 mr-2" /> {backLabel}
             </Button>
           </Link>
         </div>

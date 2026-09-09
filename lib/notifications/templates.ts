@@ -84,6 +84,20 @@ export function invitationEmail(opts: {
   return { subject, html: shell(subject, body), text }
 }
 
+export function confirmEmailEmail(opts: {
+  fullName?: string
+  url: string
+}): EmailContent {
+  const name = opts.fullName ? `Hi ${opts.fullName},` : "Hi,"
+  const subject = `Confirm your ${BRAND} account`
+  const body = `<p style="margin:0 0 12px;">${escapeHTML(name)}</p>
+    <p style="margin:0 0 16px;">Confirm this email address to finish setting up your ${escapeHTML(BRAND)} account.</p>
+    <p style="margin:0 0 16px;">${button(opts.url, "Confirm email")}</p>
+    <p style="margin:0;color:#71717a;font-size:13px;">If you didn't request this, you can safely ignore this email.</p>`
+  const text = `${name}\n\nConfirm this email address to finish setting up your ${BRAND} account.\n\nConfirm: ${opts.url}\n\nIf you didn't request this, you can safely ignore this email.`
+  return { subject, html: shell(subject, body), text }
+}
+
 export function budgetAlertEmail(opts: {
   recipientName?: string
   departmentName: string

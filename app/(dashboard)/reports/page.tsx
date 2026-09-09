@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import {
   BarChart3,
   TrendingUp,
@@ -9,6 +9,7 @@ import {
   Download,
   ArrowUpRight,
   PieChart as PieChartIcon,
+  Calendar,
 } from "lucide-react"
 import { useData, useAuth } from "@/lib/providers"
 import { cn, getCategoryLabel } from "@/lib/utils"
@@ -24,10 +25,30 @@ import {
 import { buildExpenseReport } from "@/lib/reports/export"
 import { downloadCSV, downloadHTMLReport } from "@/lib/reports/download"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { StatCard } from "@/components/dashboard/stat-card"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import type { ExpenseRequest } from "@/lib/types"
+
+// Reports used to have no date-range control at all — every total, chart,
+// and export was silently "all time" (audit P2-12). Presets rather than a
+// free-form picker: covers the real use cases without the extra UI weight.
+const RANGE_OPTIONS = [
+  { value: "30d", label: "Last 30 days", days: 30, months: 1 },
+  { value: "90d", label: "Last 3 months", days: 90, months: 3 },
+  { value: "180d", label: "Last 6 months", days: 180, months: 6 },
+  { value: "365d", label: "Last 12 months", days: 365, months: 12 },
+  { value: "all", label: "All time", days: null, months: 24 },
+] as const
+
+function filterByRange(requests: ExpenseRequest[], days: number | null): ExpenseRequest[] {
+  if (days === null) return requests
+  const cutoff = new Date()
+  cutoff.setDate(cutoff.getDate() - days)
+  return requests.filter((r) => new Date(r.created_at) >= cutoff)
+}
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Progress } from "@/components/ui/progress"
 import {
@@ -64,60 +85,68 @@ export default function ReportsPage() {
   const user = dbUser || currentUser
   const isRestricted = user?.role === "employee" || user?.role === "manager"
 
-  const totals = useMemo(() => computeTotals(expenseRequests), [expenseRequests])
+  const [range, setRange] = useState<string>("180d")
+  const rangeOption = RANGE_OPTIONS.find((o) => o.value === range) ?? RANGE_OPTIONS[2]
+  const filteredRequests = useMemo(
+    () => filterByRange(expenseRequests, rangeOption.days),
+    [expenseRequests, rangeOption.days],
+  )
+
+  const totals = useMemo(() => computeTotals(filteredRequests), [filteredRequests])
   const totalAmount = totals.submitted
   const approvedAmount = totals.approved
   const paidAmount = totals.paid
   const avgRequestAmount = totals.avg
 
-  // Real monthly trend derived from request dates (no random data).
+  // Real monthly trend derived from request dates (no random data). Window
+  // length now follows the selected range instead of a fixed 6 months.
   const monthlyData = useMemo(
-    () => monthlyTrend(expenseRequests, 6).map((p) => ({ month: p.label, ...p })),
-    [expenseRequests],
+    () => monthlyTrend(filteredRequests, rangeOption.months).map((p) => ({ month: p.label, ...p })),
+    [filteredRequests, rangeOption.months],
   )
 
   const categoryBreakdown = useMemo(
     () =>
-      spendByCategory(expenseRequests).map((c) => ({
+      spendByCategory(filteredRequests).map((c) => ({
         name: getCategoryLabel(c.category),
         count: c.count,
         amount: c.amount,
         pct: c.pct,
       })),
-    [expenseRequests],
+    [filteredRequests],
   )
 
   const deptData = useMemo(
     () =>
-      spendByDepartment(expenseRequests, departments).map((d) => {
+      spendByDepartment(filteredRequests, departments).map((d) => {
         const dept = departments.find((x) => x.id === d.departmentId)
         return { name: dept?.name ?? "Unknown", spend: d.spend, budget: d.budget, pct: d.pct }
       }),
-    [expenseRequests, departments],
+    [filteredRequests, departments],
   )
 
   const vendorSpend = useMemo(
     () =>
-      topVendors(expenseRequests, 8).map((v) => ({
+      topVendors(filteredRequests, 8).map((v) => ({
         name: vendors.find((x) => x.id === v.vendorId)?.name ?? "Unknown vendor",
         amount: v.amount,
         count: v.count,
       })),
-    [expenseRequests, vendors],
+    [filteredRequests, vendors],
   )
 
   const statusBreakdown = useMemo(
     () =>
-      countByStatus(expenseRequests).map((s) => ({
+      countByStatus(filteredRequests).map((s) => ({
         name: s.status.charAt(0).toUpperCase() + s.status.slice(1),
         value: s.count,
       })),
-    [expenseRequests],
+    [filteredRequests],
   )
 
   function handleExport(format: "csv" | "pdf") {
     const report = buildExpenseReport({
-      requests: expenseRequests,
+      requests: filteredRequests,
       departments,
       vendors,
       users,
@@ -150,6 +179,18 @@ export default function ReportsPage() {
           <h1 className="font-heading text-2xl font-extrabold tracking-tight">Reports</h1>
           <p className="text-muted-foreground text-sm mt-0.5">Financial analytics and spending insights</p>
         </div>
+        <div className="flex items-center gap-2">
+          <Select value={range} onValueChange={setRange}>
+            <SelectTrigger className="w-[160px] h-9 text-sm">
+              <Calendar className="w-3.5 h-3.5 mr-1.5 text-muted-foreground" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {RANGE_OPTIONS.map((o) => (
+                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="bg-transparent font-semibold">
@@ -165,6 +206,7 @@ export default function ReportsPage() {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        </div>
       </div>
 
       {/* Summary Stats */}
@@ -189,7 +231,7 @@ export default function ReportsPage() {
             <Card className="lg:col-span-2 border-border/60">
               <CardHeader className="pb-2">
                 <CardTitle className="font-heading text-base font-bold">Monthly Spending Trend</CardTitle>
-                <CardDescription className="text-xs">Submitted vs approved vs paid over the last 6 months</CardDescription>
+                <CardDescription className="text-xs">Submitted vs approved vs paid — {rangeOption.label.toLowerCase()}</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="h-72">

@@ -34,13 +34,13 @@ export const PRODUCTS: Product[] = [
     description: "For small teams getting started with expense management",
     priceInCents: 0,
     interval: "month",
-    maxUsers: 5,
+    maxUsers: 3,
     maxDepartments: 1,
     maxRequestsPerMonth: 50,
     stripeProductId: "prod_V8da1ptl7gI06l",
     stripePriceId: "price_1U8MIsDgVNvX3fxySWc0l2HG",
     features: [
-      "Up to 5 users",
+      "Up to 3 users",
       "50 expense requests/month",
       "Basic approval workflow",
       "Standard reporting",
@@ -53,19 +53,20 @@ export const PRODUCTS: Product[] = [
     name: "Starter",
     tier: "starter",
     description: "For growing teams that need more control and visibility",
-    priceInCents: 1900, // $19/month per organization
+    priceInCents: 2900, // $29/month per organization
     interval: "month",
-    maxUsers: 25,
+    maxUsers: 10,
     maxDepartments: 5,
     maxRequestsPerMonth: null, // unlimited
     stripeProductId: "prod_V8dbNcainvnP3Y",
     stripePriceId: "price_1U8MMwDgVNvX3fxydh4cGKeR",
     features: [
-      "Up to 25 users",
+      "Up to 10 users",
       "Unlimited expense requests",
       "Multi-level approvals",
-      "Custom categories",
-      "CSV export",
+      "Multi-currency reporting, 16 currencies",
+      "CSV & printable report exports",
+      "Custom expense categories",
       "5 departments",
       "Priority email support",
       "Vendor management",
@@ -76,19 +77,20 @@ export const PRODUCTS: Product[] = [
     name: "Starter",
     tier: "starter",
     description: "For growing teams that need more control and visibility",
-    priceInCents: 19000, // $190/year (2 months free)
+    priceInCents: 29000, // $290/year (2 months free)
     interval: "year",
-    maxUsers: 25,
+    maxUsers: 10,
     maxDepartments: 5,
     maxRequestsPerMonth: null,
     stripeProductId: "prod_V8dbNcainvnP3Y",
     stripePriceId: "price_1U8MPCDgVNvX3fxya277YrS2",
     features: [
-      "Up to 25 users",
+      "Up to 10 users",
       "Unlimited expense requests",
       "Multi-level approvals",
-      "Custom categories",
-      "CSV export",
+      "Multi-currency reporting, 16 currencies",
+      "CSV & printable report exports",
+      "Custom expense categories",
       "5 departments",
       "Priority email support",
       "Vendor management",
@@ -99,26 +101,22 @@ export const PRODUCTS: Product[] = [
     name: "Professional",
     tier: "professional",
     description: "For mid-size organizations that need advanced features",
-    priceInCents: 4900, // $49/month per organization
+    priceInCents: 6900, // $69/month per organization
     interval: "month",
     popular: true,
-    maxUsers: 100,
+    maxUsers: 50,
     maxDepartments: -1, // unlimited
     maxRequestsPerMonth: null,
     stripeProductId: "prod_V8diuzoJbw5gdq",
     stripePriceId: "price_1U8MR6DgVNvX3fxymY7292Ka",
     features: [
-      "Up to 100 users",
+      "Up to 50 users",
       "Unlimited expense requests",
-      "Advanced approval chains",
-      "Budget management",
-      "Advanced analytics",
       "Unlimited departments",
-      "API access",
-      "SSO integration",
-      "Custom roles",
-      "Audit trail",
-      "Phone & email support",
+      "Advanced approval chains",
+      "Budget management & overage alerts",
+      "Full request & approval history",
+      "Phone & priority email support",
     ],
   },
   {
@@ -126,53 +124,45 @@ export const PRODUCTS: Product[] = [
     name: "Professional",
     tier: "professional",
     description: "For mid-size organizations that need advanced features",
-    priceInCents: 49000, // $490/year (2 months free)
+    priceInCents: 69000, // $690/year (2 months free)
     interval: "year",
     popular: true,
-    maxUsers: 100,
+    maxUsers: 50,
     maxDepartments: -1,
     maxRequestsPerMonth: null,
     stripeProductId: "prod_V8diuzoJbw5gdq",
     stripePriceId: "price_1U8MRWDgVNvX3fxyuL9pB1JE",
     features: [
-      "Up to 100 users",
+      "Up to 50 users",
       "Unlimited expense requests",
-      "Advanced approval chains",
-      "Budget management",
-      "Advanced analytics",
       "Unlimited departments",
-      "API access",
-      "SSO integration",
-      "Custom roles",
-      "Audit trail",
-      "Phone & email support",
+      "Advanced approval chains",
+      "Budget management & overage alerts",
+      "Full request & approval history",
+      "Phone & priority email support",
     ],
   },
   {
     id: "enterprise-monthly",
     name: "Enterprise",
     tier: "enterprise",
-    description: "Custom deployment for large organizations",
-    priceInCents: 0, // Custom pricing - contact sales
+    description: "For large organizations that need unlimited seats and hands-on onboarding",
+    priceInCents: 19900, // $199/month, flat — unlimited seats. Still routed to Contact Sales
+    // rather than self-serve Stripe Checkout: onboarding/integration work at this scale is
+    // scoped per customer. See createCheckoutSession's explicit tier === "enterprise" guard.
     interval: "month",
     maxUsers: -1, // unlimited
     maxDepartments: -1,
     maxRequestsPerMonth: null,
     stripeProductId: "prod_V8dmUjz4zS8XEA",
-    stripePriceId: null, // no fixed price — route to a "contact sales" flow, not Stripe Checkout
+    stripePriceId: null, // no self-serve checkout — routes to Contact Sales
     features: [
       "Unlimited users",
       "Everything in Professional",
-      "Custom integrations",
-      "Dedicated account manager",
-      "SLA guarantee",
-      "On-premise option",
-      "Custom branding",
-      "Advanced security controls",
-      "Data retention & audit tools",
-      "Assisted data import",
-      "Training & onboarding",
-      "24/7 priority support",
+      "One licence, no per-user add-on pricing",
+      "Dedicated onboarding & training",
+      "Custom integrations, scoped & built to order",
+      "Named contact & response-time SLA",
     ],
   },
 ]
@@ -224,10 +214,21 @@ export function getTierFromPriceAmount(priceAmount: number): SubscriptionTier {
   if (exact) return exact.tier
   // Heuristic fallback — always a valid tier, never "business".
   if (priceAmount <= 0) return "free"
-  if (priceAmount <= 1900) return "starter"
-  if (priceAmount <= 4900) return "professional"
-  if (priceAmount <= 49000) return "professional"
+  if (priceAmount <= 2900) return "starter" // starter monthly
+  if (priceAmount <= 6900) return "professional" // professional monthly
+  if (priceAmount <= 29000) return "starter" // starter yearly
+  if (priceAmount <= 69000) return "professional" // professional yearly
   return "enterprise"
+}
+
+/**
+ * `maxUsers`/`maxDepartments` use -1 to mean "unlimited" (matches the Product
+ * type's convention). Normalizes that sentinel to Infinity so callers can do
+ * plain numeric comparisons (e.g. `count >= limit`) without special-casing -1,
+ * which would otherwise make every comparison against it true.
+ */
+export function normalizeLimit(limit: number): number {
+  return limit === -1 ? Infinity : limit
 }
 
 export function resolveSubscriptionTier(opts: { productId?: string | null; priceAmount?: number }): SubscriptionTier {
@@ -238,7 +239,7 @@ export function getTierLimits(tier: SubscriptionTier): { maxUsers: number; maxDe
   const product = getProductByTier(tier)
   if (!product) {
     // Default to free tier limits
-    return { maxUsers: 5, maxDepartments: 1, maxRequestsPerMonth: 50 }
+    return { maxUsers: 3, maxDepartments: 1, maxRequestsPerMonth: 50 }
   }
   return {
     maxUsers: product.maxUsers,

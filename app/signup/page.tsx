@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ArrowRight, ArrowLeft, Check, Users, BarChart3, TrendingUp, Globe, ShieldCheck } from "lucide-react"
+import { ArrowRight, ArrowLeft, Check, Users, BarChart3, TrendingUp, Globe, ShieldCheck, Mail } from "lucide-react"
 import { Logo } from "@/components/ui/logo"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -42,6 +42,9 @@ export default function SignupPage() {
   // Whether the signup response left the browser with an authenticated
   // session (real signup) or no server session applies (demo mode).
   const [readyForDashboard, setReadyForDashboard] = useState(false)
+  // Set when the account was created but needs email confirmation before it
+  // can be used — see /api/auth/signup's generateLink-based flow.
+  const [confirmationInfo, setConfirmationInfo] = useState<{ email: string; confirmationUrl?: string } | null>(null)
 
   function validateStep(currentStep: number): boolean {
     const newErrors: Record<string, string> = {}
@@ -100,11 +103,11 @@ export default function SignupPage() {
             return
           }
           if (data.signedIn === false) {
-            // Account + org were created, but the post-signup sign-in
-            // failed server-side (see console for the logged cause) — send
-            // them to log in manually instead of a dead-end dashboard.
-            console.error("[signup] account created but no session was established; sending to /login")
-            toast.error("Account created. Please sign in to continue.")
+            // Account + org were created, but no session was established —
+            // most likely the Supabase project requires email confirmation
+            // before sign-in. Show the check-your-email step instead of a
+            // dead-end "you're all set" screen.
+            setConfirmationInfo({ email: formData.email, confirmationUrl: data.confirmationUrl })
           } else {
             setReadyForDashboard(true)
           }
@@ -113,11 +116,15 @@ export default function SignupPage() {
           toast.error(data.error || "Registration failed")
         }
       } catch (err) {
+        // A thrown fetch error (network blip, timeout, CORS) is NOT the same
+        // signal as genuine demo mode — that's the server explicitly
+        // returning `demo: true` above. Previously this branch showed a fake
+        // "Account created!" success regardless of cause, advancing the
+        // wizard as if an account existed when the request may never have
+        // reached the server at all — the user then can't log in later with
+        // no explanation. Show a real, retryable error instead.
         console.error("[signup] request failed:", err)
-        // Network error - demo mode fallback
-        toast.success("Account created! (Demo Mode)")
-        setReadyForDashboard(true)
-        setStep(3)
+        toast.error("Couldn't reach the server. Check your connection and try again.")
       } finally {
         setLoading(false)
       }
@@ -208,7 +215,7 @@ export default function SignupPage() {
 
           <div className="flex flex-col gap-3">
             {[
-              { icon: Users, text: "Free plan includes up to 5 users" },
+              { icon: Users, text: "Free plan includes up to 3 users" },
               { icon: BarChart3, text: "Flat monthly pricing per organization" },
               { icon: ShieldCheck, text: "Enterprise-grade security included" },
             ].map((item) => {
@@ -374,18 +381,38 @@ export default function SignupPage() {
             </div>
           )}
 
-          {step === 3 && (
+          {step === 3 && confirmationInfo && (
+            <div className="text-center py-8">
+              <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mx-auto mb-5">
+                <Mail className="w-8 h-8 text-primary" />
+              </div>
+              <h3 className="font-heading font-bold text-lg mb-2">Check your email</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                We sent a confirmation link to <strong className="text-foreground">{confirmationInfo.email}</strong>. Click it to activate your account, then sign in.
+              </p>
+              {confirmationInfo.confirmationUrl && (
+                <div className="bg-secondary/50 rounded-lg p-3 text-left">
+                  <p className="text-xs text-muted-foreground mb-1.5">Email delivery isn&apos;t configured yet — use this link directly:</p>
+                  <a href={confirmationInfo.confirmationUrl} className="text-xs text-primary hover:underline break-all">
+                    {confirmationInfo.confirmationUrl}
+                  </a>
+                </div>
+              )}
+            </div>
+          )}
+
+          {step === 3 && !confirmationInfo && (
             <div className="text-center py-8">
               <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-emerald-100 dark:bg-emerald-900/30 mx-auto mb-5">
                 <Check className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
               </div>
               <h3 className="font-heading font-bold text-lg mb-2">Your account is ready!</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                {"You're on the Free plan with up to 5 users. Upgrade anytime from Settings."}
+                {"You're on the Free plan with up to 3 users. Upgrade anytime from Settings."}
               </p>
               <div className="bg-secondary/50 rounded-lg p-3 text-xs text-muted-foreground">
                 <p className="font-medium text-foreground mb-1">Free Plan Includes:</p>
-                <p>5 users, 50 requests/month, 1 department, basic approvals</p>
+                <p>3 users, 50 requests/month, 1 department, basic approvals</p>
               </div>
             </div>
           )}
@@ -404,7 +431,7 @@ export default function SignupPage() {
               {loading
                 ? "Creating account..."
                 : step === steps.length - 1
-                  ? "Go to Dashboard"
+                  ? confirmationInfo ? "Go to Sign In" : "Go to Dashboard"
                   : step === 2 && selectedTier !== "free"
                     ? "Continue to Payment"
                     : "Continue"}{" "}

@@ -38,7 +38,7 @@ organizations (tenant root)
   └─ subscription_history / stripe_* columns (billing)
 ```
 
-**Categories are a fixed, hardcoded enum** (`travel`, `meals`, `supplies`, `software`, `equipment`, `other`) baked into a Postgres `CHECK` constraint — not an organization-configurable table, despite "Custom categories" being advertised as a paid-plan feature in the marketing/pricing copy (`lib/products.ts`). This is a documented gap, not yet a real feature (see audit).
+**Categories** start from 6 system defaults (`travel`, `meals`, `supplies`, `software`, `equipment`, `other`) seeded into `expense_categories` (organization_id IS NULL). Starter-and-up organizations can add their own via Settings → Organization → Expense Categories (admin/finance only), stored as `organization_id`-scoped rows in the same table. `expense_requests.category` remains plain TEXT rather than a foreign key, validated against `expense_categories` at the API layer instead of the old hardcoded CHECK constraint.
 
 ## 4. Expense lifecycle (state machine)
 
@@ -61,15 +61,11 @@ All four org-level threshold fields (`auto_approve_under_amount`, `receipt_requi
 
 ## 5. Onboarding — current state vs. intent
 
-**Current state**: two disconnected pieces exist.
-1. `app/signup/page.tsx` — the *actual* production signup flow: account details → organization name → **plan selection** (Free/Starter/Professional) → creates the org via `/api/auth/signup` → free tier lands on `/dashboard` immediately; paid tiers redirect to Stripe Checkout, return to `/dashboard` on success.
-2. `app/onboarding/page.tsx` — a fully-built, polished 2-step wizard (workspace details + team invites) that **nothing in the app links to**, and whose submit handlers do not call any real API — they show a success toast and navigate to `/dashboard` regardless of what was entered. This is dead, decorative code today.
+**Current state**: `app/signup/page.tsx` is the one production signup flow — account details → organization name → **plan selection** (Free/Starter/Professional) → creates the org via `/api/auth/signup` → sends a confirmation email (see §7) → free tier lands on `/dashboard` once confirmed; paid tiers redirect to Stripe Checkout, return to `/dashboard` on success. New organizations get a dismissible first-run checklist on the dashboard (`components/dashboard/getting-started-checklist.tsx`, admin-only): create a department, invite the team, add a vendor, submit a first request — tracked from real data, not a separate flow.
 
-**Product decision** (documented per Rule 8, since this needed a call): rather than maintaining two competing onboarding surfaces, the sensible path is to fold onboarding into the *first-run dashboard experience* — a dismissible, resumable checklist (departments created, first vendor added, first teammate invited, first request submitted) rather than a second pre-dashboard wizard that duplicates signup. `app/onboarding/page.tsx` should either be wired to real actions and repositioned as a genuinely optional post-signup step, or removed in favor of the checklist. See audit for the concrete recommendation.
+The formerly-dead `app/onboarding/page.tsx` — a polished 2-step wizard nothing in the app linked to, whose submit handlers didn't call any real API — has been removed. Per the case study's own recommendation, onboarding now lives entirely in the first-run dashboard experience instead of a second pre-dashboard wizard duplicating signup.
 
 ## 6. Known, documented gaps (not hidden, not yet built)
 
 - **Multi-currency conversion**: marketing copy claims "employees submit in local currency, finance sees your base currency" — no FX conversion is wired to expense creation (every request is created with `currency: "USD"` by default, no currency picker in the New Request form). `lib/currency/index.ts` has a real `convertCurrency()` with a static reference-rate table, ready to be used, but nothing calls it yet. Documented as a future feature requiring an actual FX-rate provider decision, not something to fake.
-- **Google OAuth**: "Continue with Google" is a non-functional UI placeholder — no `signInWithOAuth` call exists anywhere.
-- **Organization branding/logo**: `organizations.logo_url` exists in the schema and type, but there is no upload UI or API endpoint anywhere.
-- **Custom categories**: hardcoded enum, no admin UI, despite being marketed.
+- **Google OAuth**: "Continue with Google" is a non-functional UI placeholder — no `signInWithOAuth` call exists anywhere. Needs external config (a Google Cloud OAuth client + Supabase Auth provider setup) regardless of code.

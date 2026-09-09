@@ -98,11 +98,13 @@ export async function POST(request: NextRequest) {
           }
 
           if (organizationId) {
+            const interval = subscription.items.data[0]?.price?.recurring?.interval === "year" ? "year" : "month"
             await supabase
               .from("organizations")
               .update({
                 subscription_tier: tier,
                 subscription_status: "active",
+                billing_interval: interval,
                 stripe_customer_id: session.customer as string,
                 stripe_subscription_id: session.subscription as string,
                 updated_at: new Date().toISOString(),
@@ -124,6 +126,7 @@ export async function POST(request: NextRequest) {
 
         if (supabase) {
           const tier = tierFromSubscription(subscription)
+          const interval = subscription.items.data[0]?.price?.recurring?.interval === "year" ? "year" : "month"
 
           // Map Stripe status to our status
           let status: string = "active"
@@ -137,6 +140,7 @@ export async function POST(request: NextRequest) {
             .update({
               subscription_tier: tier,
               subscription_status: status,
+              billing_interval: interval,
               updated_at: new Date().toISOString(),
             })
             .eq("stripe_subscription_id", subscription.id)
@@ -156,6 +160,7 @@ export async function POST(request: NextRequest) {
             .update({
               subscription_tier: "free",
               subscription_status: "cancelled",
+              billing_interval: "month",
               stripe_subscription_id: null,
               updated_at: new Date().toISOString(),
             })

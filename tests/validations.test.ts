@@ -74,8 +74,12 @@ describe("expenseRequestSchema", () => {
     expect(expenseRequestSchema.safeParse({ ...base, amount: 1_000_001 }).success).toBe(false)
   })
 
-  it("rejects an unknown category", () => {
-    expect(expenseRequestSchema.safeParse({ ...base, category: "crypto" }).success).toBe(false)
+  it("accepts any non-empty category (validity is checked per-org against expense_categories in the API route, not statically here)", () => {
+    expect(expenseRequestSchema.safeParse({ ...base, category: "crypto" }).success).toBe(true)
+  })
+
+  it("rejects an empty category", () => {
+    expect(expenseRequestSchema.safeParse({ ...base, category: "" }).success).toBe(false)
   })
 
   it("rejects a too-short purpose", () => {

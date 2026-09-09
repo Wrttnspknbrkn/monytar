@@ -14,6 +14,30 @@ import type {
   ExpenseRequestWithRelations,
 } from "@/lib/types"
 
+// PostgREST caps the rows a single request returns (commonly 1000). Any
+// query fetching a whole org's table with no .range()/.limit() silently
+// truncates past that cap instead of erroring — for expense_requests, that
+// understates real totals (stats, reports) with no signal anything is wrong.
+// This loops with .range() until a page comes back short, so the result is
+// always complete regardless of how large an org's data gets.
+const FETCH_ALL_PAGE_SIZE = 1000
+
+async function fetchAllRows<T>(
+  buildQuery: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>,
+): Promise<T[]> {
+  const all: T[] = []
+  let from = 0
+  for (;;) {
+    const { data, error } = await buildQuery(from, from + FETCH_ALL_PAGE_SIZE - 1)
+    if (error) throw error
+    const rows = data || []
+    all.push(...rows)
+    if (rows.length < FETCH_ALL_PAGE_SIZE) break
+    from += FETCH_ALL_PAGE_SIZE
+  }
+  return all
+}
+
 // Generic fetcher for Supabase
 async function supabaseFetcher<T>(key: string): Promise<T> {
   if (!isSupabaseConfigured()) {
@@ -131,32 +155,33 @@ export function useExpenseRequests(
     async () => {
       if (!orgId) return []
       const supabase = getSupabaseBrowserClient()
-      
-      let query = supabase
-        .from("expense_requests")
-        .select("*")
-        .eq("organization_id", orgId)
-        .order("created_at", { ascending: false })
-      
-      if (filters?.status) {
-        if (Array.isArray(filters.status)) {
-          query = query.in("status", filters.status)
-        } else {
-          query = query.eq("status", filters.status)
+
+      return fetchAllRows<ExpenseRequest>((from, to) => {
+        let query = supabase
+          .from("expense_requests")
+          .select("*")
+          .eq("organization_id", orgId)
+          .order("created_at", { ascending: false })
+          .range(from, to)
+
+        if (filters?.status) {
+          if (Array.isArray(filters.status)) {
+            query = query.in("status", filters.status)
+          } else {
+            query = query.eq("status", filters.status)
+          }
         }
-      }
-      
-      if (filters?.employeeId) {
-        query = query.eq("employee_id", filters.employeeId)
-      }
-      
-      if (filters?.departmentId) {
-        query = query.eq("department_id", filters.departmentId)
-      }
-      
-      const { data, error } = await query
-      if (error) throw error
-      return data || []
+
+        if (filters?.employeeId) {
+          query = query.eq("employee_id", filters.employeeId)
+        }
+
+        if (filters?.departmentId) {
+          query = query.eq("department_id", filters.departmentId)
+        }
+
+        return query
+      })
     },
     { fallbackData: [] }
   )
@@ -235,13 +260,16 @@ export function useDashboardStats(orgId: string | undefined, userId: string | un
     orgId && userId && isSupabaseConfigured() ? `dashboard-stats:${orgId}:${userId}:${role}` : null,
     async () => {
       const supabase = getSupabaseBrowserClient()
-      
+
       // Get request counts by status
-      const { data: requests } = await supabase
-        .from("expense_requests")
-        .select("status, amount")
-        .eq("organization_id", orgId)
-      
+      const requests = await fetchAllRows<{ status: string; amount: number }>((from, to) =>
+        supabase
+          .from("expense_requests")
+          .select("status, amount")
+          .eq("organization_id", orgId)
+          .range(from, to),
+      )
+
       const stats = {
         pending: 0,
         approved: 0,

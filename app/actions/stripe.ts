@@ -105,13 +105,14 @@ export async function createCheckoutSession(productId: string, userEmail?: strin
     return { error: "Invalid product selected" }
   }
 
-  // Enterprise plans require manual sales process
-  if (product.priceInCents === 0) {
+  // Enterprise requires a scoped sales/onboarding process, regardless of its
+  // listed reference price — never route it through self-serve Checkout.
+  if (product.tier === "enterprise" || !product.stripePriceId) {
     return { error: "Enterprise plans require contacting sales. Please reach out to sales@monytar.com" }
   }
 
   // Validate price is within expected range (security check)
-  const validPrices = PRODUCTS.map(p => p.priceInCents).filter(p => p > 0)
+  const validPrices = PRODUCTS.filter(p => p.tier !== "enterprise").map(p => p.priceInCents).filter(p => p > 0)
   if (!validPrices.includes(product.priceInCents)) {
     console.error("[Stripe] Invalid price detected:", product.priceInCents)
     return { error: "Invalid product configuration" }
@@ -204,26 +205,53 @@ export async function createCustomerPortalSession(customerId: string) {
 }
 
 /**
- * Creates a checkout session for upgrading/downgrading an existing subscription.
- * This uses Stripe's subscription update flow.
+ * Upgrades or downgrades the CURRENT authenticated user's organization to a
+ * different paid tier, in place, with Stripe proration — no new subscription,
+ * no checkout page. The Stripe customer/subscription IDs are resolved
+ * server-side from the caller's own org (never accepted from the client),
+ * matching the pattern in openBillingPortal: a signed-in user can only ever
+ * modify their own organization's billing.
  */
-export async function createSubscriptionUpdateSession(
-  customerId: string,
-  currentSubscriptionId: string,
-  newProductId: string
-) {
+export async function createSubscriptionUpdateSession(newProductId: string) {
   if (!isStripeConfigured()) {
     return { error: "Stripe is not configured." }
   }
-
-  // Validate inputs
-  if (!customerId?.startsWith('cus_') || !currentSubscriptionId?.startsWith('sub_')) {
-    return { error: "Invalid subscription details" }
+  if (!isSupabaseConfigured()) {
+    return { error: "Billing management is unavailable in demo mode." }
   }
 
   const newProduct = getProductById(newProductId)
-  if (!newProduct || newProduct.priceInCents === 0) {
-    return { error: "Invalid plan selected" }
+  if (!newProduct || newProduct.tier === "enterprise" || !newProduct.stripePriceId) {
+    return { error: "Enterprise plans require contacting sales. Please reach out to sales@monytar.com" }
+  }
+
+  const supabase = await getSupabaseServerClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "You must be signed in." }
+
+  const { data: dbUser } = await supabase
+    .from("users")
+    .select("organization_id, role")
+    .eq("id", user.id)
+    .single()
+
+  if (!dbUser || (dbUser.role !== "admin" && dbUser.role !== "finance")) {
+    return { error: "Only admins and finance users can manage billing." }
+  }
+
+  const { data: org } = await supabase
+    .from("organizations")
+    .select("stripe_customer_id, stripe_subscription_id")
+    .eq("id", dbUser.organization_id)
+    .single()
+
+  const customerId = org?.stripe_customer_id
+  const currentSubscriptionId = org?.stripe_subscription_id
+
+  if (!customerId?.startsWith("cus_") || !currentSubscriptionId?.startsWith("sub_")) {
+    return { error: "No active subscription found. Subscribe to a paid plan first." }
   }
 
   const { stripe } = await import("@/lib/stripe/server")
@@ -231,7 +259,13 @@ export async function createSubscriptionUpdateSession(
   try {
     // Get current subscription
     const subscription = await stripe.subscriptions.retrieve(currentSubscriptionId)
-    
+
+    // Defense in depth: the subscription must actually belong to this org's
+    // Stripe customer (guards against a stale/mismatched stored ID).
+    if (subscription.customer !== customerId) {
+      return { error: "Subscription does not match your organization's billing account." }
+    }
+
     if (subscription.status !== 'active' && subscription.status !== 'trialing') {
       return { error: "Can only update active subscriptions" }
     }
