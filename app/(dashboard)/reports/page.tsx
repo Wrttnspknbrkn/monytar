@@ -125,6 +125,17 @@ export default function ReportsPage() {
     [filteredRequests, departments],
   )
 
+  // Departments ranked against EACH OTHER by spend (not against their own
+  // budget, which "Department Budget Utilization" above already covers) —
+  // same "share of total" framing as the Top Vendors table.
+  const deptComparison = useMemo(() => {
+    const totalSpend = deptData.reduce((s, d) => s + d.spend, 0)
+    return deptData
+      .slice()
+      .sort((a, b) => b.spend - a.spend)
+      .map((d) => ({ ...d, share: totalSpend > 0 ? Math.round((d.spend / totalSpend) * 100) : 0 }))
+  }, [deptData])
+
   const vendorSpend = useMemo(
     () =>
       topVendors(filteredRequests, 8).map((v) => ({
@@ -394,6 +405,44 @@ export default function ReportsPage() {
               </CardContent>
             </Card>
           </div>
+
+          <Card className="border-border/60 overflow-hidden">
+            <CardHeader className="pb-2">
+              <CardTitle className="font-heading text-base font-bold">Spend by Department</CardTitle>
+              <CardDescription className="text-xs">Departments ranked against each other, not against their own budget</CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="hover:bg-transparent border-border/60">
+                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Rank</TableHead>
+                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Department</TableHead>
+                      <TableHead className="text-right text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Spend</TableHead>
+                      <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Share of total spend</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {deptComparison.map((d, i) => (
+                      <TableRow key={d.name} className="hover:bg-secondary/40 border-border/40 transition-colors">
+                        <TableCell>
+                          <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-secondary text-xs font-bold">{i + 1}</span>
+                        </TableCell>
+                        <TableCell className="text-sm font-medium">{d.name}</TableCell>
+                        <TableCell className="text-right font-heading font-bold text-sm tabular-nums">{formatAmount(d.spend)}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Progress value={d.share} className="h-1.5 w-24" />
+                            <span className="text-xs text-muted-foreground tabular-nums">{d.share}%</span>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Vendors */}

@@ -28,7 +28,7 @@ import { SUPPORTED_CURRENCIES } from "@/lib/currency"
 
 export default function SettingsPage() {
   const { dbUser } = useAuth()
-  const { currentUser, departments, updateUser, orgSettings, updateOrgSettings, organization } = useData()
+  const { currentUser, departments, updateUser, orgSettings, updateOrgSettings, organization, isLoading } = useData()
   const { theme, setTheme } = useTheme()
   
   const user = dbUser || currentUser
@@ -380,8 +380,20 @@ export default function SettingsPage() {
   }
 
   const isAdminOrFinance = user?.role === "admin" || user?.role === "finance"
-  
-  if (!user) return null
+
+  // Previously `if (!user) return null` — a real (non-error) delay in the
+  // user loading (slow network, an auth session mid-refresh) rendered a
+  // silent blank page with no way to tell it apart from a genuine crash.
+  // Show a spinner while loading; only bail to nothing once loading has
+  // actually finished and there's still no user (auth/layout handles the
+  // redirect-to-login case).
+  if (isLoading || !user) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-6 max-w-4xl">
