@@ -44,7 +44,7 @@ export default function SignupPage() {
   const [readyForDashboard, setReadyForDashboard] = useState(false)
   // Set when the account was created but needs email confirmation before it
   // can be used — see /api/auth/signup's generateLink-based flow.
-  const [confirmationInfo, setConfirmationInfo] = useState<{ email: string; confirmationUrl?: string } | null>(null)
+  const [confirmationInfo, setConfirmationInfo] = useState<{ email: string; confirmationUrl?: string; domainNotVerified?: boolean } | null>(null)
 
   function validateStep(currentStep: number): boolean {
     const newErrors: Record<string, string> = {}
@@ -107,7 +107,7 @@ export default function SignupPage() {
             // most likely the Supabase project requires email confirmation
             // before sign-in. Show the check-your-email step instead of a
             // dead-end "you're all set" screen.
-            setConfirmationInfo({ email: formData.email, confirmationUrl: data.confirmationUrl })
+            setConfirmationInfo({ email: formData.email, confirmationUrl: data.confirmationUrl, domainNotVerified: data.emailDomainNotVerified })
           } else {
             setReadyForDashboard(true)
           }
@@ -388,11 +388,13 @@ export default function SignupPage() {
               </div>
               <h3 className="font-heading font-bold text-lg mb-2">Check your email</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                We sent a confirmation link to <strong className="text-foreground">{confirmationInfo.email}</strong>. Click it to activate your account, then sign in.
+                {confirmationInfo.confirmationUrl
+                  ? <>We couldn&apos;t email a confirmation link to <strong className="text-foreground">{confirmationInfo.email}</strong>{confirmationInfo.domainNotVerified ? " — our sending domain isn't verified yet" : ""}. Use the link below to activate your account, then sign in.</>
+                  : <>We sent a confirmation link to <strong className="text-foreground">{confirmationInfo.email}</strong>. Click it to activate your account, then sign in.</>}
               </p>
               {confirmationInfo.confirmationUrl && (
                 <div className="bg-secondary/50 rounded-lg p-3 text-left">
-                  <p className="text-xs text-muted-foreground mb-1.5">Email delivery isn&apos;t configured yet — use this link directly:</p>
+                  <p className="text-xs text-muted-foreground mb-1.5">Confirmation link:</p>
                   <a href={confirmationInfo.confirmationUrl} className="text-xs text-primary hover:underline break-all">
                     {confirmationInfo.confirmationUrl}
                   </a>

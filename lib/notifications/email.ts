@@ -10,7 +10,16 @@ export function isEmailConfigured(): boolean {
   return Boolean(process.env.RESEND_API_KEY)
 }
 
-export type SendEmailResult = { sent: boolean; skipped?: boolean; id?: string; error?: string }
+export type SendEmailResult = {
+  sent: boolean
+  skipped?: boolean
+  id?: string
+  error?: string
+  /** True when Resend rejected the send because EMAIL_FROM's domain isn't
+   * verified on this account yet — a distinct, actionable failure mode from
+   * a generic API error (wrong key, rate limit, etc). */
+  domainNotVerified?: boolean
+}
 
 export async function sendEmail(to: string, content: EmailContent): Promise<SendEmailResult> {
   const apiKey = process.env.RESEND_API_KEY
@@ -41,7 +50,12 @@ export async function sendEmail(to: string, content: EmailContent): Promise<Send
     if (!res.ok) {
       const detail = await res.text().catch(() => "")
       console.error(`[email] send failed (${res.status}): ${detail}`)
-      return { sent: false, error: `Resend responded ${res.status}` }
+      // Resend's exact wording for this case: "This API key is not
+      // authorized to send emails from <domain>" — surface it as a distinct
+      // flag so callers can point whoever's looking straight at the fix
+      // (verify the domain in Resend) instead of a generic failure.
+      const domainNotVerified = res.status === 403 && /not authorized to send emails from/i.test(detail)
+      return { sent: false, error: `Resend responded ${res.status}`, domainNotVerified }
     }
 
     const json = (await res.json().catch(() => ({}))) as { id?: string }

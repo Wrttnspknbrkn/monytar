@@ -95,11 +95,14 @@ export default function UsersPage() {
       if (data.emailSent) {
         toast.success(`Invitation sent to ${form.email}`)
       } else {
+        const reason = data.emailDomainNotVerified
+          ? "your sending domain isn't verified in Resend yet"
+          : "the email couldn't be sent"
         try {
           await navigator.clipboard.writeText(data.inviteUrl)
-          toast.warning(`Invitation created, but the email couldn't be sent. Link copied — share it with ${form.email} directly.`, { duration: 8000 })
+          toast.warning(`Invitation created, but ${reason}. Link copied — share it with ${form.email} directly.`, { duration: 8000 })
         } catch {
-          toast.warning(`Invitation created, but the email couldn't be sent. Share this link with ${form.email}: ${data.inviteUrl}`, { duration: 10000 })
+          toast.warning(`Invitation created, but ${reason}. Share this link with ${form.email}: ${data.inviteUrl}`, { duration: 10000 })
         }
       }
       setForm({ full_name: "", email: "", role: "employee", department_id: "" })
