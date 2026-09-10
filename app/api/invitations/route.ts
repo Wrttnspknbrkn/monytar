@@ -198,6 +198,7 @@ export async function POST(request: Request) {
       success: true,
       invitation,
       emailSent: emailResult.sent,
+      emailDomainNotVerified: emailResult.domainNotVerified ?? false,
       // Returned for development so invites work before email is configured.
       inviteUrl,
     })

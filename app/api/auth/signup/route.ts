@@ -180,6 +180,7 @@ export async function POST(request: Request) {
       organization: org,
       signedIn: !signInError,
       emailSent: emailResult.sent,
+      emailDomainNotVerified: "domainNotVerified" in emailResult ? (emailResult.domainNotVerified ?? false) : false,
       // Returned for development so signup works end-to-end before email is
       // configured — never expose this in a real deployment's response.
       confirmationUrl: !emailResult.sent ? confirmationUrl : undefined,

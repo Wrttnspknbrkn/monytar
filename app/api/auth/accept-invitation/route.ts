@@ -199,6 +199,7 @@ export async function POST(request: Request) {
       email: invitation.email,
       signedIn: !signInError,
       emailSent: emailResult.sent,
+      emailDomainNotVerified: "domainNotVerified" in emailResult ? (emailResult.domainNotVerified ?? false) : false,
       confirmationUrl: !emailResult.sent ? confirmationUrl : undefined,
     })
   } catch (error) {

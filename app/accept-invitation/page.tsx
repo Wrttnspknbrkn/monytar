@@ -29,7 +29,7 @@ function AcceptInvitationContent() {
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [submitting, setSubmitting] = useState(false)
-  const [awaitingConfirmation, setAwaitingConfirmation] = useState<{ email: string; confirmationUrl?: string } | null>(null)
+  const [awaitingConfirmation, setAwaitingConfirmation] = useState<{ email: string; confirmationUrl?: string; domainNotVerified?: boolean } | null>(null)
 
   useEffect(() => {
     if (!token) {
@@ -81,7 +81,7 @@ function AcceptInvitationContent() {
         return
       }
 
-      setAwaitingConfirmation({ email: data.email, confirmationUrl: data.confirmationUrl })
+      setAwaitingConfirmation({ email: data.email, confirmationUrl: data.confirmationUrl, domainNotVerified: data.emailDomainNotVerified })
     } catch {
       toast.error("Something went wrong. Please try again.")
     } finally {
@@ -97,11 +97,13 @@ function AcceptInvitationContent() {
         </div>
         <h1 className="font-display text-2xl font-bold tracking-tight mb-1.5">Check your email</h1>
         <p className="text-sm text-muted-foreground mb-6">
-          We sent a confirmation link to <strong>{awaitingConfirmation.email}</strong>. Click it to activate your account, then sign in.
+          {awaitingConfirmation.confirmationUrl
+            ? <>We couldn&apos;t email a confirmation link to <strong>{awaitingConfirmation.email}</strong>{awaitingConfirmation.domainNotVerified ? " — our sending domain isn't verified yet" : ""}. Use the link below to activate your account, then sign in.</>
+            : <>We sent a confirmation link to <strong>{awaitingConfirmation.email}</strong>. Click it to activate your account, then sign in.</>}
         </p>
         {awaitingConfirmation.confirmationUrl && (
           <div className="mb-6 p-3 rounded-lg bg-secondary/50 text-left">
-            <p className="text-xs text-muted-foreground mb-1.5">Email delivery isn&apos;t configured yet — use this link directly:</p>
+            <p className="text-xs text-muted-foreground mb-1.5">Confirmation link:</p>
             <a href={awaitingConfirmation.confirmationUrl} className="text-xs text-primary hover:underline break-all">
               {awaitingConfirmation.confirmationUrl}
             </a>

@@ -179,7 +179,7 @@ export default function DashboardPage() {
           <StatCard title="Approved" value={formatAmount(totalApprovedAmount)} icon={CheckCircle2} href="/requests?status=approved" />
           <StatCard title="Paid" value={formatAmount(totalPaidAmount)} icon={CreditCard} href="/requests?status=paid" />
           {role === "admin" ? (
-            <StatCard title="Users" value={String(users.filter((u) => u.status === "active").length)} icon={Users} href="/settings/team" />
+            <StatCard title="Users" value={String(users.filter((u) => u.status === "active").length)} icon={Users} href="/users" />
           ) : role === "finance" ? (
             <StatCard title="Awaiting Pay" value={String(awaitingPayment.length)} icon={DollarSign} href="/requests?status=approved&payment=unpaid" />
           ) : (
@@ -187,7 +187,7 @@ export default function DashboardPage() {
               title="Team"
               value={String(users.filter((u) => u.department_id === user.department_id).length)}
               icon={Users}
-              href="/settings/team"
+              href="/users"
             />
           )}
         </div>

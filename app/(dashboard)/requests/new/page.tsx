@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react"
 import useSWR from "swr"
 import { useRouter, useSearchParams } from "next/navigation"
-import { ArrowLeft, Upload, DollarSign, FileText } from "lucide-react"
+import { ArrowLeft, Upload, DollarSign, FileText, AlertTriangle } from "lucide-react"
 import { useData, useAuth } from "@/lib/providers"
 import { generateId, getCategoryLabel } from "@/lib/utils"
 import { getCurrencySymbol } from "@/lib/currency"
@@ -75,6 +75,16 @@ function NewRequestContent() {
     }
   }, [editing, loadedEdit])
 
+  // Computed reactively (not just checked at submit time) so the Receipts
+  // card can show a persistent notice instead of relying on a toast someone
+  // can miss — a missed toast plus the button reverting to its normal
+  // resting label reads as "stuck", not "blocked, here's why".
+  const receiptStillNeeded =
+    !!orgSettings &&
+    files.length === 0 &&
+    existingReceiptCount === 0 &&
+    isReceiptRequired(Number.parseFloat(amount) || 0, orgSettings)
+
   async function handleSubmit(asDraft: boolean) {
     if (!user) return
     if (!amount || !purpose) {
@@ -83,8 +93,8 @@ function NewRequestContent() {
     }
     // A receipt requirement is a submission gate, not a draft one — someone
     // should always be able to save their progress and attach it later.
-    if (!asDraft && orgSettings && files.length === 0 && existingReceiptCount === 0 && isReceiptRequired(Number.parseFloat(amount) || 0, orgSettings)) {
-      toast.error(`A receipt is required for expenses of ${getCurrencySymbol(currencyCode)}${orgSettings.receipt_required_above_amount} or more. Attach one, or save as a draft.`)
+    if (!asDraft && receiptStillNeeded) {
+      toast.error(`A receipt is required for expenses of ${getCurrencySymbol(currencyCode)}${orgSettings!.receipt_required_above_amount} or more. Attach one, or save as a draft.`)
       return
     }
     setSubmitting(true)
@@ -128,7 +138,12 @@ function NewRequestContent() {
           organization_id: orgId,
           request_number: requestNumber,
           employee_id: user.id,
-          department_id: user.department_id,
+          // A user with no department assigned yet (e.g. a fresh org's
+          // admin) has department_id: null — the request schema's zod field
+          // is `.optional()` (accepts undefined) but not `.nullable()`, so
+          // sending null as-is 400s with "Expected string, received null"
+          // on literally every submission for that user.
+          department_id: user.department_id || undefined,
           ...fields,
           status: asDraft ? "draft" : "pending",
           payment_status: "unpaid",
@@ -213,7 +228,7 @@ function NewRequestContent() {
                   placeholder="0.00"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className="pl-7 h-10 font-mono tabular-nums"
+                  className="pl-7 h-10 font-mono text-base font-semibold text-foreground tabular-nums"
                 />
               </div>
             </div>
@@ -257,12 +272,13 @@ function NewRequestContent() {
 
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="flex flex-col gap-2">
-              <Label htmlFor="vendor" className="text-[13px] font-medium">Vendor</Label>
-              <Select value={vendorId} onValueChange={setVendorId}>
+              <Label htmlFor="vendor" className="text-[13px] font-medium">Vendor (optional)</Label>
+              <Select value={vendorId || "none"} onValueChange={(v) => setVendorId(v === "none" ? "" : v)}>
                 <SelectTrigger id="vendor" className="h-10">
                   <SelectValue placeholder="Select vendor" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="none">No vendor</SelectItem>
                   {vendors
                     .filter((v) => v.is_approved && v.is_active !== false)
                     .map((v) => (
@@ -325,7 +341,15 @@ function NewRequestContent() {
             <CardTitle className="font-heading text-sm font-bold">{editing ? "Add More Receipts" : "Receipts"}</CardTitle>
           </div>
         </CardHeader>
-        <CardContent className="pt-5">
+        <CardContent className="pt-5 flex flex-col gap-3">
+          {receiptStillNeeded && (
+            <div className="flex items-start gap-2.5 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/10 border border-amber-200/60 dark:border-amber-800/30">
+              <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <p className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
+                A receipt is required for expenses of {getCurrencySymbol(currencyCode)}{orgSettings?.receipt_required_above_amount} or more before this can be submitted for approval. Attach one below, or save as a draft for now.
+              </p>
+            </div>
+          )}
           <ReceiptUploader files={files} onChange={setFiles} disabled={submitting} />
         </CardContent>
       </Card>
