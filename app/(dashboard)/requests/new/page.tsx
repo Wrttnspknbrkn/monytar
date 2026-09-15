@@ -114,6 +114,11 @@ function NewRequestContent() {
       }
 
       let requestId: string
+      // Set when the request still needs submit() called after receipts are
+      // uploaded below — true for edits (submit is always a separate call),
+      // and for new requests the server forced into draft because a receipt
+      // is required and couldn't exist yet on a brand-new row.
+      let needsSubmit = false
 
       if (editing) {
         // Editing an existing draft/rejected request: update its content,
@@ -123,9 +128,7 @@ function NewRequestContent() {
         // handled server-side in /api/requests/[id]/submit).
         await updateRequest(editing.id, fields)
         requestId = editing.id
-        if (!asDraft) {
-          await submitRequest(editing.id)
-        }
+        needsSubmit = !asDraft
       } else {
         const orgId = organization?.id || user.organization_id
         // Real orgs get a race-safe number from the server (see
@@ -157,6 +160,10 @@ function NewRequestContent() {
           ...({ as_draft: asDraft } as Record<string, unknown>),
         })
         requestId = created.id
+        // A brand-new request has no id until this point, so it can never
+        // arrive with a receipt already attached — the server falls back to
+        // draft whenever the amount requires one, regardless of `asDraft`.
+        needsSubmit = !asDraft && Boolean(created.receiptRequired)
       }
 
       // Upload receipts to storage when a real backend is connected; otherwise
@@ -168,6 +175,10 @@ function NewRequestContent() {
           console.error("[Receipts] upload failed:", err)
           toast.warning("Request saved, but some receipts failed to upload. You can re-add them from the request page.")
         }
+      }
+
+      if (needsSubmit) {
+        await submitRequest(requestId)
       }
 
       toast.success(asDraft ? "Saved as draft" : "Request submitted for approval")

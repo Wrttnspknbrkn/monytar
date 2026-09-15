@@ -3,7 +3,7 @@ import { expenseRequestSchema } from "@/lib/validations"
 import { isSupabaseConfigured } from "@/lib/supabase/config"
 import { getSupabaseServerClient } from "@/lib/supabase/server"
 import { loadApprovalSettings } from "@/lib/approvals/settings"
-import { shouldAutoApprove } from "@/lib/approvals/engine"
+import { shouldAutoApprove, isReceiptRequired } from "@/lib/approvals/engine"
 import { serverError } from "@/lib/api/errors"
 import { clampLimit, decodeCursor, buildPage } from "@/lib/api/pagination"
 
@@ -123,12 +123,23 @@ export async function POST(request: Request) {
     if (as_draft) {
       status = "draft"
     } else {
-      // Apply the org's auto-approval policy: sub-threshold amounts skip review.
       const settings = await loadApprovalSettings(supabase, dbUser.organization_id)
-      autoApprove = shouldAutoApprove(parsed.data.amount, settings)
-      status = autoApprove ? "approved" : "pending"
-      approvedAt = autoApprove ? now : null
-      managerComment = autoApprove ? "Auto-approved: amount below approval threshold." : null
+      // A brand-new request has no id yet, so no receipt can possibly be
+      // attached to it at this point — the client uploads receipts in a
+      // follow-up call once it has the id back. Rather than let a direct,
+      // non-draft creation skip the receipt gate entirely (the same gate
+      // /api/requests/[id]/submit enforces on resubmission), fall back to
+      // draft here so the request can only reach pending/approved through
+      // submit(), after a receipt has actually been uploaded.
+      if (isReceiptRequired(parsed.data.amount, settings)) {
+        status = "draft"
+      } else {
+        // Apply the org's auto-approval policy: sub-threshold amounts skip review.
+        autoApprove = shouldAutoApprove(parsed.data.amount, settings)
+        status = autoApprove ? "approved" : "pending"
+        approvedAt = autoApprove ? now : null
+        managerComment = autoApprove ? "Auto-approved: amount below approval threshold." : null
+      }
     }
 
     const { data, error } = await supabase.from("expense_requests").insert({
@@ -140,13 +151,20 @@ export async function POST(request: Request) {
       status,
       approved_at: approvedAt,
       manager_comment: managerComment,
-      submitted_at: as_draft ? null : now,
+      submitted_at: status === "draft" ? null : now,
       payment_status: "unpaid",
     }).select().single()
 
     if (error) return serverError(error, { route: "requests.POST" })
 
-    return NextResponse.json({ data, auto_approved: autoApprove }, { status: 201 })
+    return NextResponse.json({
+      data,
+      auto_approved: autoApprove,
+      // Lets the client know its as_draft:false intent was overridden so it
+      // can still call /api/requests/[id]/submit once a receipt is attached,
+      // instead of assuming the request already entered the workflow.
+      receipt_required: !as_draft && status === "draft",
+    }, { status: 201 })
   } catch (err) {
     return serverError(err, { route: "requests.POST" })
   }
