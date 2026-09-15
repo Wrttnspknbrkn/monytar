@@ -81,7 +81,10 @@ interface DataContextValue {
   rejectRequest: (id: string, comment: string) => Promise<void>
   markPaid: (id: string, paymentRef: string, paymentMethod: string) => Promise<void>
   markNotificationRead: (id: string) => Promise<void>
-  createRequest: (data: Partial<ExpenseRequest>) => Promise<ExpenseRequest>
+  /** receiptRequired: true means the server forced this into draft status
+   *  because a receipt is required and none can exist yet on a brand-new
+   *  request — the caller must upload a receipt and then call submitRequest. */
+  createRequest: (data: Partial<ExpenseRequest>) => Promise<ExpenseRequest & { receiptRequired?: boolean }>
   updateRequest: (id: string, updates: Partial<ExpenseRequest>) => Promise<ExpenseRequest>
   /** Moves a draft or rejected request into the real workflow (pending, or auto-approved). */
   submitRequest: (id: string) => Promise<{ autoApproved: boolean }>
@@ -279,7 +282,7 @@ export function DataProvider({ children }: DataProviderProps) {
     const body = await res.json().catch(() => ({}))
     if (!res.ok) throw new Error(body.error || "Failed to create request")
     invalidateRequestCaches()
-    return body.data as ExpenseRequest
+    return { ...(body.data as ExpenseRequest), receiptRequired: Boolean(body.receipt_required) }
   }, [isDemo])
 
   const handleUpdateRequest = useCallback(async (id: string, updates: Partial<ExpenseRequest>) => {

@@ -62,7 +62,7 @@ async function supabaseFetcher<T>(key: string): Promise<T> {
   })
   
   const { data, error } = await query
-  
+
   if (error) throw error
   return data as T
 }
@@ -74,15 +74,15 @@ export function useCurrentUser() {
     async () => {
       const supabase = getSupabaseBrowserClient()
       const { data: { user: authUser } } = await supabase.auth.getUser()
-      
+
       if (!authUser) return null
-      
+
       const { data, error } = await supabase
         .from("users")
         .select("*")
         .eq("id", authUser.id)
         .single()
-      
+
       if (error) throw error
       return data
     },
