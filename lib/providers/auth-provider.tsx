@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react"
 import { useRouter } from "next/navigation"
+import { mutate } from "swr"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 import { isSupabaseConfigured } from "@/lib/supabase/config"
 import type { User as SupabaseUser, Session } from "@supabase/supabase-js"
@@ -81,13 +82,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       async (event, session) => {
         setSession(session)
         setAuthUser(session?.user ?? null)
-        
+
+        // Sign-out (and the sign-in that follows it) doesn't reload the
+        // page — it's a client-side router.push. Every hook in
+        // DataProvider caches by a fixed SWR key ("current-user",
+        // "users:<org>", etc.), so without this, a different account
+        // signing in on the same tab right after a sign-out would keep
+        // showing the PREVIOUS account's org, users, requests and
+        // everything else until something happened to revalidate each
+        // key — a real cross-account data leak, not just a stale-data
+        // annoyance. Clear every cached entry and force a fresh fetch on
+        // any identity transition.
+        if (event === "SIGNED_OUT" || event === "SIGNED_IN") {
+          await mutate(() => true, undefined, { revalidate: true })
+        }
+
         if (session?.user) {
           await fetchDbUser(session.user.id)
         } else {
           setDbUser(null)
         }
-        
+
         if (event === "SIGNED_OUT") {
           router.push("/login")
         }
