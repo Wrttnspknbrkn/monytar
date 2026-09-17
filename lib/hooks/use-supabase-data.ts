@@ -38,6 +38,30 @@ async function fetchAllRows<T>(
   return all
 }
 
+// A rejected promise resolves SWR's isLoading to false on its own — but a
+// promise that never settles (a genuinely hung request, e.g. a session
+// whose token died mid-refresh) leaves isLoading stuck true forever, with
+// nothing downstream ever able to recover. This bounds the current-user
+// fetch specifically because the dashboard layout gate blocks all rendering
+// on it resolving one way or the other.
+const AUTH_RESOLUTION_TIMEOUT_MS = 10_000
+
+function withTimeout<T>(promise: PromiseLike<T>, ms: number, message: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(message)), ms)
+    promise.then(
+      (value) => {
+        clearTimeout(timer)
+        resolve(value)
+      },
+      (error) => {
+        clearTimeout(timer)
+        reject(error)
+      },
+    )
+  })
+}
+
 // Hook: Current authenticated user with organization
 export function useCurrentUser() {
   return useSWR<User | null>(
@@ -53,16 +77,20 @@ export function useCurrentUser() {
       // That network round-trip was also the reproducible cause of pages
       // rendering with empty data right after a refresh — see the session
       // reliability audit.
-      const { data: { session } } = await supabase.auth.getSession()
+      const { data: { session } } = await withTimeout(
+        supabase.auth.getSession(),
+        AUTH_RESOLUTION_TIMEOUT_MS,
+        "Timed out loading your session",
+      )
       const authUser = session?.user
 
       if (!authUser) return null
 
-      const { data, error } = await supabase
-        .from("users")
-        .select("*")
-        .eq("id", authUser.id)
-        .single()
+      const { data, error } = await withTimeout(
+        supabase.from("users").select("*").eq("id", authUser.id).single(),
+        AUTH_RESOLUTION_TIMEOUT_MS,
+        "Timed out loading your profile",
+      )
 
       if (error) throw error
       return data

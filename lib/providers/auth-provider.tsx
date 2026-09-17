@@ -19,6 +19,30 @@ function isOrphanedProfileError(error: unknown): boolean {
   return typeof error === "object" && error !== null && (error as { code?: string }).code === "PGRST116"
 }
 
+// A rejected promise still lets fetchDbUser's catch block recover — but a
+// promise that never settles at all (a genuinely hung request, not just a
+// failed one) leaves isLoading stuck true forever with nothing left to
+// resolve it. This bounds every auth-resolution call so a hang gets treated
+// the same as a clean failure instead of leaving the user on an infinite
+// spinner with no escape.
+const AUTH_RESOLUTION_TIMEOUT_MS = 10_000
+
+function withTimeout<T>(promise: PromiseLike<T>, ms: number, message: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(message)), ms)
+    promise.then(
+      (value) => {
+        clearTimeout(timer)
+        resolve(value)
+      },
+      (error) => {
+        clearTimeout(timer)
+        reject(error)
+      },
+    )
+  })
+}
+
 interface AuthContextValue {
   isLoading: boolean
   isAuthenticated: boolean
@@ -64,18 +88,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     
     const supabase = getSupabaseBrowserClient()
-    
+
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setAuthUser(session?.user ?? null)
-      
-      if (session?.user) {
-        fetchDbUser(session.user.id)
-      } else {
+    withTimeout(supabase.auth.getSession(), AUTH_RESOLUTION_TIMEOUT_MS, "Timed out loading your session")
+      .then(({ data: { session } }) => {
+        setSession(session)
+        setAuthUser(session?.user ?? null)
+
+        if (session?.user) {
+          fetchDbUser(session.user.id)
+        } else {
+          setIsLoading(false)
+        }
+      })
+      .catch((error) => {
+        console.error("Error loading session:", error)
         setIsLoading(false)
-      }
-    })
+      })
     
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -115,24 +144,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchDbUser = async (userId: string) => {
     try {
       const supabase = getSupabaseBrowserClient()
-      const { data, error } = await supabase
-        .from("users")
-        .select("*")
-        .eq("id", userId)
-        .single()
-      
+      const { data, error } = await withTimeout(
+        supabase.from("users").select("*").eq("id", userId).single(),
+        AUTH_RESOLUTION_TIMEOUT_MS,
+        "Timed out loading your profile",
+      )
+
       if (error) throw error
       setDbUser(data)
     } catch (error) {
       console.error("Error fetching user:", error)
-      // Otherwise the user is left stuck "authenticated" (authUser/session
-      // set) with no profile data anywhere in the app — sign them out so
-      // onAuthStateChange's SIGNED_OUT branch redirects to /login instead.
-      if (isOrphanedProfileError(error)) {
-        toast.error("We couldn't find your account. Please sign in again.")
-        const supabase = getSupabaseBrowserClient()
-        await supabase.auth.signOut()
-      }
+      // Middleware already decided this request is "authenticated" (that's
+      // the only way this ever runs) and won't route the browser back to
+      // /login on its own — so if we can't actually load the profile behind
+      // that session, this component is the only place left that can get
+      // the user unstuck. That covers two different failures identically:
+      // an orphaned account (valid session, no matching `users` row) and a
+      // session whose access token died between the redirect and this
+      // fetch — e.g. a concurrent refresh-token rotation racing the
+      // middleware's own refresh for the same navigation, which is exactly
+      // what "still shows as logged in, but the dashboard never loads"
+      // looks like. Previously only the orphaned-profile case recovered;
+      // every other error left dbUser permanently null with isLoading
+      // already false — the dashboard layout's loading gate then had
+      // nothing to wait for and nothing to render, forever. Sign out and
+      // send them to a clean login instead of leaving them stuck.
+      toast.error(
+        isOrphanedProfileError(error)
+          ? "We couldn't find your account. Please sign in again."
+          : "Your session couldn't be restored. Please sign in again.",
+      )
+      const supabase = getSupabaseBrowserClient()
+      await supabase.auth.signOut()
     } finally {
       setIsLoading(false)
     }
