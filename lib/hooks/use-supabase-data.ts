@@ -38,42 +38,23 @@ async function fetchAllRows<T>(
   return all
 }
 
-// Generic fetcher for Supabase
-async function supabaseFetcher<T>(key: string): Promise<T> {
-  if (!isSupabaseConfigured()) {
-    throw new Error("Supabase not configured")
-  }
-  
-  const supabase = getSupabaseBrowserClient()
-  const [table, ...filters] = key.split(":")
-  
-  let query = supabase.from(table).select("*")
-  
-  // Parse filters from key
-  filters.forEach(filter => {
-    const [field, op, value] = filter.split("|")
-    if (op === "eq") {
-      query = query.eq(field, value)
-    } else if (op === "in") {
-      query = query.in(field, value.split(","))
-    } else if (op === "order") {
-      query = query.order(field, { ascending: value === "asc" })
-    }
-  })
-  
-  const { data, error } = await query
-
-  if (error) throw error
-  return data as T
-}
-
 // Hook: Current authenticated user with organization
 export function useCurrentUser() {
   return useSWR<User | null>(
     isSupabaseConfigured() ? "current-user" : null,
     async () => {
       const supabase = getSupabaseBrowserClient()
-      const { data: { user: authUser } } = await supabase.auth.getUser()
+      // getSession() reads the already-hydrated local session (from the
+      // SSR cookie the middleware just refreshed) — fast and reliable.
+      // getUser() instead round-trips to Supabase's Auth API on every call,
+      // which this data-loading path doesn't need: RLS re-validates the
+      // JWT server-side on every query anyway, so a stale/invalid session
+      // here just surfaces as a query error, not a false sense of security.
+      // That network round-trip was also the reproducible cause of pages
+      // rendering with empty data right after a refresh — see the session
+      // reliability audit.
+      const { data: { session } } = await supabase.auth.getSession()
+      const authUser = session?.user
 
       if (!authUser) return null
 
@@ -102,7 +83,6 @@ export function useOrganization(orgId: string | undefined) {
         .select("*")
         .eq("id", orgId)
         .single()
-      
       if (error) throw error
       return data
     }
@@ -132,8 +112,16 @@ export function useOrganizationSettings(orgId: string | undefined) {
 export function useUsers(orgId: string | undefined) {
   return useSWR<User[]>(
     orgId && isSupabaseConfigured() ? `users:organization_id|eq|${orgId}` : null,
-    supabaseFetcher<User[]>,
-    { fallbackData: [] }
+    async () => {
+      if (!orgId) return []
+      const supabase = getSupabaseBrowserClient()
+      const { data, error } = await supabase
+        .from("users")
+        .select("*")
+        .eq("organization_id", orgId)
+      if (error) throw error
+      return data || []
+    }
   )
 }
 
@@ -182,8 +170,7 @@ export function useExpenseRequests(
 
         return query
       })
-    },
-    { fallbackData: [] }
+    }
   )
 }
 
@@ -219,8 +206,16 @@ export function useExpenseRequest(requestId: string | undefined) {
 export function useVendors(orgId: string | undefined) {
   return useSWR<Vendor[]>(
     orgId && isSupabaseConfigured() ? `vendors:organization_id|eq|${orgId}` : null,
-    supabaseFetcher<Vendor[]>,
-    { fallbackData: [] }
+    async () => {
+      if (!orgId) return []
+      const supabase = getSupabaseBrowserClient()
+      const { data, error } = await supabase
+        .from("vendors")
+        .select("*")
+        .eq("organization_id", orgId)
+      if (error) throw error
+      return data || []
+    }
   )
 }
 
@@ -228,8 +223,16 @@ export function useVendors(orgId: string | undefined) {
 export function useDepartments(orgId: string | undefined) {
   return useSWR<Department[]>(
     orgId && isSupabaseConfigured() ? `departments:organization_id|eq|${orgId}` : null,
-    supabaseFetcher<Department[]>,
-    { fallbackData: [] }
+    async () => {
+      if (!orgId) return []
+      const supabase = getSupabaseBrowserClient()
+      const { data, error } = await supabase
+        .from("departments")
+        .select("*")
+        .eq("organization_id", orgId)
+      if (error) throw error
+      return data || []
+    }
   )
 }
 
@@ -249,8 +252,7 @@ export function useNotifications(userId: string | undefined) {
       
       if (error) throw error
       return data || []
-    },
-    { fallbackData: [] }
+    }
   )
 }
 
