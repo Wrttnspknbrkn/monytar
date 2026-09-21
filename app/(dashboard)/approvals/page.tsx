@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useCallback } from "react"
 import Link from "next/link"
-import { Clock, CheckCircle2, XCircle, AlertTriangle, Search, Inbox, Loader2 } from "lucide-react"
+import { CheckCircle2, XCircle, AlertTriangle, Search, Inbox, Loader2 } from "lucide-react"
 import { useData, useAuth } from "@/lib/providers"
 import { formatRelativeTime, getCategoryLabel, getInitials } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -19,7 +19,7 @@ type ActionState = {
 
 export default function ApprovalsPage() {
   const { dbUser } = useAuth()
-  const { currentUser, getPendingApprovals, getUserById, getVendorById, approveRequest, rejectRequest, isDemo, formatAmount } = useData()
+  const { currentUser, getPendingApprovals, getUserById, getVendorById, approveRequest, rejectRequest, formatAmount } = useData()
   
   const user = dbUser || currentUser
   const [search, setSearch] = useState("")

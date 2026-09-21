@@ -7,8 +7,6 @@ import {
   DollarSign,
   FileText,
   Download,
-  ArrowUpRight,
-  PieChart as PieChartIcon,
   Calendar,
 } from "lucide-react"
 import { useData, useAuth } from "@/lib/providers"
@@ -57,7 +55,6 @@ import {
   PieChart,
   Pie,
   Cell,
-  LineChart,
   Line,
   XAxis,
   YAxis,
