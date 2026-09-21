@@ -79,6 +79,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Set while a sign-out the user asked for is in flight, so the SIGNED_OUT
   // handler can tell "you logged out" apart from "your session expired".
   const userInitiatedSignOut = useRef(false)
+  // Which account the cached data currently belongs to (see the auth listener).
+  const cachedForUserId = useRef<string | null>(null)
   
   // Demo mode state
   const [demoUser, setDemoUser] = useState<User>(mockUsers[3]) // Default employee
@@ -109,35 +111,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsLoading(false)
       })
     
-    // Listen for auth changes
+    // Listen for auth changes.
+    //
+    // IMPORTANT: this callback must not await anything that talks to Supabase.
+    // supabase-js runs auth-state callbacks while holding its internal auth
+    // lock, and every query (supabase.from(...)) first calls getSession(),
+    // which needs that same lock. Awaiting a query in here therefore
+    // deadlocks: the callback waits for the query, the query waits for the
+    // lock, the lock waits for the callback. The visible symptom was a hard
+    // refresh sitting on "Loading your workspace…" until the 10s timeouts
+    // fired ("Timed out loading your session / profile") and then bouncing
+    // the user to /login. Update cheap local state synchronously, and defer
+    // everything that needs the network to run after the lock is released.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         setSession(session)
         setAuthUser(session?.user ?? null)
 
-        // Sign-out (and the sign-in that follows it) doesn't reload the
-        // page — it's a client-side router.push. Every hook in
-        // DataProvider caches by a fixed SWR key ("current-user",
-        // "users:<org>", etc.), so without this, a different account
-        // signing in on the same tab right after a sign-out would keep
-        // showing the PREVIOUS account's org, users, requests and
-        // everything else until something happened to revalidate each
-        // key — a real cross-account data leak, not just a stale-data
-        // annoyance. Clear every cached entry and force a fresh fetch on
-        // any identity transition.
-        if (event === "SIGNED_OUT" || event === "SIGNED_IN") {
-          await mutate(() => true, undefined, { revalidate: true })
-        }
+        setTimeout(() => {
+          void (async () => {
+            // Sign-out (and the sign-in that follows it) doesn't reload the
+            // page — it's a client-side router.push. Every hook in
+            // DataProvider caches by a fixed SWR key ("current-user",
+            // "users:<org>", etc.), so without this, a different account
+            // signing in on the same tab right after a sign-out would keep
+            // showing the PREVIOUS account's org, users, requests and
+            // everything else until something happened to revalidate each
+            // key — a real cross-account data leak, not just a stale-data
+            // annoyance. Clear every cached entry and force a fresh fetch on
+            // any identity transition.
+            //
+            // Supabase also emits SIGNED_IN for the SAME user whenever a tab
+            // regains focus or a session is recovered. Treating that as an
+            // identity change wiped every cache, which put the whole dashboard
+            // back behind the loading gate and unmounted the page — losing
+            // whatever the user was typing (e.g. a half-finished password
+            // change or request form). Only clear when the account changed.
+            const nextUserId = session?.user?.id ?? null
+            const identityChanged = event === "SIGNED_OUT" || (event === "SIGNED_IN" && nextUserId !== cachedForUserId.current)
+            if (event === "SIGNED_OUT" || event === "SIGNED_IN" || event === "INITIAL_SESSION") {
+              cachedForUserId.current = nextUserId
+            }
+            if (identityChanged) {
+              await mutate(() => true, undefined, { revalidate: true })
+            }
 
-        if (session?.user) {
-          await fetchDbUser(session.user.id)
-        } else {
-          setDbUser(null)
-        }
+            if (session?.user) {
+              await fetchDbUser(session.user.id)
+            } else {
+              setDbUser(null)
+            }
 
-        if (event === "SIGNED_OUT") {
-          router.push(userInitiatedSignOut.current ? "/login?reason=signed_out" : "/login?reason=expired")
-        }
+            if (event === "SIGNED_OUT") {
+              router.push(userInitiatedSignOut.current ? "/login?reason=signed_out" : "/login?reason=expired")
+            }
+          })()
+        }, 0)
       }
     )
     
@@ -219,7 +248,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       
       return {}
-    } catch (error) {
+    } catch {
       return { error: "An unexpected error occurred" }
     }
   }, [isDemo])
@@ -283,7 +312,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       return {}
-    } catch (error) {
+    } catch {
       return { error: "An unexpected error occurred" }
     }
   }, [isDemo])

@@ -29,7 +29,6 @@ import {
 } from "@/lib/hooks/use-realtime"
 import type {
   User,
-  UserRole,
   ExpenseRequest,
   Vendor,
   Department,

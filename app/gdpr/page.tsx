@@ -13,7 +13,7 @@ export default function GDPRPage() {
       <ul>
         <li><strong>Right of Access</strong> - Request a copy of all personal data we hold about you</li>
         <li><strong>Right to Rectification</strong> - Correct any inaccurate or incomplete personal data</li>
-        <li><strong>Right to Erasure</strong> - Request deletion of your personal data ("right to be forgotten")</li>
+        <li><strong>Right to Erasure</strong> - Request deletion of your personal data (&ldquo;right to be forgotten&rdquo;)</li>
         <li><strong>Right to Data Portability</strong> - Receive your data in a structured, machine-readable format</li>
         <li><strong>Right to Object</strong> - Object to processing of your personal data in certain circumstances</li>
         <li><strong>Right to Restrict Processing</strong> - Request limitation of processing of your personal data</li>

@@ -180,15 +180,52 @@ export default function SettingsPage() {
         toast.error("Current password is incorrect.")
         return
       }
+      // Supabase requires the current password on every change
+      // (`current_password`), and — depending on session age — an emailed
+      // one-time code as well (`reauthentication_needed`). Try the direct
+      // change first and only fall back to the emailed code when the server
+      // asks for it, so users aren't sent a code they don't need.
+      const { error: directError } = await supabase.auth.updateUser({ password: newPassword, current_password: currentPassword })
+      if (!directError) {
+        finishPasswordChange()
+        return
+      }
+      if (directError.code !== "reauthentication_needed") {
+        toast.error(passwordErrorMessage(directError))
+        return
+      }
       const { error: reauthError } = await supabase.auth.reauthenticate()
       if (reauthError) throw reauthError
       setAwaitingReauthCode(true)
-      toast.success("Check your email for a confirmation code.")
+      toast.success("We emailed you a confirmation code.")
     } catch (err) {
-      console.error("[Settings] password reauth request failed:", err)
+      console.error("[Settings] password change request failed:", err)
       toast.error("Failed to start the password change. Please try again.")
     } finally {
       setUpdatingPassword(false)
+    }
+  }
+
+  function finishPasswordChange() {
+    toast.success("Password updated successfully")
+    setCurrentPassword("")
+    setNewPassword("")
+    setReauthCode("")
+    setAwaitingReauthCode(false)
+  }
+
+  function passwordErrorMessage(error: { code?: string; message?: string }) {
+    switch (error.code) {
+      case "same_password":
+        return "Your new password must be different from your current one."
+      case "weak_password":
+        return "That password is too weak. Use a longer password with a mix of letters, numbers and symbols."
+      case "reauthentication_not_valid":
+        return "That confirmation code is incorrect or has expired. Request a new one."
+      case "current_password_mismatch":
+        return "Your current password is incorrect."
+      default:
+        return error.message || "Couldn't update your password. Please try again."
     }
   }
 
@@ -200,22 +237,24 @@ export default function SettingsPage() {
     setUpdatingPassword(true)
     try {
       const supabase = getSupabaseBrowserClient()
-      const { error: updateError } = await supabase.auth.updateUser({ password: newPassword, nonce: reauthCode })
-      if (updateError) throw updateError
-      toast.success("Password updated successfully")
-      setCurrentPassword("")
-      setNewPassword("")
-      setReauthCode("")
-      setAwaitingReauthCode(false)
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword,
+        current_password: currentPassword,
+        nonce: reauthCode.trim(),
+      })
+      if (updateError) {
+        toast.error(passwordErrorMessage(updateError))
+        return
+      }
+      finishPasswordChange()
     } catch (err) {
       console.error("[Settings] password update failed:", err)
-      toast.error("That code didn't work. Please try again.")
+      toast.error("Couldn't update your password. Please try again.")
     } finally {
       setUpdatingPassword(false)
     }
   }
 
-  const [cancelLoading, setCancelLoading] = useState(false)
   const [portalLoading, setPortalLoading] = useState(false)
   const [changingPlanId, setChangingPlanId] = useState<string | null>(null)
 
@@ -527,7 +566,13 @@ export default function SettingsPage() {
                   <div className="flex flex-col gap-2 max-w-xs">
                     <Label className="text-[13px] font-medium">Confirmation Code</Label>
                     <p className="text-xs text-muted-foreground">Enter the code we just emailed you to confirm the change.</p>
-                    <Input placeholder="123456" value={reauthCode} onChange={(e) => setReauthCode(e.target.value)} />
+                    <Input
+                      placeholder="Enter the code"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      value={reauthCode}
+                      onChange={(e) => setReauthCode(e.target.value)}
+                    />
                   </div>
                   <div className="flex items-center gap-3">
                     <Button variant="outline" disabled={updatingPassword} className="w-fit bg-transparent font-semibold" onClick={handleConfirmPasswordChange}>
@@ -1060,11 +1105,11 @@ export default function SettingsPage() {
               <Button
                 variant="outline"
                 onClick={handleCancelSubscription}
-                disabled={cancelLoading || !isAdminOrFinance || currentPlan.tier === "free"}
+                disabled={portalLoading || !isAdminOrFinance || currentPlan.tier === "free"}
                 className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive font-semibold bg-transparent"
               >
-                {cancelLoading ? (
-                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Cancelling...</>
+                {portalLoading ? (
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Opening billing portal...</>
                 ) : currentPlan.tier === "free" ? (
                   "Already on the Free plan"
                 ) : (

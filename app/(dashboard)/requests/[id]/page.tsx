@@ -139,18 +139,18 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
     <div className="flex flex-col gap-6 max-w-4xl">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 sm:gap-4 min-w-0">
           <Link href="/requests">
-            <Button variant="ghost" size="icon" className="h-9 w-9">
+            <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0">
               <ArrowLeft className="w-4 h-4" />
             </Button>
           </Link>
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="font-heading text-2xl font-extrabold tracking-tight">{request.request_number}</h1>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <h1 className="font-heading text-xl sm:text-2xl font-extrabold tracking-tight break-all">{request.request_number}</h1>
               <RequestStatusBadge status={request.status} />
             </div>
-            <p className="text-sm text-muted-foreground mt-0.5">{request.purpose}</p>
+            <p className="text-sm text-muted-foreground mt-0.5 break-words">{request.purpose}</p>
           </div>
         </div>
         <p className="font-heading text-3xl font-extrabold tracking-tight tabular-nums">{formatCurrency(request.amount, request.currency)}</p>

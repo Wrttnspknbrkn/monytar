@@ -375,7 +375,7 @@ export default function SignupPage() {
               })}
               {selectedTier !== "free" && (
                 <p className="text-xs text-muted-foreground text-center">
-                  14-day free trial, no card required. You'll complete payment setup next.
+                  14-day free trial, no card required. You&apos;ll complete payment setup next.
                 </p>
               )}
             </div>

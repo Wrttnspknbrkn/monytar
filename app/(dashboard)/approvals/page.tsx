@@ -59,7 +59,7 @@ export default function ApprovalsPage() {
           return newState
         })
       }, 2000)
-    } catch (error) {
+    } catch {
       setActionStates(prev => {
         const newState = { ...prev }
         delete newState[id]
@@ -96,7 +96,7 @@ export default function ApprovalsPage() {
           return newState
         })
       }, 2000)
-    } catch (error) {
+    } catch {
       setActionStates(prev => {
         const newState = { ...prev }
         delete newState[rejectId]
