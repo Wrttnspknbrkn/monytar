@@ -345,14 +345,14 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-3">
-                <Avatar className="w-10 h-10">
+                <Avatar className="w-10 h-10 shrink-0">
                   <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
                     {request.employee?.full_name?.slice(0, 2).toUpperCase() || "??"}
                   </AvatarFallback>
                 </Avatar>
-                <div>
-                  <p className="text-sm font-semibold">{request.employee?.full_name || "Unknown"}</p>
-                  <p className="text-xs text-muted-foreground">{request.employee?.email}</p>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold break-words">{request.employee?.full_name || "Unknown"}</p>
+                  <p className="text-xs text-muted-foreground break-all">{request.employee?.email}</p>
                 </div>
               </div>
               <div className="mt-4 flex flex-col gap-2 text-sm">

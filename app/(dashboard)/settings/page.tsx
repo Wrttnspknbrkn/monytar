@@ -8,6 +8,7 @@ import { useExpenseCategories } from "@/lib/hooks/use-categories"
 import { uploadOrgLogo, removeOrgLogo, validateLogoFile } from "@/lib/logo/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { useConfirm } from "@/components/ui/confirm-dialog"
 import { PasswordInput } from "@/components/ui/password-input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -27,6 +28,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/config"
 import { SUPPORTED_CURRENCIES } from "@/lib/currency"
 
 export default function SettingsPage() {
+  const { confirm, dialog } = useConfirm()
   const { dbUser } = useAuth()
   const { currentUser, departments, updateUser, orgSettings, updateOrgSettings, organization, isLoading } = useData()
   const { theme, setTheme } = useTheme()
@@ -241,7 +243,7 @@ export default function SettingsPage() {
   }
 
   async function handleLogoRemove() {
-    if (!window.confirm("Remove your organization logo?")) return
+    if (!(await confirm({ title: "Remove your organization logo?", confirmLabel: "Remove", destructive: true }))) return
     setLogoUploading(true)
     try {
       await removeOrgLogo()
@@ -285,7 +287,7 @@ export default function SettingsPage() {
   }
 
   async function handleDeleteCategory(id: string, name: string) {
-    if (!window.confirm(`Remove "${name}"? Existing requests keep it, but it won't be selectable for new ones.`)) return
+    if (!(await confirm({ title: `Remove "${name}"?`, description: "Existing requests keep it, but it won't be selectable for new ones.", confirmLabel: "Remove", destructive: true }))) return
     setDeletingCategoryId(id)
     try {
       const res = await fetch(`/api/categories?id=${id}`, { method: "DELETE" })
@@ -347,7 +349,7 @@ export default function SettingsPage() {
           toast.error("No active subscription to cancel.")
           return
         }
-        if (!window.confirm("You'll move to the Free plan at the end of your current billing period, and keep paid features until then. Continue?")) {
+        if (!(await confirm({ title: "Move to the Free plan?", description: "You'll keep paid features until the end of your current billing period, then move to Free.", confirmLabel: "Cancel subscription", destructive: true }))) {
           return
         }
         const result = await cancelSubscription(organization.stripe_subscription_id)
@@ -408,6 +410,7 @@ export default function SettingsPage() {
 
   return (
     <div className="flex flex-col gap-6 max-w-4xl">
+      {dialog}
       <div>
         <h1 className="font-heading text-2xl font-extrabold tracking-tight">Settings</h1>
         <p className="text-muted-foreground text-sm mt-0.5">Manage your account and preferences</p>

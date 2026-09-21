@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useConfirm } from "@/components/ui/confirm-dialog"
 import useSWR from "swr"
 import { FileText, ImageIcon, ExternalLink, Trash2, Loader2 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -31,6 +32,7 @@ export function RequestReceipts({ requestId, fallbackReceipts = [], requestStatu
   const connected = isSupabaseConfigured()
   const { dbUser } = useAuth()
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const { confirm, dialog } = useConfirm()
 
   // Only hit the API when a real backend is connected.
   const { data, mutate } = useSWR<{ receipts?: ReceiptWithUrl[] }>(
@@ -46,7 +48,7 @@ export function RequestReceipts({ requestId, fallbackReceipts = [], requestStatu
   const canDelete = connected && (requestStatus === "draft" || requestStatus === "pending" || !requestStatus)
 
   async function handleDelete(receiptId: string, fileName: string) {
-    if (!window.confirm(`Remove "${fileName}"? This can't be undone.`)) return
+    if (!(await confirm({ title: `Remove "${fileName}"?`, description: "This can't be undone.", confirmLabel: "Remove", destructive: true }))) return
     setDeletingId(receiptId)
     try {
       const res = await fetch(`/api/receipts/${receiptId}`, { method: "DELETE" })
@@ -67,6 +69,7 @@ export function RequestReceipts({ requestId, fallbackReceipts = [], requestStatu
 
   return (
     <Card className="border-border/60">
+      {dialog}
       <CardHeader className="pb-3">
         <CardTitle className="font-heading text-base font-bold">
           Receipts <span className="text-muted-foreground font-medium">({receipts.length})</span>
@@ -105,7 +108,7 @@ export function RequestReceipts({ requestId, fallbackReceipts = [], requestStatu
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                    className="h-9 w-9 sm:h-7 sm:w-7 shrink-0 text-muted-foreground hover:text-destructive"
                     disabled={deletingId === receipt.id}
                     onClick={() => handleDelete(receipt.id, receipt.file_name)}
                     aria-label={`Remove ${receipt.file_name}`}
