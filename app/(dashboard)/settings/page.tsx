@@ -9,6 +9,7 @@ import { uploadOrgLogo, removeOrgLogo, validateLogoFile } from "@/lib/logo/clien
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useConfirm } from "@/components/ui/confirm-dialog"
+import { requestPasswordChange, confirmPasswordChange } from "@/lib/auth/password-change"
 import { PasswordInput } from "@/components/ui/password-input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -180,24 +181,15 @@ export default function SettingsPage() {
         toast.error("Current password is incorrect.")
         return
       }
-      // Supabase requires the current password on every change
-      // (`current_password`), and — depending on session age — an emailed
-      // one-time code as well (`reauthentication_needed`). Try the direct
-      // change first and only fall back to the emailed code when the server
-      // asks for it, so users aren't sent a code they don't need.
-      const { error: directError } = await supabase.auth.updateUser({ password: newPassword, current_password: currentPassword })
-      if (!directError) {
+      const result = await requestPasswordChange(supabase, { currentPassword, newPassword })
+      if (result.status === "changed") {
         finishPasswordChange()
-        return
+      } else if (result.status === "needs_code") {
+        setAwaitingReauthCode(true)
+        toast.success("We emailed you a confirmation code.")
+      } else {
+        toast.error(result.message)
       }
-      if (directError.code !== "reauthentication_needed") {
-        toast.error(passwordErrorMessage(directError))
-        return
-      }
-      const { error: reauthError } = await supabase.auth.reauthenticate()
-      if (reauthError) throw reauthError
-      setAwaitingReauthCode(true)
-      toast.success("We emailed you a confirmation code.")
     } catch (err) {
       console.error("[Settings] password change request failed:", err)
       toast.error("Failed to start the password change. Please try again.")
@@ -214,21 +206,6 @@ export default function SettingsPage() {
     setAwaitingReauthCode(false)
   }
 
-  function passwordErrorMessage(error: { code?: string; message?: string }) {
-    switch (error.code) {
-      case "same_password":
-        return "Your new password must be different from your current one."
-      case "weak_password":
-        return "That password is too weak. Use a longer password with a mix of letters, numbers and symbols."
-      case "reauthentication_not_valid":
-        return "That confirmation code is incorrect or has expired. Request a new one."
-      case "current_password_mismatch":
-        return "Your current password is incorrect."
-      default:
-        return error.message || "Couldn't update your password. Please try again."
-    }
-  }
-
   async function handleConfirmPasswordChange() {
     if (!reauthCode) {
       toast.error("Enter the code from your email.")
@@ -237,16 +214,12 @@ export default function SettingsPage() {
     setUpdatingPassword(true)
     try {
       const supabase = getSupabaseBrowserClient()
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: newPassword,
-        current_password: currentPassword,
-        nonce: reauthCode.trim(),
-      })
-      if (updateError) {
-        toast.error(passwordErrorMessage(updateError))
-        return
+      const result = await confirmPasswordChange(supabase, { currentPassword, newPassword, code: reauthCode })
+      if (result.status === "changed") {
+        finishPasswordChange()
+      } else if (result.status === "error") {
+        toast.error(result.message)
       }
-      finishPasswordChange()
     } catch (err) {
       console.error("[Settings] password update failed:", err)
       toast.error("Couldn't update your password. Please try again.")
