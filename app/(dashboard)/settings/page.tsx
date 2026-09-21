@@ -59,17 +59,28 @@ export default function SettingsPage() {
 
   const [savingProfile, setSavingProfile] = useState(false)
 
+  const [profileError, setProfileError] = useState<string | null>(null)
+
   async function handleSaveProfile() {
-    if (!user) return
+    if (!user || savingProfile) return
+    const fullName = profileForm.full_name.trim()
+    if (fullName.length < 2) {
+      setProfileError("Enter your full name (at least 2 characters).")
+      return
+    }
+    setProfileError(null)
     setSavingProfile(true)
     try {
-      await updateUser(user.id, { full_name: profileForm.full_name, email: profileForm.email })
+      // Only the name is saved. The email is the account's sign-in identity
+      // (it lives in the auth system too), so editing just the profile copy
+      // would leave the two out of sync and break invitations/lookups.
+      await updateUser(user.id, { full_name: fullName })
       setSaved(true)
-      toast.success("Profile updated successfully")
+      toast.success("Profile updated.")
       setTimeout(() => setSaved(false), 2000)
     } catch (err) {
       console.error("[Settings] profile update failed:", err)
-      toast.error("Failed to update profile. Please try again.")
+      setProfileError(err instanceof Error && err.message ? err.message : "Couldn't update your profile. Please try again.")
     } finally {
       setSavingProfile(false)
     }
@@ -429,16 +440,16 @@ export default function SettingsPage() {
               <CardDescription className="text-xs">Update your profile details</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-6">
-              <div className="flex items-center gap-5">
-                <Avatar className="w-16 h-16">
+              <div className="flex items-center gap-4 sm:gap-5 min-w-0">
+                <Avatar className="w-16 h-16 shrink-0">
                   <AvatarFallback className="bg-primary/10 text-primary text-lg font-bold">
                     {user.full_name.split(" ").map((n) => n[0]).join("").toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <div>
-                  <h3 className="font-heading font-bold">{user.full_name}</h3>
-                  <p className="text-sm text-muted-foreground">{user.email}</p>
-                  <div className="flex items-center gap-2 mt-1">
+                <div className="min-w-0">
+                  <h3 className="font-heading font-bold break-words">{user.full_name}</h3>
+                  <p className="text-sm text-muted-foreground break-all">{user.email}</p>
+                  <div className="flex flex-wrap items-center gap-2 mt-1">
                     <span className={cn(
                       "inline-flex items-center px-2 py-0.5 rounded-md border text-[10px] font-semibold uppercase tracking-wider",
                       user.role === "admin" ? "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800" :
@@ -457,19 +468,24 @@ export default function SettingsPage() {
 
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-2">
-                  <Label className="text-[13px] font-medium">Full Name</Label>
+                  <Label htmlFor="profile-name" className="text-[13px] font-medium">Full name</Label>
                   <Input
+                    id="profile-name"
+                    autoComplete="name"
                     value={profileForm.full_name}
-                    onChange={(e) => setProfileForm({ ...profileForm, full_name: e.target.value })}
+                    onChange={(e) => {
+                      setProfileForm({ ...profileForm, full_name: e.target.value })
+                      if (profileError) setProfileError(null)
+                    }}
+                    aria-invalid={!!profileError}
+                    aria-describedby={profileError ? "profile-error" : undefined}
                   />
+                  {profileError && <p id="profile-error" role="alert" className="text-xs text-destructive">{profileError}</p>}
                 </div>
                 <div className="flex flex-col gap-2">
-                  <Label className="text-[13px] font-medium">Email</Label>
-                  <Input
-                    type="email"
-                    value={profileForm.email}
-                    onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
-                  />
+                  <Label htmlFor="profile-email" className="text-[13px] font-medium">Email</Label>
+                  <Input id="profile-email" type="email" value={profileForm.email} readOnly disabled className="bg-secondary/50" />
+                  <p className="text-xs text-muted-foreground">This is your sign-in email. It can&apos;t be changed here.</p>
                 </div>
               </div>
 

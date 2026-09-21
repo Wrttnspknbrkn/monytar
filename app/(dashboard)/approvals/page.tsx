@@ -112,8 +112,9 @@ export default function ApprovalsPage() {
         <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-secondary mb-4">
           <AlertTriangle className="w-7 h-7 text-muted-foreground/40" />
         </div>
-        <h3 className="font-heading font-bold mb-1">Access Restricted</h3>
-        <p className="text-sm text-muted-foreground">You need manager, finance, or admin role to access approvals.</p>
+        <h1 className="font-heading font-bold mb-1">Approvals aren&apos;t available for your role</h1>
+        <p className="text-sm text-muted-foreground max-w-sm mb-5">Approving requests needs the Manager, Finance or Admin role. You can track your own requests from the Requests page.</p>
+        <Button asChild variant="outline" className="font-semibold"><Link href="/requests">Go to my requests</Link></Button>
       </div>
     )
   }
@@ -122,12 +123,12 @@ export default function ApprovalsPage() {
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="font-heading text-2xl font-extrabold tracking-tight">Approvals</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">{pending.length} requests awaiting your review</p>
+        <p className="text-muted-foreground text-sm mt-0.5">{pending.length === 0 ? "Nothing waiting for your review" : `${pending.length} ${pending.length === 1 ? "request" : "requests"} awaiting your review`}</p>
       </div>
 
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-        <Input placeholder="Search pending requests..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-9 text-sm" />
+        <Input aria-label="Search pending requests" placeholder="Search by number, purpose or employee…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-10 sm:h-9 text-sm" />
       </div>
 
       {filtered.length === 0 ? (
@@ -167,8 +168,8 @@ export default function ApprovalsPage() {
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
+                      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4">
+                        <div className="min-w-0">
                           <Link href={`/requests/${req.id}`} className="font-semibold text-sm hover:text-primary transition-colors">
                             {req.purpose}
                           </Link>
@@ -176,7 +177,7 @@ export default function ApprovalsPage() {
                             {req.request_number} &middot; by {emp?.full_name || "Unknown"} &middot;{" "}
                             {formatRelativeTime(req.submitted_at || req.created_at)}
                           </p>
-                          <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-xs text-muted-foreground">
                             <span>{getCategoryLabel(req.category)}</span>
                             {vendor && (
                               <>
@@ -192,7 +193,7 @@ export default function ApprovalsPage() {
                       </div>
                       
                       {/* Action Buttons with Status Feedback */}
-                      <div className="flex items-center gap-2 mt-4">
+                      <div className="flex flex-wrap items-center gap-2 mt-4">
                         {isApproved ? (
                           <div className="flex items-center gap-2 px-4 py-2 rounded-md bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300">
                             <CheckCircle2 className="w-4 h-4" />
@@ -237,16 +238,18 @@ export default function ApprovalsPage() {
                               </DialogTrigger>
                               <DialogContent className="rounded-2xl">
                                 <DialogHeader>
-                                  <DialogTitle className="font-heading">Reject Request</DialogTitle>
+                                  <DialogTitle className="font-heading">Reject request</DialogTitle>
                                   <DialogDescription>Explain why this request is being rejected.</DialogDescription>
                                 </DialogHeader>
                                 <Textarea 
-                                  placeholder="Reason for rejection..." 
+                                  aria-label="Reason for rejection"
+                                  placeholder="Reason for rejection (the employee will see this)…" 
                                   value={rejectComment} 
                                   onChange={(e) => setRejectComment(e.target.value)} 
                                   rows={3} 
                                 />
                                 <DialogFooter>
+                                  <Button type="button" variant="outline" onClick={() => { setRejectId(null); setRejectComment("") }} disabled={actionState === "rejecting"}>Cancel</Button>
                                   <Button 
                                     variant="destructive" 
                                     onClick={handleReject} 
@@ -259,7 +262,7 @@ export default function ApprovalsPage() {
                                         Rejecting...
                                       </>
                                     ) : (
-                                      "Confirm Rejection"
+                                      "Reject request"
                                     )}
                                   </Button>
                                 </DialogFooter>

@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react"
+import { createContext, useContext, useEffect, useRef, useState, useCallback, type ReactNode } from "react"
 import { useRouter } from "next/navigation"
 import { mutate } from "swr"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
@@ -76,6 +76,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [authUser, setAuthUser] = useState<SupabaseUser | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [dbUser, setDbUser] = useState<User | null>(null)
+  // Set while a sign-out the user asked for is in flight, so the SIGNED_OUT
+  // handler can tell "you logged out" apart from "your session expired".
+  const userInitiatedSignOut = useRef(false)
   
   // Demo mode state
   const [demoUser, setDemoUser] = useState<User>(mockUsers[3]) // Default employee
@@ -133,7 +136,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         if (event === "SIGNED_OUT") {
-          router.push("/login")
+          router.push(userInitiatedSignOut.current ? "/login?reason=signed_out" : "/login?reason=expired")
         }
       }
     )
@@ -151,6 +154,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       )
 
       if (error) throw error
+
+      // A deactivated account must not keep a working session: the Users page
+      // promises "they will immediately lose access", and nothing else
+      // enforces it. Treat it like any other unusable session.
+      if (data.status === "inactive" || (data as { is_active?: boolean }).is_active === false) {
+        userInitiatedSignOut.current = true
+        toast.error("This account has been deactivated. Contact your administrator.")
+        await supabase.auth.signOut()
+        window.location.assign("/login?reason=deactivated")
+        return
+      }
+
       setDbUser(data)
     } catch (error) {
       console.error("Error fetching user:", error)
@@ -280,8 +295,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return
     }
     
+    userInitiatedSignOut.current = true
     const supabase = getSupabaseBrowserClient()
-    await supabase.auth.signOut()
+    try {
+      // Global sign-out revokes the refresh token server-side. If that call
+      // fails (offline, timeout) fall back to clearing this browser's session
+      // so "Log out" can never appear to do nothing.
+      await withTimeout(supabase.auth.signOut(), AUTH_RESOLUTION_TIMEOUT_MS, "Sign-out timed out")
+    } catch {
+      try {
+        await supabase.auth.signOut({ scope: "local" })
+      } catch {
+        // Nothing else to try — the hard navigation below still drops the app state.
+      }
+    }
+    // A full navigation (not router.push) guarantees a clean slate: no cached
+    // SWR data, no stuck overlays, and the middleware re-reads the cookies.
+    window.location.assign("/login?reason=signed_out")
   }, [isDemo, router])
   
   // Demo mode helpers

@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from "react"
 import useSWR from "swr"
-import { Search, Shield, Download, Users, Sparkles, TrendingUp, Building2, RefreshCw } from "lucide-react"
+import { AccessDenied } from "@/components/layout/access-denied"
+import { Search, Download, Users, Sparkles, TrendingUp, Building2, RefreshCw } from "lucide-react"
 import { useData, useAuth } from "@/lib/providers"
 import { listDemoLeads, leadsToCsv } from "@/lib/demo/leads"
 import { getInitials, formatRelativeTime, cn } from "@/lib/utils"
@@ -80,13 +81,7 @@ export default function DemoLeadsPage() {
 
   if (!isAdmin) {
     return (
-      <div className="flex flex-col items-center justify-center py-32 text-center">
-        <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-secondary mb-4">
-          <Shield className="w-7 h-7 text-muted-foreground/40" />
-        </div>
-        <h3 className="font-heading font-bold mb-1">Admin Only</h3>
-        <p className="text-sm text-muted-foreground">Demo leads are visible to admins only.</p>
-      </div>
+      <AccessDenied title="Admin only" needs="Demo leads are visible to admins only." />
     )
   }
 

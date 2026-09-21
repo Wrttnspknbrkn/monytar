@@ -1,14 +1,26 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { Plus, Search, Store, CheckCircle2, XCircle, Mail, Phone, MapPin, Archive, ArchiveRestore } from "lucide-react"
+import { Plus, Search, Store, CheckCircle2, XCircle, Mail, Phone, MapPin, Archive, ArchiveRestore, Loader2, AlertCircle } from "lucide-react"
 import { useData, useAuth } from "@/lib/providers"
 import { generateId, cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent } from "@/components/ui/card"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { EmptyState } from "@/components/ui/empty-state"
+import { useInitialSearchQuery } from "@/lib/hooks/use-url-query"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { toast } from "sonner"
@@ -20,6 +32,9 @@ export default function VendorsPage() {
   // roles can actually toggle vendor approval, so only they get the control.
   const canManageVendors = ["admin", "finance", "manager"].includes((dbUser || currentUser)?.role ?? "")
   const [search, setSearch] = useState("")
+  useInitialSearchQuery(setSearch)
+  const [formError, setFormError] = useState<string | null>(null)
+  const [archiveTarget, setArchiveTarget] = useState<{ id: string; name: string; archive: boolean } | null>(null)
   const [showArchived, setShowArchived] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -35,8 +50,13 @@ export default function VendorsPage() {
     return base.filter((v) => v.name.toLowerCase().includes(q) || v.category?.toLowerCase().includes(q))
   }, [vendors, search, showArchived])
 
-  async function handleAdd() {
-    if (!form.name.trim()) { toast.error("Vendor name is required"); return }
+  async function handleAdd(e?: React.FormEvent) {
+    e?.preventDefault()
+    if (saving) return
+    setFormError(null)
+    if (!form.name.trim()) { setFormError("Vendor name is required."); return }
+    if (form.contact_email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(form.contact_email.trim())) { setFormError("Enter a valid contact email, or leave it blank."); return }
+    if (vendors.some((v) => v.name.trim().toLowerCase() === form.name.trim().toLowerCase())) { setFormError("A vendor with this name already exists."); return }
     setSaving(true)
     const now = new Date().toISOString()
     try {
@@ -46,12 +66,12 @@ export default function VendorsPage() {
         address: form.address || undefined, payment_terms: form.payment_terms || undefined, notes: form.notes || undefined,
         is_approved: true, approval_required: false, created_at: now, updated_at: now,
       })
-      toast.success("Vendor added successfully")
+      toast.success(`${form.name.trim()} was added and is ready to use on requests.`)
       setForm({ name: "", category: "", contact_email: "", contact_phone: "", address: "", payment_terms: "", notes: "" })
       setDialogOpen(false)
     } catch (err) {
       console.error("[Vendors] create failed:", err)
-      toast.error("Failed to add vendor. Please try again.")
+      setFormError(err instanceof Error && err.message ? err.message : "Couldn't add the vendor. Please try again.")
     } finally {
       setSaving(false)
     }
@@ -60,21 +80,24 @@ export default function VendorsPage() {
   async function handleToggleApproved(vendorId: string, checked: boolean) {
     try {
       await updateVendor(vendorId, { is_approved: checked })
+      toast.success(checked ? "Vendor approved." : "Vendor marked as pending approval.")
     } catch (err) {
       console.error("[Vendors] update failed:", err)
       toast.error("Failed to update vendor status. Please try again.")
     }
   }
 
-  async function handleToggleArchived(vendorId: string, name: string, archive: boolean) {
-    if (archive && !window.confirm(`Archive "${name}"? It won't be selectable on new expense requests, but stays on past ones.`)) return
-    setArchivingId(vendorId)
+  async function confirmArchive() {
+    if (!archiveTarget || archivingId) return
+    const { id, name, archive } = archiveTarget
+    setArchivingId(id)
     try {
-      await updateVendor(vendorId, { is_active: !archive })
-      toast.success(archive ? `${name} archived` : `${name} restored`)
+      await updateVendor(id, { is_active: !archive })
+      toast.success(archive ? `${name} was archived.` : `${name} was restored.`)
+      setArchiveTarget(null)
     } catch (err) {
       console.error("[Vendors] archive toggle failed:", err)
-      toast.error("Failed to update vendor. Please try again.")
+      toast.error("Couldn't update the vendor. Please try again.")
     } finally {
       setArchivingId(null)
     }
@@ -85,31 +108,39 @@ export default function VendorsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="font-heading text-2xl font-extrabold tracking-tight">Vendors</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">{vendors.length} registered vendors</p>
+          <p className="text-muted-foreground text-sm mt-0.5">{vendors.filter((v) => v.is_active !== false).length} active {vendors.filter((v) => v.is_active !== false).length === 1 ? "vendor" : "vendors"}</p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="shadow-sm shadow-primary/25 font-semibold"><Plus className="w-4 h-4 mr-2" /> Add Vendor</Button>
-          </DialogTrigger>
+        <Button className="shadow-sm shadow-primary/25 font-semibold w-full sm:w-auto" onClick={() => { setFormError(null); setDialogOpen(true) }}><Plus className="w-4 h-4 mr-2" /> Add vendor</Button>
+        <Dialog open={dialogOpen} onOpenChange={(open) => !saving && setDialogOpen(open)}>
           <DialogContent className="rounded-2xl max-w-lg">
+            <form onSubmit={handleAdd} noValidate className="flex flex-col gap-4">
             <DialogHeader>
-              <DialogTitle className="font-heading">Add New Vendor</DialogTitle>
-              <DialogDescription>Register a new vendor for expense requests.</DialogDescription>
+              <DialogTitle className="font-heading">Add a vendor</DialogTitle>
+              <DialogDescription>Register who you pay so requests can reference them. Fields marked <span className="text-destructive">*</span> are required.</DialogDescription>
             </DialogHeader>
+            {formError && (
+              <div role="alert" className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 dark:bg-red-950/20 dark:border-red-900 px-3 py-2.5 text-sm text-red-700 dark:text-red-300">
+                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" /> <span>{formError}</span>
+              </div>
+            )}
             <div className="flex flex-col gap-4">
               <div className="grid sm:grid-cols-2 gap-4">
-                <div className="flex flex-col gap-2"><Label className="text-[13px] font-medium">Name *</Label><Input placeholder="Vendor name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
-                <div className="flex flex-col gap-2"><Label className="text-[13px] font-medium">Category</Label><Input placeholder="e.g. Software" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} /></div>
+                <div className="flex flex-col gap-2"><Label htmlFor="vendor-name" className="text-[13px] font-medium">Name <span className="text-destructive">*</span></Label><Input id="vendor-name" autoFocus placeholder="Vendor name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
+                <div className="flex flex-col gap-2"><Label htmlFor="vendor-category" className="text-[13px] font-medium">Category</Label><Input id="vendor-category" placeholder="e.g. Software" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} /></div>
               </div>
               <div className="grid sm:grid-cols-2 gap-4">
-                <div className="flex flex-col gap-2"><Label className="text-[13px] font-medium">Email</Label><Input type="email" placeholder="contact@vendor.com" value={form.contact_email} onChange={(e) => setForm({ ...form, contact_email: e.target.value })} /></div>
-                <div className="flex flex-col gap-2"><Label className="text-[13px] font-medium">Phone</Label><Input placeholder="+1 (555) 000-0000" value={form.contact_phone} onChange={(e) => setForm({ ...form, contact_phone: e.target.value })} /></div>
+                <div className="flex flex-col gap-2"><Label htmlFor="vendor-email" className="text-[13px] font-medium">Email</Label><Input id="vendor-email" type="email" placeholder="contact@vendor.com" value={form.contact_email} onChange={(e) => setForm({ ...form, contact_email: e.target.value })} /></div>
+                <div className="flex flex-col gap-2"><Label htmlFor="vendor-phone" className="text-[13px] font-medium">Phone</Label><Input id="vendor-phone" type="tel" placeholder="+1 (555) 000-0000" value={form.contact_phone} onChange={(e) => setForm({ ...form, contact_phone: e.target.value })} /></div>
               </div>
-              <div className="flex flex-col gap-2"><Label className="text-[13px] font-medium">Address</Label><Input placeholder="123 Main St" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></div>
-              <div className="flex flex-col gap-2"><Label className="text-[13px] font-medium">Payment Terms</Label><Input placeholder="e.g. Net 30" value={form.payment_terms} onChange={(e) => setForm({ ...form, payment_terms: e.target.value })} /></div>
-              <div className="flex flex-col gap-2"><Label className="text-[13px] font-medium">Notes</Label><Textarea placeholder="Additional notes..." value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} /></div>
+              <div className="flex flex-col gap-2"><Label htmlFor="vendor-address" className="text-[13px] font-medium">Address</Label><Input id="vendor-address" placeholder="123 Main St" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></div>
+              <div className="flex flex-col gap-2"><Label htmlFor="vendor-terms" className="text-[13px] font-medium">Payment terms</Label><Input id="vendor-terms" placeholder="e.g. Net 30" value={form.payment_terms} onChange={(e) => setForm({ ...form, payment_terms: e.target.value })} /></div>
+              <div className="flex flex-col gap-2"><Label htmlFor="vendor-notes" className="text-[13px] font-medium">Notes</Label><Textarea id="vendor-notes" placeholder="Additional notes..." value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} /></div>
             </div>
-            <DialogFooter><Button onClick={handleAdd} disabled={saving} className="font-semibold shadow-sm shadow-primary/20">{saving ? "Adding..." : "Add Vendor"}</Button></DialogFooter>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)} disabled={saving}>Cancel</Button>
+              <Button type="submit" disabled={saving} className="font-semibold shadow-sm shadow-primary/20">{saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Adding…</> : "Add vendor"}</Button>
+            </DialogFooter>
+            </form>
           </DialogContent>
         </Dialog>
       </div>
@@ -117,7 +148,7 @@ export default function VendorsPage() {
       <div className="flex items-center gap-4 flex-wrap">
         <div className="relative max-w-sm flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-          <Input placeholder="Search vendors..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-9 text-sm" />
+          <Input aria-label="Search vendors" placeholder="Search by name or category…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-9 text-sm" />
         </div>
         {archivedCount > 0 && (
           <label className="flex items-center gap-2 text-xs font-medium text-muted-foreground cursor-pointer">
@@ -128,25 +159,29 @@ export default function VendorsPage() {
       </div>
 
       {filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-secondary mb-4"><Store className="w-7 h-7 text-muted-foreground/40" /></div>
-          <h3 className="font-heading font-bold mb-1">No vendors found</h3>
-          <p className="text-sm text-muted-foreground">Add your first vendor to get started.</p>
-        </div>
+        <EmptyState
+          icon={Store}
+          title={search ? "No vendors match your search" : "No vendors yet"}
+          description={search ? "Try a different name or category." : "Add the companies and people you pay so requests can reference them."}
+          actionLabel={search ? undefined : "Add vendor"}
+          onAction={() => { setFormError(null); setDialogOpen(true) }}
+          secondaryLabel={search ? "Clear search" : undefined}
+          onSecondary={() => setSearch("")}
+        />
       ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((vendor) => {
             const archived = vendor.is_active === false
             return (
-            <Card key={vendor.id} className={cn("border-border/60 hover:border-primary/20 transition-all duration-200 hover:shadow-md hover:shadow-foreground/[0.03] hover:-translate-y-0.5 group", archived && "opacity-60")}>
+            <Card key={vendor.id} className={cn("min-w-0 border-border/60 hover:border-primary/20 transition-all duration-200 hover:shadow-md hover:shadow-foreground/[0.03] hover:-translate-y-0.5 group", archived && "opacity-60")}>
               <CardContent className="p-5">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-secondary">
+                <div className="flex items-start justify-between gap-2 mb-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-secondary shrink-0">
                       <Store className="w-5 h-5 text-muted-foreground" />
                     </div>
                     <div>
-                      <h3 className="font-heading font-bold text-sm">{vendor.name}</h3>
+                      <h2 className="font-heading font-bold text-sm break-words">{vendor.name}</h2>
                       {vendor.category && <p className="text-xs text-muted-foreground">{vendor.category}</p>}
                     </div>
                   </div>
@@ -166,9 +201,10 @@ export default function VendorsPage() {
                     {canManageVendors && (
                       <button
                         type="button"
-                        onClick={() => handleToggleArchived(vendor.id, vendor.name, !archived)}
+                        onClick={() => setArchiveTarget({ id: vendor.id, name: vendor.name, archive: !archived })}
                         disabled={archivingId === vendor.id}
-                        className="text-muted-foreground hover:text-foreground transition-colors opacity-0 group-hover:opacity-100"
+                        title={archived ? "Restore vendor" : "Archive vendor"}
+                        className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100"
                         aria-label={archived ? `Restore ${vendor.name}` : `Archive ${vendor.name}`}
                       >
                         {archived ? <ArchiveRestore className="w-3.5 h-3.5" /> : <Archive className="w-3.5 h-3.5" />}
@@ -177,7 +213,7 @@ export default function VendorsPage() {
                   </div>
                 </div>
                 <div className="flex flex-col gap-1.5 text-xs text-muted-foreground">
-                  {vendor.contact_email && <div className="flex items-center gap-2"><Mail className="w-3 h-3" /><span>{vendor.contact_email}</span></div>}
+                  {vendor.contact_email && <div className="flex items-center gap-2"><Mail className="w-3 h-3" /><span className="break-all">{vendor.contact_email}</span></div>}
                   {vendor.contact_phone && <div className="flex items-center gap-2"><Phone className="w-3 h-3" /><span>{vendor.contact_phone}</span></div>}
                   {vendor.address && <div className="flex items-center gap-2"><MapPin className="w-3 h-3" /><span className="truncate">{vendor.address}</span></div>}
                 </div>
@@ -190,7 +226,7 @@ export default function VendorsPage() {
                 <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/50">
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Approved</span>
                   {canManageVendors ? (
-                    <Switch checked={vendor.is_approved} onCheckedChange={(checked) => handleToggleApproved(vendor.id, checked)} />
+                    <Switch aria-label={`Approved: ${vendor.name}`} checked={vendor.is_approved} onCheckedChange={(checked) => handleToggleApproved(vendor.id, checked)} />
                   ) : (
                     <span className="text-xs font-medium text-muted-foreground">{vendor.is_approved ? "Yes" : "No"}</span>
                   )}
@@ -200,6 +236,25 @@ export default function VendorsPage() {
           )})}
         </div>
       )}
+
+      <AlertDialog open={!!archiveTarget} onOpenChange={(open) => !open && !archivingId && setArchiveTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{archiveTarget?.archive ? `Archive ${archiveTarget.name}?` : `Restore ${archiveTarget?.name}?`}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {archiveTarget?.archive
+                ? "It won't be selectable on new expense requests, but stays on past ones. You can restore it any time."
+                : "It will be selectable on new expense requests again."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={!!archivingId}>Cancel</AlertDialogCancel>
+            <AlertDialogAction disabled={!!archivingId} onClick={(e) => { e.preventDefault(); void confirmArchive() }}>
+              {archivingId ? "Working…" : archiveTarget?.archive ? "Archive" : "Restore"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

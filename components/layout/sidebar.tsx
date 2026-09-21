@@ -2,48 +2,26 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import {
-  LayoutDashboard,
-  FileText,
-  CheckSquare,
-  Store,
-  Building2,
-  Users,
-  BarChart3,
-  Settings,
-  ChevronLeft,
-  ChevronRight,
-  Wallet,
-} from "lucide-react"
+import { ChevronLeft, ChevronRight, LogOut, Wallet } from "lucide-react"
 import { Logo } from "@/components/ui/logo"
-import { cn } from "@/lib/utils"
-import { useData, useAuth } from "@/lib/providers"
-import { Button } from "@/components/ui/button"
+import { cn, getInitials } from "@/lib/utils"
+import { useData } from "@/lib/providers"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { useState } from "react"
-
-const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ["employee", "manager", "finance", "admin"] },
-  { href: "/requests", label: "Requests", icon: FileText, roles: ["employee", "manager", "finance", "admin"], badge: true },
-  { href: "/approvals", label: "Approvals", icon: CheckSquare, roles: ["manager", "finance", "admin"], badge: true },
-  { href: "/vendors", label: "Vendors", icon: Store, roles: ["employee", "manager", "finance", "admin"] },
-  { href: "/departments", label: "Departments", icon: Building2, roles: ["manager", "finance", "admin"] },
-  { href: "/users", label: "Users", icon: Users, roles: ["admin"] },
-  { href: "/reports", label: "Reports", icon: BarChart3, roles: ["finance", "admin"] },
-  { href: "/settings", label: "Settings", icon: Settings, roles: ["employee", "manager", "finance", "admin"] },
-]
+import { isNavActive, navItemsForRole } from "@/lib/navigation"
+import { SignedInAs, roleAvatarColors, useAccount } from "./account-info"
 
 export function Sidebar() {
   const pathname = usePathname()
-  const { dbUser } = useAuth()
-  const { currentUser, getMyRequests, getPendingApprovals } = useData()
+  const { getMyRequests, getPendingApprovals } = useData()
+  const { user, roleLabel, signOut } = useAccount()
   const [collapsed, setCollapsed] = useState(false)
 
-  const user = dbUser || currentUser
   const myPendingCount = getMyRequests().filter((r) => r.status === "pending").length
   const approvalsCount = getPendingApprovals().length
 
-  const filteredItems = navItems.filter((item) => user && item.roles.includes(user.role))
+  const filteredItems = navItemsForRole(user?.role)
 
   function getBadgeCount(href: string): number | undefined {
     if (href === "/requests" && myPendingCount > 0) return myPendingCount
@@ -54,15 +32,16 @@ export function Sidebar() {
   return (
     <TooltipProvider delayDuration={0}>
       <aside
+        aria-label="Main navigation"
         className={cn(
-          "hidden md:flex flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border transition-all duration-300 ease-in-out",
+          "hidden md:flex flex-col sticky top-0 h-screen shrink-0 bg-sidebar text-sidebar-foreground border-r border-sidebar-border transition-all duration-300 ease-in-out",
           collapsed ? "w-[68px]" : "w-[248px]",
         )}
       >
         {/* Logo */}
         <div
           className={cn(
-            "flex items-center h-16 px-4 border-b border-sidebar-border",
+            "flex items-center h-16 px-4 border-b border-sidebar-border shrink-0",
             collapsed ? "justify-center" : "gap-2.5",
           )}
         >
@@ -76,17 +55,19 @@ export function Sidebar() {
         </div>
 
         {/* Nav Items */}
-        <nav className="flex-1 py-3 px-2.5 flex flex-col gap-0.5 overflow-y-auto">
+        <nav aria-label="Pages" className="flex-1 py-3 px-2.5 flex flex-col gap-0.5 overflow-y-auto">
           {filteredItems.map((item) => {
-            const isActive = pathname.startsWith(item.href)
+            const isActive = isNavActive(pathname, item.href)
             const badge = item.badge ? getBadgeCount(item.href) : undefined
             const Icon = item.icon
 
             const linkContent = (
               <Link
                 href={item.href}
+                aria-current={isActive ? "page" : undefined}
+                aria-label={collapsed ? item.label : undefined}
                 className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-200 relative group",
+                  "flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-200 relative group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
                   isActive
                     ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
                     : "text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
@@ -129,16 +110,51 @@ export function Sidebar() {
           })}
         </nav>
 
-        {/* Collapse + footer */}
-        <div className="p-2.5 border-t border-sidebar-border flex flex-col gap-2">
+        {/* Account + collapse */}
+        <div className="p-2.5 border-t border-sidebar-border flex flex-col gap-2 shrink-0">
+          {user &&
+            (collapsed ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => void signOut()}
+                    aria-label={`Log out ${user.full_name} (${roleLabel})`}
+                    className="mx-auto flex items-center justify-center w-10 h-10 rounded-xl text-sidebar-foreground/70 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/60 transition-colors"
+                  >
+                    <Avatar className="w-7 h-7">
+                      <AvatarFallback className={cn("text-[11px] font-bold", roleAvatarColors[user.role])}>
+                        {getInitials(user.full_name)}
+                      </AvatarFallback>
+                    </Avatar>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="font-medium">
+                  {user.full_name} · {roleLabel} — click to log out
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <div className="rounded-xl border border-sidebar-border/60 bg-sidebar-accent/30 p-2.5 flex flex-col gap-2">
+                <SignedInAs compact className="[&_p]:text-sidebar-foreground [&_p.text-muted-foreground]:text-sidebar-foreground/60 [&_p:first-child]:text-sidebar-foreground/50" />
+                <button
+                  type="button"
+                  onClick={() => void signOut()}
+                  className="flex items-center justify-center gap-2 h-8 rounded-lg text-xs font-semibold text-sidebar-foreground/80 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent transition-colors"
+                >
+                  <LogOut className="w-3.5 h-3.5" /> Log out
+                </button>
+              </div>
+            ))}
           <Tooltip>
             <TooltipTrigger asChild>
               <button
                 type="button"
                 onClick={() => setCollapsed(!collapsed)}
+                aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+                aria-expanded={!collapsed}
                 className={cn(
                   "flex items-center justify-center rounded-xl border border-sidebar-border/60 text-sidebar-foreground/70 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/60 hover:border-sidebar-accent/40 active:scale-95 transition-all duration-200",
-                  collapsed ? "w-10 h-10 mx-auto" : "w-full h-10",
+                  collapsed ? "w-10 h-10 mx-auto" : "w-full h-9",
                 )}
               >
                 {collapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
