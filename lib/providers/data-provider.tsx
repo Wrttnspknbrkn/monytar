@@ -156,7 +156,13 @@ export function DataProvider({ children }: DataProviderProps) {
   const notifications = isDemo ? mockNotifications : supabaseNotifs
   const budgetAlerts = isDemo ? mockBudgetAlerts : [] // TODO: Fetch from Supabase when implemented
 
-  const currencyCode = orgSettings?.default_currency || organization?.currency || "USD"
+  // organizations.currency is a legacy column: nothing ever writes anything but
+  // its DB default ('USD') to it — the Settings currency picker only updates
+  // organization_settings.default_currency. Reading it as a fallback here would
+  // just be a trap for the next caller (it already caused a real bug: the
+  // departments page checked it *before* orgSettings and so never reflected a
+  // changed currency). orgSettings.default_currency is the only source of truth.
+  const currencyCode = orgSettings?.default_currency || "USD"
   const formatAmount = useCallback((amount: number) => formatCurrency(amount, currencyCode), [currencyCode])
   
   const dashboardStats = useMemo(() => {
