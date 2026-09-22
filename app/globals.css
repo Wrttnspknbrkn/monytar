@@ -133,8 +133,22 @@
   body {
     @apply bg-background text-foreground;
   }
-  /* CRITICAL — prevents ALL horizontal scroll */
-  html, body {
+  /* CRITICAL — prevents ALL horizontal scroll.
+     Only html, not body: setting overflow-x alone (with overflow-y left
+     'visible') makes the browser auto-compute overflow-y: auto on whatever
+     it's applied to (CSS Overflow spec — a 'visible' axis paired with a
+     non-visible sibling axis computes to 'auto'). Applying that to BOTH
+     html and body made body its own scroll container even though it never
+     actually overflows itself — the page really scrolls via html. Every
+     `position: sticky` element inside body (the sidebar, sticky table
+     headers, etc.) then stuck to body's frame instead of the viewport, and
+     since body's own scroll offset never moves, "sticky" was a no-op: those
+     elements just scrolled away with the rest of the page. html alone is
+     enough to block horizontal overflow, since it's the actual outer box —
+     and it's already the real scrolling element (confirmed via
+     document.documentElement.scrollTop tracking window.scrollY), so sticky
+     descendants correctly reference it. */
+  html {
     overflow-x: hidden;
   }
   img {
