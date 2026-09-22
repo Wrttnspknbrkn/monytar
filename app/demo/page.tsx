@@ -85,7 +85,6 @@ function DemoContent() {
       presetApplied.current = true
       setSelectedRole(requestedRole as DemoRole)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requestedRole])
 
   function validate(): boolean {

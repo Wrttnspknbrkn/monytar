@@ -8,6 +8,8 @@ import { useExpenseCategories } from "@/lib/hooks/use-categories"
 import { uploadOrgLogo, removeOrgLogo, validateLogoFile } from "@/lib/logo/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { useConfirm } from "@/components/ui/confirm-dialog"
+import { requestPasswordChange, confirmPasswordChange } from "@/lib/auth/password-change"
 import { PasswordInput } from "@/components/ui/password-input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -27,6 +29,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/config"
 import { SUPPORTED_CURRENCIES } from "@/lib/currency"
 
 export default function SettingsPage() {
+  const { confirm, dialog } = useConfirm()
   const { dbUser } = useAuth()
   const { currentUser, departments, updateUser, orgSettings, updateOrgSettings, organization, isLoading } = useData()
   const { theme, setTheme } = useTheme()
@@ -59,17 +62,28 @@ export default function SettingsPage() {
 
   const [savingProfile, setSavingProfile] = useState(false)
 
+  const [profileError, setProfileError] = useState<string | null>(null)
+
   async function handleSaveProfile() {
-    if (!user) return
+    if (!user || savingProfile) return
+    const fullName = profileForm.full_name.trim()
+    if (fullName.length < 2) {
+      setProfileError("Enter your full name (at least 2 characters).")
+      return
+    }
+    setProfileError(null)
     setSavingProfile(true)
     try {
-      await updateUser(user.id, { full_name: profileForm.full_name, email: profileForm.email })
+      // Only the name is saved. The email is the account's sign-in identity
+      // (it lives in the auth system too), so editing just the profile copy
+      // would leave the two out of sync and break invitations/lookups.
+      await updateUser(user.id, { full_name: fullName })
       setSaved(true)
-      toast.success("Profile updated successfully")
+      toast.success("Profile updated.")
       setTimeout(() => setSaved(false), 2000)
     } catch (err) {
       console.error("[Settings] profile update failed:", err)
-      toast.error("Failed to update profile. Please try again.")
+      setProfileError(err instanceof Error && err.message ? err.message : "Couldn't update your profile. Please try again.")
     } finally {
       setSavingProfile(false)
     }
@@ -167,16 +181,29 @@ export default function SettingsPage() {
         toast.error("Current password is incorrect.")
         return
       }
-      const { error: reauthError } = await supabase.auth.reauthenticate()
-      if (reauthError) throw reauthError
-      setAwaitingReauthCode(true)
-      toast.success("Check your email for a confirmation code.")
+      const result = await requestPasswordChange(supabase, { currentPassword, newPassword })
+      if (result.status === "changed") {
+        finishPasswordChange()
+      } else if (result.status === "needs_code") {
+        setAwaitingReauthCode(true)
+        toast.success("We emailed you a confirmation code.")
+      } else {
+        toast.error(result.message)
+      }
     } catch (err) {
-      console.error("[Settings] password reauth request failed:", err)
+      console.error("[Settings] password change request failed:", err)
       toast.error("Failed to start the password change. Please try again.")
     } finally {
       setUpdatingPassword(false)
     }
+  }
+
+  function finishPasswordChange() {
+    toast.success("Password updated successfully")
+    setCurrentPassword("")
+    setNewPassword("")
+    setReauthCode("")
+    setAwaitingReauthCode(false)
   }
 
   async function handleConfirmPasswordChange() {
@@ -187,22 +214,20 @@ export default function SettingsPage() {
     setUpdatingPassword(true)
     try {
       const supabase = getSupabaseBrowserClient()
-      const { error: updateError } = await supabase.auth.updateUser({ password: newPassword, nonce: reauthCode })
-      if (updateError) throw updateError
-      toast.success("Password updated successfully")
-      setCurrentPassword("")
-      setNewPassword("")
-      setReauthCode("")
-      setAwaitingReauthCode(false)
+      const result = await confirmPasswordChange(supabase, { currentPassword, newPassword, code: reauthCode })
+      if (result.status === "changed") {
+        finishPasswordChange()
+      } else if (result.status === "error") {
+        toast.error(result.message)
+      }
     } catch (err) {
       console.error("[Settings] password update failed:", err)
-      toast.error("That code didn't work. Please try again.")
+      toast.error("Couldn't update your password. Please try again.")
     } finally {
       setUpdatingPassword(false)
     }
   }
 
-  const [cancelLoading, setCancelLoading] = useState(false)
   const [portalLoading, setPortalLoading] = useState(false)
   const [changingPlanId, setChangingPlanId] = useState<string | null>(null)
 
@@ -230,7 +255,7 @@ export default function SettingsPage() {
   }
 
   async function handleLogoRemove() {
-    if (!window.confirm("Remove your organization logo?")) return
+    if (!(await confirm({ title: "Remove your organization logo?", confirmLabel: "Remove", destructive: true }))) return
     setLogoUploading(true)
     try {
       await removeOrgLogo()
@@ -274,7 +299,7 @@ export default function SettingsPage() {
   }
 
   async function handleDeleteCategory(id: string, name: string) {
-    if (!window.confirm(`Remove "${name}"? Existing requests keep it, but it won't be selectable for new ones.`)) return
+    if (!(await confirm({ title: `Remove "${name}"?`, description: "Existing requests keep it, but it won't be selectable for new ones.", confirmLabel: "Remove", destructive: true }))) return
     setDeletingCategoryId(id)
     try {
       const res = await fetch(`/api/categories?id=${id}`, { method: "DELETE" })
@@ -336,7 +361,7 @@ export default function SettingsPage() {
           toast.error("No active subscription to cancel.")
           return
         }
-        if (!window.confirm("You'll move to the Free plan at the end of your current billing period, and keep paid features until then. Continue?")) {
+        if (!(await confirm({ title: "Move to the Free plan?", description: "You'll keep paid features until the end of your current billing period, then move to Free.", confirmLabel: "Cancel subscription", destructive: true }))) {
           return
         }
         const result = await cancelSubscription(organization.stripe_subscription_id)
@@ -397,6 +422,7 @@ export default function SettingsPage() {
 
   return (
     <div className="flex flex-col gap-6 max-w-4xl">
+      {dialog}
       <div>
         <h1 className="font-heading text-2xl font-extrabold tracking-tight">Settings</h1>
         <p className="text-muted-foreground text-sm mt-0.5">Manage your account and preferences</p>
@@ -429,16 +455,16 @@ export default function SettingsPage() {
               <CardDescription className="text-xs">Update your profile details</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-6">
-              <div className="flex items-center gap-5">
-                <Avatar className="w-16 h-16">
+              <div className="flex items-center gap-4 sm:gap-5 min-w-0">
+                <Avatar className="w-16 h-16 shrink-0">
                   <AvatarFallback className="bg-primary/10 text-primary text-lg font-bold">
                     {user.full_name.split(" ").map((n) => n[0]).join("").toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <div>
-                  <h3 className="font-heading font-bold">{user.full_name}</h3>
-                  <p className="text-sm text-muted-foreground">{user.email}</p>
-                  <div className="flex items-center gap-2 mt-1">
+                <div className="min-w-0">
+                  <h3 className="font-heading font-bold break-words">{user.full_name}</h3>
+                  <p className="text-sm text-muted-foreground break-all">{user.email}</p>
+                  <div className="flex flex-wrap items-center gap-2 mt-1">
                     <span className={cn(
                       "inline-flex items-center px-2 py-0.5 rounded-md border text-[10px] font-semibold uppercase tracking-wider",
                       user.role === "admin" ? "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800" :
@@ -457,19 +483,24 @@ export default function SettingsPage() {
 
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-2">
-                  <Label className="text-[13px] font-medium">Full Name</Label>
+                  <Label htmlFor="profile-name" className="text-[13px] font-medium">Full name</Label>
                   <Input
+                    id="profile-name"
+                    autoComplete="name"
                     value={profileForm.full_name}
-                    onChange={(e) => setProfileForm({ ...profileForm, full_name: e.target.value })}
+                    onChange={(e) => {
+                      setProfileForm({ ...profileForm, full_name: e.target.value })
+                      if (profileError) setProfileError(null)
+                    }}
+                    aria-invalid={!!profileError}
+                    aria-describedby={profileError ? "profile-error" : undefined}
                   />
+                  {profileError && <p id="profile-error" role="alert" className="text-xs text-destructive">{profileError}</p>}
                 </div>
                 <div className="flex flex-col gap-2">
-                  <Label className="text-[13px] font-medium">Email</Label>
-                  <Input
-                    type="email"
-                    value={profileForm.email}
-                    onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
-                  />
+                  <Label htmlFor="profile-email" className="text-[13px] font-medium">Email</Label>
+                  <Input id="profile-email" type="email" value={profileForm.email} readOnly disabled className="bg-secondary/50" />
+                  <p className="text-xs text-muted-foreground">This is your sign-in email. It can&apos;t be changed here.</p>
                 </div>
               </div>
 
@@ -508,7 +539,13 @@ export default function SettingsPage() {
                   <div className="flex flex-col gap-2 max-w-xs">
                     <Label className="text-[13px] font-medium">Confirmation Code</Label>
                     <p className="text-xs text-muted-foreground">Enter the code we just emailed you to confirm the change.</p>
-                    <Input placeholder="123456" value={reauthCode} onChange={(e) => setReauthCode(e.target.value)} />
+                    <Input
+                      placeholder="Enter the code"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      value={reauthCode}
+                      onChange={(e) => setReauthCode(e.target.value)}
+                    />
                   </div>
                   <div className="flex items-center gap-3">
                     <Button variant="outline" disabled={updatingPassword} className="w-fit bg-transparent font-semibold" onClick={handleConfirmPasswordChange}>
@@ -1041,11 +1078,11 @@ export default function SettingsPage() {
               <Button
                 variant="outline"
                 onClick={handleCancelSubscription}
-                disabled={cancelLoading || !isAdminOrFinance || currentPlan.tier === "free"}
+                disabled={portalLoading || !isAdminOrFinance || currentPlan.tier === "free"}
                 className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive font-semibold bg-transparent"
               >
-                {cancelLoading ? (
-                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Cancelling...</>
+                {portalLoading ? (
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Opening billing portal...</>
                 ) : currentPlan.tier === "free" ? (
                   "Already on the Free plan"
                 ) : (

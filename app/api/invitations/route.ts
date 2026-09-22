@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { getSupabaseServerClient } from "@/lib/supabase/server"
 import { isSupabaseConfigured } from "@/lib/supabase/config"
-import { enforceRateLimit, getClientIp } from "@/lib/api/rate-limit"
+import { enforceRateLimit } from "@/lib/api/rate-limit"
 import { getTierLimits, normalizeLimit } from "@/lib/products"
 import type { SubscriptionTier } from "@/lib/types"
 import { sendEmail } from "@/lib/notifications/email"

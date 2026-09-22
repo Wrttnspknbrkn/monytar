@@ -4,7 +4,7 @@ import { use, useState } from "react"
 import Link from "next/link"
 import { ArrowLeft, Clock, CheckCircle2, XCircle, FileText, DollarSign, User, Building2, MessageSquare, CreditCard, Pencil } from "lucide-react"
 import { useData, useAuth } from "@/lib/providers"
-import { formatCurrency, formatDateTime, formatRelativeTime, getCategoryLabel, getRoleLabel, cn } from "@/lib/utils"
+import { formatCurrency, formatDateTime, formatRelativeTime, getCategoryLabel, getRoleLabel } from "@/lib/utils"
 import { RequestStatusBadge } from "@/components/requests/request-status-badge"
 import { RequestReceipts } from "@/components/requests/request-receipts"
 import { ApprovalChain } from "@/components/requests/approval-chain"
@@ -139,18 +139,18 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
     <div className="flex flex-col gap-6 max-w-4xl">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 sm:gap-4 min-w-0">
           <Link href="/requests">
-            <Button variant="ghost" size="icon" className="h-9 w-9">
+            <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0">
               <ArrowLeft className="w-4 h-4" />
             </Button>
           </Link>
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="font-heading text-2xl font-extrabold tracking-tight">{request.request_number}</h1>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <h1 className="font-heading text-xl sm:text-2xl font-extrabold tracking-tight break-all">{request.request_number}</h1>
               <RequestStatusBadge status={request.status} />
             </div>
-            <p className="text-sm text-muted-foreground mt-0.5">{request.purpose}</p>
+            <p className="text-sm text-muted-foreground mt-0.5 break-words">{request.purpose}</p>
           </div>
         </div>
         <p className="font-heading text-3xl font-extrabold tracking-tight tabular-nums">{formatCurrency(request.amount, request.currency)}</p>
@@ -345,14 +345,14 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-3">
-                <Avatar className="w-10 h-10">
+                <Avatar className="w-10 h-10 shrink-0">
                   <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
                     {request.employee?.full_name?.slice(0, 2).toUpperCase() || "??"}
                   </AvatarFallback>
                 </Avatar>
-                <div>
-                  <p className="text-sm font-semibold">{request.employee?.full_name || "Unknown"}</p>
-                  <p className="text-xs text-muted-foreground">{request.employee?.email}</p>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold break-words">{request.employee?.full_name || "Unknown"}</p>
+                  <p className="text-xs text-muted-foreground break-all">{request.employee?.email}</p>
                 </div>
               </div>
               <div className="mt-4 flex flex-col gap-2 text-sm">

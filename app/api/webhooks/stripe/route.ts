@@ -121,6 +121,9 @@ export async function POST(request: NextRequest) {
         break
       }
 
+      // "created" carries the same shape as "updated"; handling both keeps the org in sync
+      // whichever order Stripe delivers them (checkout.session.completed links the org).
+      case "customer.subscription.created":
       case "customer.subscription.updated": {
         const subscription = event.data.object as Stripe.Subscription
 
@@ -189,6 +192,9 @@ export async function POST(request: NextRequest) {
         break
       }
 
+      // Stripe sends invoice.paid and invoice.payment_succeeded for the same payment; the
+      // dashboard's default endpoint config subscribes to invoice.paid.
+      case "invoice.paid":
       case "invoice.payment_succeeded": {
         const invoice = event.data.object as Stripe.Invoice
 

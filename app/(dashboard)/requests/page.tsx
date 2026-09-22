@@ -67,11 +67,11 @@ function RequestsPageContent() {
           <h1 className="font-heading text-2xl font-extrabold tracking-tight">{isEmployee ? "My Requests" : "All Requests"}</h1>
           <p className="text-muted-foreground text-sm mt-0.5">{filtered.length} expense requests</p>
         </div>
-        <Link href="/requests/new">
-          <Button className="shadow-sm shadow-primary/25 font-semibold">
-            <Plus className="w-4 h-4 mr-2" /> New Request
-          </Button>
-        </Link>
+        <Button asChild className="shadow-sm shadow-primary/25 font-semibold w-full sm:w-auto">
+          <Link href="/requests/new">
+            <Plus className="w-4 h-4 mr-2" /> New request
+          </Link>
+        </Button>
       </div>
 
       {/* Status Tabs */}
@@ -102,14 +102,15 @@ function RequestsPageContent() {
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
           <Input
-            placeholder="Search requests..."
+            aria-label="Search requests"
+            placeholder="Search by number, purpose or vendor…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-9 h-9 text-sm"
+            className="pl-9 h-10 sm:h-9 text-sm"
           />
         </div>
         <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="w-44 h-9 text-sm">
+          <SelectTrigger aria-label="Filter by category" className="w-full sm:w-44 h-10 sm:h-9 text-sm">
             <SlidersHorizontal className="w-3.5 h-3.5 mr-2 text-muted-foreground" />
             <SelectValue placeholder="Category" />
           </SelectTrigger>
@@ -131,16 +132,21 @@ function RequestsPageContent() {
             <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-secondary mb-4">
               <FileText className="w-7 h-7 text-muted-foreground/40" />
             </div>
-            <h3 className="font-heading font-bold mb-1">No requests found</h3>
-            <p className="text-sm text-muted-foreground max-w-xs">
-              {search || statusFilter !== "all" ? "Try adjusting your filters" : "Create your first expense request to get started"}
+            <h3 className="font-heading font-bold mb-1">{search || statusFilter !== "all" || categoryFilter !== "all" ? "No requests match your filters" : "No requests yet"}</h3>
+            <p className="text-sm text-muted-foreground max-w-xs mb-5">
+              {search || statusFilter !== "all" || categoryFilter !== "all" ? "Try a different search, status or category." : "Create your first expense request to get started."}
             </p>
+            {search || statusFilter !== "all" || categoryFilter !== "all" ? (
+              <Button variant="outline" className="bg-transparent font-semibold" onClick={() => { setSearch(""); setStatusFilter("all"); setCategoryFilter("all") }}>Clear filters</Button>
+            ) : (
+              <Button asChild className="font-semibold shadow-sm shadow-primary/25"><Link href="/requests/new"><Plus className="w-4 h-4 mr-2" /> New request</Link></Button>
+            )}
           </CardContent>
         </Card>
       ) : (
         <>
           {/* Mobile Card View */}
-          <div className="flex flex-col gap-3 md:hidden">
+          <div className="flex flex-col gap-3 lg:hidden">
             {filtered.map((req) => {
               const emp = getUserById(req.employee_id)
               return (
@@ -155,7 +161,7 @@ function RequestsPageContent() {
           </div>
 
           {/* Desktop Table View */}
-          <Card className="border-border/60 overflow-hidden hidden md:block">
+          <Card className="border-border/60 overflow-hidden hidden lg:block">
             <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <Table>

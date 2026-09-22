@@ -33,7 +33,7 @@ export function RequestCard({ request, employeeName, showEmployee = false }: Req
         <CardContent className="p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
+              <div className="flex flex-wrap items-center gap-2 mb-1">
                 <span className="font-mono text-xs font-semibold text-primary">{request.request_number}</span>
                 <span className={cn(
                   "inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[10px] font-semibold uppercase tracking-wider",
@@ -44,7 +44,7 @@ export function RequestCard({ request, employeeName, showEmployee = false }: Req
                 </span>
               </div>
               <p className="text-sm font-medium line-clamp-2 mb-2">{request.purpose}</p>
-              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                 <span className="px-2 py-0.5 rounded bg-secondary/60">{getCategoryLabel(request.category)}</span>
                 <span className="tabular-nums">{formatDate(request.created_at)}</span>
               </div>

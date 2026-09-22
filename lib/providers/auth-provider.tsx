@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react"
+import { createContext, useContext, useEffect, useRef, useState, useCallback, type ReactNode } from "react"
 import { useRouter } from "next/navigation"
 import { mutate } from "swr"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
@@ -17,6 +17,30 @@ import { users as mockUsers } from "@/lib/mock-data"
 // signup that failed partway through creating the profile).
 function isOrphanedProfileError(error: unknown): boolean {
   return typeof error === "object" && error !== null && (error as { code?: string }).code === "PGRST116"
+}
+
+// A rejected promise still lets fetchDbUser's catch block recover — but a
+// promise that never settles at all (a genuinely hung request, not just a
+// failed one) leaves isLoading stuck true forever with nothing left to
+// resolve it. This bounds every auth-resolution call so a hang gets treated
+// the same as a clean failure instead of leaving the user on an infinite
+// spinner with no escape.
+const AUTH_RESOLUTION_TIMEOUT_MS = 10_000
+
+function withTimeout<T>(promise: PromiseLike<T>, ms: number, message: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(message)), ms)
+    promise.then(
+      (value) => {
+        clearTimeout(timer)
+        resolve(value)
+      },
+      (error) => {
+        clearTimeout(timer)
+        reject(error)
+      },
+    )
+  })
 }
 
 interface AuthContextValue {
@@ -52,6 +76,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [authUser, setAuthUser] = useState<SupabaseUser | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [dbUser, setDbUser] = useState<User | null>(null)
+  // Set while a sign-out the user asked for is in flight, so the SIGNED_OUT
+  // handler can tell "you logged out" apart from "your session expired".
+  const userInitiatedSignOut = useRef(false)
+  // Which account the cached data currently belongs to (see the auth listener).
+  const cachedForUserId = useRef<string | null>(null)
   
   // Demo mode state
   const [demoUser, setDemoUser] = useState<User>(mockUsers[3]) // Default employee
@@ -64,48 +93,80 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     
     const supabase = getSupabaseBrowserClient()
-    
+
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setAuthUser(session?.user ?? null)
-      
-      if (session?.user) {
-        fetchDbUser(session.user.id)
-      } else {
-        setIsLoading(false)
-      }
-    })
-    
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+    withTimeout(supabase.auth.getSession(), AUTH_RESOLUTION_TIMEOUT_MS, "Timed out loading your session")
+      .then(({ data: { session } }) => {
         setSession(session)
         setAuthUser(session?.user ?? null)
 
-        // Sign-out (and the sign-in that follows it) doesn't reload the
-        // page — it's a client-side router.push. Every hook in
-        // DataProvider caches by a fixed SWR key ("current-user",
-        // "users:<org>", etc.), so without this, a different account
-        // signing in on the same tab right after a sign-out would keep
-        // showing the PREVIOUS account's org, users, requests and
-        // everything else until something happened to revalidate each
-        // key — a real cross-account data leak, not just a stale-data
-        // annoyance. Clear every cached entry and force a fresh fetch on
-        // any identity transition.
-        if (event === "SIGNED_OUT" || event === "SIGNED_IN") {
-          await mutate(() => true, undefined, { revalidate: true })
-        }
-
         if (session?.user) {
-          await fetchDbUser(session.user.id)
+          fetchDbUser(session.user.id)
         } else {
-          setDbUser(null)
+          setIsLoading(false)
         }
+      })
+      .catch((error) => {
+        console.error("Error loading session:", error)
+        setIsLoading(false)
+      })
+    
+    // Listen for auth changes.
+    //
+    // IMPORTANT: this callback must not await anything that talks to Supabase.
+    // supabase-js runs auth-state callbacks while holding its internal auth
+    // lock, and every query (supabase.from(...)) first calls getSession(),
+    // which needs that same lock. Awaiting a query in here therefore
+    // deadlocks: the callback waits for the query, the query waits for the
+    // lock, the lock waits for the callback. The visible symptom was a hard
+    // refresh sitting on "Loading your workspace…" until the 10s timeouts
+    // fired ("Timed out loading your session / profile") and then bouncing
+    // the user to /login. Update cheap local state synchronously, and defer
+    // everything that needs the network to run after the lock is released.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session)
+        setAuthUser(session?.user ?? null)
 
-        if (event === "SIGNED_OUT") {
-          router.push("/login")
-        }
+        setTimeout(() => {
+          void (async () => {
+            // Sign-out (and the sign-in that follows it) doesn't reload the
+            // page — it's a client-side router.push. Every hook in
+            // DataProvider caches by a fixed SWR key ("current-user",
+            // "users:<org>", etc.), so without this, a different account
+            // signing in on the same tab right after a sign-out would keep
+            // showing the PREVIOUS account's org, users, requests and
+            // everything else until something happened to revalidate each
+            // key — a real cross-account data leak, not just a stale-data
+            // annoyance. Clear every cached entry and force a fresh fetch on
+            // any identity transition.
+            //
+            // Supabase also emits SIGNED_IN for the SAME user whenever a tab
+            // regains focus or a session is recovered. Treating that as an
+            // identity change wiped every cache, which put the whole dashboard
+            // back behind the loading gate and unmounted the page — losing
+            // whatever the user was typing (e.g. a half-finished password
+            // change or request form). Only clear when the account changed.
+            const nextUserId = session?.user?.id ?? null
+            const identityChanged = event === "SIGNED_OUT" || (event === "SIGNED_IN" && nextUserId !== cachedForUserId.current)
+            if (event === "SIGNED_OUT" || event === "SIGNED_IN" || event === "INITIAL_SESSION") {
+              cachedForUserId.current = nextUserId
+            }
+            if (identityChanged) {
+              await mutate(() => true, undefined, { revalidate: true })
+            }
+
+            if (session?.user) {
+              await fetchDbUser(session.user.id)
+            } else {
+              setDbUser(null)
+            }
+
+            if (event === "SIGNED_OUT") {
+              router.push(userInitiatedSignOut.current ? "/login?reason=signed_out" : "/login?reason=expired")
+            }
+          })()
+        }, 0)
       }
     )
     
@@ -115,24 +176,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchDbUser = async (userId: string) => {
     try {
       const supabase = getSupabaseBrowserClient()
-      const { data, error } = await supabase
-        .from("users")
-        .select("*")
-        .eq("id", userId)
-        .single()
-      
+      const { data, error } = await withTimeout(
+        supabase.from("users").select("*").eq("id", userId).single(),
+        AUTH_RESOLUTION_TIMEOUT_MS,
+        "Timed out loading your profile",
+      )
+
       if (error) throw error
+
+      // A deactivated account must not keep a working session: the Users page
+      // promises "they will immediately lose access", and nothing else
+      // enforces it. Treat it like any other unusable session.
+      if (data.status === "inactive" || (data as { is_active?: boolean }).is_active === false) {
+        userInitiatedSignOut.current = true
+        toast.error("This account has been deactivated. Contact your administrator.")
+        await supabase.auth.signOut()
+        window.location.assign("/login?reason=deactivated")
+        return
+      }
+
       setDbUser(data)
     } catch (error) {
       console.error("Error fetching user:", error)
-      // Otherwise the user is left stuck "authenticated" (authUser/session
-      // set) with no profile data anywhere in the app — sign them out so
-      // onAuthStateChange's SIGNED_OUT branch redirects to /login instead.
-      if (isOrphanedProfileError(error)) {
-        toast.error("We couldn't find your account. Please sign in again.")
-        const supabase = getSupabaseBrowserClient()
-        await supabase.auth.signOut()
-      }
+      // Middleware already decided this request is "authenticated" (that's
+      // the only way this ever runs) and won't route the browser back to
+      // /login on its own — so if we can't actually load the profile behind
+      // that session, this component is the only place left that can get
+      // the user unstuck. That covers two different failures identically:
+      // an orphaned account (valid session, no matching `users` row) and a
+      // session whose access token died between the redirect and this
+      // fetch — e.g. a concurrent refresh-token rotation racing the
+      // middleware's own refresh for the same navigation, which is exactly
+      // what "still shows as logged in, but the dashboard never loads"
+      // looks like. Previously only the orphaned-profile case recovered;
+      // every other error left dbUser permanently null with isLoading
+      // already false — the dashboard layout's loading gate then had
+      // nothing to wait for and nothing to render, forever. Sign out and
+      // send them to a clean login instead of leaving them stuck.
+      toast.error(
+        isOrphanedProfileError(error)
+          ? "We couldn't find your account. Please sign in again."
+          : "Your session couldn't be restored. Please sign in again.",
+      )
+      const supabase = getSupabaseBrowserClient()
+      await supabase.auth.signOut()
     } finally {
       setIsLoading(false)
     }
@@ -161,7 +248,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       
       return {}
-    } catch (error) {
+    } catch {
       return { error: "An unexpected error occurred" }
     }
   }, [isDemo])
@@ -225,7 +312,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       return {}
-    } catch (error) {
+    } catch {
       return { error: "An unexpected error occurred" }
     }
   }, [isDemo])
@@ -237,8 +324,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return
     }
     
+    userInitiatedSignOut.current = true
     const supabase = getSupabaseBrowserClient()
-    await supabase.auth.signOut()
+    try {
+      // Global sign-out revokes the refresh token server-side. If that call
+      // fails (offline, timeout) fall back to clearing this browser's session
+      // so "Log out" can never appear to do nothing.
+      await withTimeout(supabase.auth.signOut(), AUTH_RESOLUTION_TIMEOUT_MS, "Sign-out timed out")
+    } catch {
+      try {
+        await supabase.auth.signOut({ scope: "local" })
+      } catch {
+        // Nothing else to try — the hard navigation below still drops the app state.
+      }
+    }
+    // A full navigation (not router.push) guarantees a clean slate: no cached
+    // SWR data, no stuck overlays, and the middleware re-reads the cookies.
+    window.location.assign("/login?reason=signed_out")
   }, [isDemo, router])
   
   // Demo mode helpers

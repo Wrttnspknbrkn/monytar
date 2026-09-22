@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
+import { getRoleLabel } from "@/lib/utils"
+import type { UserRole } from "@/lib/types"
 
 interface InvitationPreview {
   email: string
@@ -29,6 +31,7 @@ function AcceptInvitationContent() {
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
   const [awaitingConfirmation, setAwaitingConfirmation] = useState<{ email: string; confirmationUrl?: string; domainNotVerified?: boolean } | null>(null)
 
   useEffect(() => {
@@ -52,12 +55,14 @@ function AcceptInvitationContent() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (submitting) return
+    setFormError(null)
     if (fullName.trim().length < 2) {
-      toast.error("Please enter your full name")
+      setFormError("Enter your full name (at least 2 characters).")
       return
     }
     if (password.length < 8) {
-      toast.error("Password must be at least 8 characters")
+      setFormError("Choose a password with at least 8 characters.")
       return
     }
 
@@ -71,7 +76,7 @@ function AcceptInvitationContent() {
       const data = await res.json().catch(() => ({}))
 
       if (!res.ok) {
-        toast.error(data.error || "Couldn't accept this invitation")
+        setFormError(data.error || "Couldn't accept this invitation. Ask your admin to send a new one.")
         return
       }
 
@@ -83,7 +88,7 @@ function AcceptInvitationContent() {
 
       setAwaitingConfirmation({ email: data.email, confirmationUrl: data.confirmationUrl, domainNotVerified: data.emailDomainNotVerified })
     } catch {
-      toast.error("Something went wrong. Please try again.")
+      setFormError("We couldn't reach the server. Check your connection and try again.")
     } finally {
       setSubmitting(false)
     }
@@ -147,16 +152,23 @@ function AcceptInvitationContent() {
         </div>
         <h1 className="font-display text-2xl font-bold tracking-tight mb-1.5">Join {preview.organizationName}</h1>
         <p className="text-sm text-muted-foreground">
-          You&apos;ve been invited as <strong className="text-foreground">{preview.role}</strong>. Set your name and password to finish.
+          You&apos;ve been invited as <strong className="text-foreground">{getRoleLabel(preview.role as UserRole)}</strong>. Set your name and password to finish.
         </p>
         <p className="text-xs text-muted-foreground mt-2">{preview.email}</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+      <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
+        {formError && (
+          <div role="alert" className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700">
+            <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" /> <span>{formError}</span>
+          </div>
+        )}
         <div className="flex flex-col gap-2">
           <Label htmlFor="fullName" className="text-[13px] font-medium">Full name</Label>
           <Input
             id="fullName"
+            autoComplete="name"
+            autoFocus
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             placeholder="Jane Doe"
@@ -171,6 +183,7 @@ function AcceptInvitationContent() {
             <Input
               id="password"
               type={showPassword ? "text" : "password"}
+              autoComplete="new-password"
               placeholder="Min 8 characters"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -183,6 +196,8 @@ function AcceptInvitationContent() {
               size="icon"
               className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
               onClick={() => setShowPassword(!showPassword)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-pressed={showPassword}
             >
               {showPassword ? <EyeOff className="w-4 h-4 text-muted-foreground" /> : <Eye className="w-4 h-4 text-muted-foreground" />}
             </Button>
@@ -200,7 +215,7 @@ function AcceptInvitationContent() {
 
 export default function AcceptInvitationPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-6">
+    <div className="min-h-dvh flex items-center justify-center bg-background p-4 sm:p-6">
       <div className="w-full max-w-sm">
         <div className="flex items-center justify-center mb-8">
           <Link href="/" className="font-display font-bold text-2xl text-foreground">

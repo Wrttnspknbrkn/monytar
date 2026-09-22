@@ -139,7 +139,7 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-dvh flex">
       {/* Left Panel - Abstract Financial Visuals */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 via-primary to-cyan-600 relative overflow-hidden">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:3rem_3rem]" />
@@ -234,16 +234,16 @@ export default function SignupPage() {
       </div>
 
       {/* Right Panel - Form */}
-      <div className="flex-1 flex items-center justify-center p-6 lg:p-12">
+      <div className="flex-1 min-w-0 flex items-center justify-center p-6 lg:p-12">
         <div className="w-full max-w-sm">
           <div className="lg:hidden flex items-center justify-center mb-10">
             <Logo size="lg" />
           </div>
 
           {/* Progress Steps */}
-          <div className="flex items-center justify-center gap-2 mb-8">
+          <div className="flex items-center justify-center gap-1.5 sm:gap-2 mb-8">
             {steps.map((s, i) => (
-              <div key={s.title} className="flex items-center gap-2">
+              <div key={s.title} className="flex items-center gap-1.5 sm:gap-2">
                 <div
                   className={cn(
                     "flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold transition-all duration-300",
@@ -257,7 +257,7 @@ export default function SignupPage() {
                   {i < step ? <Check className="w-4 h-4" /> : i + 1}
                 </div>
                 {i < steps.length - 1 && (
-                  <div className={cn("w-10 h-0.5 rounded-full transition-colors", i < step ? "bg-primary" : "bg-border")} />
+                  <div className={cn("w-6 sm:w-10 h-0.5 rounded-full transition-colors", i < step ? "bg-primary" : "bg-border")} />
                 )}
               </div>
             ))}
@@ -375,7 +375,7 @@ export default function SignupPage() {
               })}
               {selectedTier !== "free" && (
                 <p className="text-xs text-muted-foreground text-center">
-                  14-day free trial, no card required. You'll complete payment setup next.
+                  14-day free trial, no card required. You&apos;ll complete payment setup next.
                 </p>
               )}
             </div>

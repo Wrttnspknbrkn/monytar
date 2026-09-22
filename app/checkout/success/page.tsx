@@ -5,12 +5,13 @@ import { useSearchParams } from "next/navigation"
 import { getCheckoutSessionStatus } from "@/app/actions/stripe"
 import { Logo } from "@/components/ui/logo"
 import { Button } from "@/components/ui/button"
-import { CheckCircle2, ArrowRight, Loader2 } from "lucide-react"
+import { CheckCircle2, ArrowRight, Loader2, AlertCircle } from "lucide-react"
 import Link from "next/link"
 
 function SuccessContent() {
   const searchParams = useSearchParams()
   const sessionId = searchParams.get("session_id")
+  // "complete" = paid/trialing; "open" = the customer never finished paying; null = couldn't confirm.
   const [status, setStatus] = useState<string | null>(null)
   const [email, setEmail] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -22,10 +23,14 @@ function SuccessContent() {
     }
 
     async function checkStatus() {
-      const result = await getCheckoutSessionStatus(sessionId!)
-      if (!result.error) {
-        setStatus(result.status || null)
-        setEmail(result.customerEmail || null)
+      try {
+        const result = await getCheckoutSessionStatus(sessionId!)
+        if (!result.error) {
+          setStatus(result.status || null)
+          setEmail(result.customerEmail || null)
+        }
+      } catch {
+        // fall through to the "couldn't confirm" state
       }
       setLoading(false)
     }
@@ -43,8 +48,42 @@ function SuccessContent() {
     )
   }
 
+  if (status !== "complete") {
+    const notPaid = status === "open"
+    return (
+      <div className="min-h-dvh flex items-center justify-center bg-background p-6">
+        <div className="max-w-md w-full text-center">
+          <Logo size="lg" />
+          <div className="mt-8 p-8 rounded-2xl border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30" role="status">
+            <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-amber-100 dark:bg-amber-900/50 mx-auto mb-5">
+              <AlertCircle className="w-8 h-8 text-amber-600 dark:text-amber-400" aria-hidden />
+            </div>
+            <h1 className="font-heading text-2xl font-extrabold mb-2">{notPaid ? "Payment not completed" : "We couldn't confirm your payment"}</h1>
+            <p className="text-muted-foreground text-sm mb-6">
+              {notPaid
+                ? "Your checkout wasn't finished, so you haven't been charged and your plan hasn't changed."
+                : "We couldn't verify this checkout. If you were charged, your plan will update shortly — check Settings → Billing, or contact support."}
+            </p>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Link href="/settings" className="flex-1">
+                <Button variant="outline" className="w-full font-semibold">Go to Billing</Button>
+              </Link>
+              <Link href="/dashboard" className="flex-1">
+                <Button className="w-full font-semibold">Go to Dashboard</Button>
+              </Link>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground mt-6">
+            Need help? Contact us at{" "}
+            <a href="mailto:support@monytar.com" className="text-primary hover:underline">support@monytar.com</a>
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-6">
+    <div className="min-h-dvh flex items-center justify-center bg-background p-6">
       <div className="max-w-md w-full text-center">
         <Logo size="lg" />
 

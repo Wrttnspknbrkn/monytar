@@ -7,8 +7,6 @@ import {
   DollarSign,
   FileText,
   Download,
-  ArrowUpRight,
-  PieChart as PieChartIcon,
   Calendar,
 } from "lucide-react"
 import { useData, useAuth } from "@/lib/providers"
@@ -30,6 +28,7 @@ import { StatCard } from "@/components/dashboard/stat-card"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { AccessDenied } from "@/components/layout/access-denied"
 import type { ExpenseRequest } from "@/lib/types"
 
 // Reports used to have no date-range control at all — every total, chart,
@@ -56,7 +55,6 @@ import {
   PieChart,
   Pie,
   Cell,
-  LineChart,
   Line,
   XAxis,
   YAxis,
@@ -173,13 +171,7 @@ export default function ReportsPage() {
 
   if (isRestricted) {
     return (
-      <div className="flex flex-col items-center justify-center py-32 text-center">
-        <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-secondary mb-4">
-          <BarChart3 className="w-7 h-7 text-muted-foreground/40" />
-        </div>
-        <h3 className="font-heading font-bold mb-1">Reports Access Restricted</h3>
-        <p className="text-sm text-muted-foreground max-w-xs">Finance and admin roles can access detailed financial reports.</p>
-      </div>
+      <AccessDenied title="Reports aren't available for your role" needs="Detailed financial reports need the Finance or Admin role." />
     )
   }
 

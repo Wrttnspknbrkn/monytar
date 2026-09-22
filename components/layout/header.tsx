@@ -1,8 +1,8 @@
 "use client"
 
-import { Bell, Search, ChevronDown, LogOut, User, Settings, Shield } from "lucide-react"
+import { Bell, Search, ChevronDown, LogOut, Settings, Shield, ArrowRight } from "lucide-react"
 import { useData, useAuth } from "@/lib/providers"
-import { cn, getInitials, getRoleLabel, formatRelativeTime } from "@/lib/utils"
+import { cn, getInitials, formatRelativeTime } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
@@ -20,50 +20,49 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { ScrollArea } from "@/components/ui/scroll-area"
 import Link from "next/link"
 import type { UserRole } from "@/lib/types"
-import { useRouter } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { useState } from "react"
 import { CommandSearch } from "./command-search"
-
-const roleColors: Record<UserRole, string> = {
-  employee: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800",
-  manager: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800",
-  finance: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800",
-  admin: "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800",
-}
-
-const roleAvatarColors: Record<UserRole, string> = {
-  employee: "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300",
-  manager: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300",
-  finance: "bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300",
-  admin: "bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300",
-}
+import { pageTitleFor } from "@/lib/navigation"
+import { SignedInAs, roleAvatarColors, roleBadgeColors, useAccount } from "./account-info"
 
 export function Header() {
   const router = useRouter()
-  const { dbUser, switchDemoRole, signOut, isDemo } = useAuth()
-  const {
-    currentUser,
-    notifications,
-    getUnreadNotificationCount,
-    markNotificationRead,
-  } = useData()
-  
-  const user = dbUser || currentUser
+  const pathname = usePathname()
+  const { switchDemoRole, isDemo } = useAuth()
+  const { notifications, getUnreadNotificationCount, markNotificationRead } = useData()
+  const { user, roleLabel, departmentName, signOut } = useAccount()
+
   const unreadCount = getUnreadNotificationCount()
   const userNotifs = user ? notifications.filter((n) => n.user_id === user.id).slice(0, 10) : []
   const [searchOpen, setSearchOpen] = useState(false)
-  
+  const [notifOpen, setNotifOpen] = useState(false)
+
   const markAllRead = async () => {
-    for (const notif of userNotifs.filter(n => !n.is_read)) {
+    for (const notif of userNotifs.filter((n) => !n.is_read)) {
       await markNotificationRead(notif.id)
     }
   }
-  
-  if (!user) return null
+
+  // Even if the profile hasn't resolved, the header must still offer a way
+  // out — otherwise a half-loaded session is a dead end with no Log out.
+  if (!user) {
+    return (
+      <header className="sticky top-0 z-30 flex items-center h-14 px-3 sm:px-4 gap-3 bg-card/80 glass border-b border-border/60">
+        <div className="flex-1" />
+        <Button variant="outline" size="sm" className="font-semibold gap-2" onClick={() => void signOut()}>
+          <LogOut className="w-4 h-4" /> Log out
+        </Button>
+      </header>
+    )
+  }
 
   return (
     <>
-      <header className="sticky top-0 z-30 flex items-center h-14 px-4 gap-4 bg-card/80 glass border-b border-border/60">
+      <header className="sticky top-0 z-30 flex items-center h-14 px-3 sm:px-4 gap-2 sm:gap-4 bg-card/80 glass border-b border-border/60">
+        {/* Current page — mobile has no sidebar, so this is the "where am I" cue */}
+        <h2 className="md:hidden font-heading font-bold text-base truncate min-w-0 flex-1">{pageTitleFor(pathname)}</h2>
+
         {/* Search */}
         <Button
           variant="outline"
@@ -76,54 +75,50 @@ export function Header() {
             <span className="text-[10px]">Ctrl</span>K
           </kbd>
         </Button>
-        <Button variant="ghost" size="icon" className="md:hidden h-9 w-9" onClick={() => setSearchOpen(true)}>
+        <Button variant="ghost" size="icon" className="md:hidden h-10 w-10 shrink-0" onClick={() => setSearchOpen(true)} aria-label="Search">
           <Search className="w-4 h-4" />
         </Button>
 
-        <div className="flex-1" />
+        <div className="hidden md:block flex-1" />
 
-        {/* Role Badge */}
+        {/* Role badge — always visible so it's clear which role you're using */}
         <span
+          title={`You are signed in as ${roleLabel}`}
           className={cn(
-            "hidden sm:inline-flex items-center px-2.5 py-1 rounded-md border text-[11px] font-semibold uppercase tracking-wider",
-            roleColors[user.role],
+            "inline-flex shrink-0 items-center px-2 sm:px-2.5 py-1 rounded-md border text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider",
+            roleBadgeColors[user.role],
           )}
         >
-          {getRoleLabel(user.role)}
+          {roleLabel}
         </span>
 
         {/* Notifications */}
-        <Popover>
+        <Popover open={notifOpen} onOpenChange={setNotifOpen}>
           <PopoverTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative h-9 w-9 hover:bg-secondary/80">
+            <Button variant="ghost" size="icon" className="relative h-10 w-10 sm:h-9 sm:w-9 shrink-0 hover:bg-secondary/80">
               <Bell className="w-4 h-4" />
               {unreadCount > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-primary text-primary-foreground text-[10px] font-bold shadow-sm shadow-primary/25">
                   {unreadCount}
                 </span>
               )}
-              <span className="sr-only">Notifications</span>
+              <span className="sr-only">Notifications{unreadCount > 0 ? ` (${unreadCount} unread)` : ""}</span>
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-80 p-0 rounded-xl shadow-xl shadow-foreground/5" align="end">
+          <PopoverContent className="w-[min(20rem,calc(100vw-1.5rem))] p-0 rounded-xl shadow-xl shadow-foreground/5" align="end" collisionPadding={12}>
             <div className="flex items-center justify-between p-4 border-b border-border">
               <h4 className="font-heading font-semibold text-sm">Notifications</h4>
               {unreadCount > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-xs h-auto py-1 text-primary hover:text-primary"
-                  onClick={markAllRead}
-                >
+                <Button variant="ghost" size="sm" className="text-xs h-auto py-1 text-primary hover:text-primary" onClick={markAllRead}>
                   Mark all read
                 </Button>
               )}
             </div>
-            <ScrollArea className="h-80">
+            <ScrollArea className="h-72 max-h-[50dvh]">
               {userNotifs.length === 0 ? (
                 <div className="p-8 text-center text-sm text-muted-foreground">
                   <Bell className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
-                  No notifications yet
+                  You&apos;re all caught up — no notifications yet.
                 </div>
               ) : (
                 <div className="flex flex-col">
@@ -137,15 +132,14 @@ export function Header() {
                       )}
                       onClick={() => {
                         markNotificationRead(notif.id)
+                        setNotifOpen(false)
                         if (notif.related_entity_type === "expense_request" && notif.related_entity_id) {
                           router.push(`/requests/${notif.related_entity_id}`)
                         }
                       }}
                     >
                       <div className="flex items-start gap-2.5">
-                        {!notif.is_read && (
-                          <span className="w-2 h-2 rounded-full bg-primary mt-1.5 shrink-0 shadow-sm shadow-primary/30" />
-                        )}
+                        {!notif.is_read && <span className="w-2 h-2 rounded-full bg-primary mt-1.5 shrink-0 shadow-sm shadow-primary/30" />}
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium truncate">{notif.title}</p>
                           <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{notif.message}</p>
@@ -157,72 +151,71 @@ export function Header() {
                 </div>
               )}
             </ScrollArea>
+            <Link
+              href="/notifications"
+              onClick={() => setNotifOpen(false)}
+              className="flex items-center justify-center gap-1.5 p-3 border-t border-border text-xs font-semibold text-primary hover:bg-secondary/50 rounded-b-xl"
+            >
+              View all notifications <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
           </PopoverContent>
         </Popover>
 
-        {/* User Menu */}
+        {/* Account menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="flex items-center gap-2.5 px-2 h-9 hover:bg-secondary/80">
+            <Button variant="ghost" className="flex items-center gap-2.5 px-1.5 sm:px-2 h-10 sm:h-9 shrink-0 hover:bg-secondary/80" aria-label={`Account menu for ${user.full_name}, ${roleLabel}`}>
               <Avatar className="w-7 h-7">
-                <AvatarFallback
-                  className={cn("text-[11px] font-bold", roleAvatarColors[user.role])}
-                >
-                  {getInitials(user.full_name)}
-                </AvatarFallback>
+                <AvatarFallback className={cn("text-[11px] font-bold", roleAvatarColors[user.role])}>{getInitials(user.full_name)}</AvatarFallback>
               </Avatar>
-              <span className="hidden md:block text-[13px] font-medium">{user.full_name}</span>
-              <ChevronDown className="w-3.5 h-3.5 text-muted-foreground hidden md:block" />
+              <span className="hidden lg:flex flex-col items-start leading-tight text-left max-w-40">
+                <span className="text-[13px] font-medium truncate max-w-full">{user.full_name}</span>
+                <span className="text-[10px] text-muted-foreground truncate max-w-full">
+                  {roleLabel}
+                  {departmentName ? ` · ${departmentName}` : ""}
+                </span>
+              </span>
+              <ChevronDown className="w-3.5 h-3.5 text-muted-foreground hidden sm:block" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56 rounded-xl shadow-xl shadow-foreground/5">
-            <DropdownMenuLabel>
-              <div className="flex flex-col gap-0.5">
-                <span className="font-heading font-semibold">{user.full_name}</span>
-                <span className="text-xs text-muted-foreground font-normal">{user.email}</span>
-              </div>
+          <DropdownMenuContent align="end" collisionPadding={12} className="w-[min(18rem,calc(100vw-1.5rem))] rounded-xl shadow-xl shadow-foreground/5">
+            <DropdownMenuLabel className="font-normal">
+              <SignedInAs />
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
+            <DropdownMenuItem asChild className="min-h-10">
               <Link href="/settings">
-                <User className="w-4 h-4 mr-2" /> Profile
+                <Settings className="w-4 h-4 mr-2" /> Account &amp; settings
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href="/settings">
-                <Settings className="w-4 h-4 mr-2" /> Settings
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
             {isDemo && (
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger>
-                  <Shield className="w-4 h-4 mr-2" /> Switch Role (Demo)
-                </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent>
-                  {(["employee", "manager", "finance", "admin"] as UserRole[]).map((role) => (
-                    <DropdownMenuItem
-                      key={role}
-                      onClick={() => switchDemoRole(role)}
-                      className={cn(user.role === role && "bg-accent")}
-                    >
-                      <span
-                        className={cn(
-                          "w-2 h-2 rounded-full mr-2",
-                          role === "employee" && "bg-blue-500",
-                          role === "manager" && "bg-emerald-500",
-                          role === "finance" && "bg-amber-500",
-                          role === "admin" && "bg-rose-500",
-                        )}
-                      />
-                      {getRoleLabel(role)}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger className="min-h-10">
+                    <Shield className="w-4 h-4 mr-2" /> Switch Role (Demo)
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    {(["employee", "manager", "finance", "admin"] as UserRole[]).map((role) => (
+                      <DropdownMenuItem key={role} onClick={() => switchDemoRole(role)} className={cn("min-h-10 capitalize", user.role === role && "bg-accent")}>
+                        <span
+                          className={cn(
+                            "w-2 h-2 rounded-full mr-2",
+                            role === "employee" && "bg-blue-500",
+                            role === "manager" && "bg-emerald-500",
+                            role === "finance" && "bg-amber-500",
+                            role === "admin" && "bg-rose-500",
+                          )}
+                        />
+                        {role}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+              </>
             )}
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => signOut()}>
+            <DropdownMenuItem onSelect={() => void signOut()} className="min-h-10 text-destructive focus:text-destructive">
               <LogOut className="w-4 h-4 mr-2" /> Log out
             </DropdownMenuItem>
           </DropdownMenuContent>

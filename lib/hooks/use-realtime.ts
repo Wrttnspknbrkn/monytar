@@ -32,14 +32,14 @@ export function useRealtimeSubscription(
     const channel = supabase
       .channel(channelName)
       .on(
-        "postgres_changes" as any,
+        "postgres_changes",
         {
           event: config.event || "*",
           schema: config.schema || "public",
           table: config.table,
           filter: config.filter,
         },
-        (payload: any) => {
+        () => {
           // Revalidate all SWR caches that match the prefix
           mutate(
             (key: string) => typeof key === "string" && key.startsWith(cacheKeyPrefix),
