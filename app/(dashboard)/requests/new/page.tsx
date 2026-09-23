@@ -229,19 +229,16 @@ function NewRequestContent() {
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="flex flex-col gap-2">
               <Label htmlFor="amount" className="text-[13px] font-medium">Amount ({currencyCode}) *</Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium">{getCurrencySymbol(currencyCode)}</span>
-                <Input
-                  id="amount"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="0.00"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  className="pl-7 h-10 font-mono text-base font-semibold text-foreground tabular-nums"
-                />
-              </div>
+              <Input
+                id="amount"
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="0.00"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className="h-10 font-mono text-base font-semibold text-foreground tabular-nums"
+              />
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="category" className="text-[13px] font-medium">Category *</Label>
