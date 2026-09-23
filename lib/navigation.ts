@@ -8,6 +8,7 @@ import {
   BarChart3,
   Settings,
   Bell,
+  HelpCircle,
   type LucideIcon,
 } from "lucide-react"
 import type { UserRole } from "@/lib/types"
@@ -39,6 +40,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/reports", label: "Reports", icon: BarChart3, roles: ["finance", "admin"] },
   { href: "/notifications", label: "Notifications", icon: Bell, roles: ALL_ROLES },
   { href: "/settings", label: "Settings", icon: Settings, roles: ALL_ROLES },
+  { href: "/help", label: "Help", icon: HelpCircle, roles: ALL_ROLES },
 ]
 
 /** Pages that live in the app but aren't top-level nav entries. */
