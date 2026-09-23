@@ -47,8 +47,15 @@ function errorText(err: unknown, fallback: string): string {
 
 export default function DepartmentsPage() {
   const { dbUser } = useAuth()
-  const { currentUser, departments, users, getDepartmentSpend, addDepartment, updateDepartment, updateUser, organization, orgSettings } = useData()
-  const currency = organization?.currency || orgSettings?.default_currency || "USD"
+  const { currentUser, departments, users, getDepartmentSpend, addDepartment, updateDepartment, updateUser, organization, orgSettings, currencyCode } = useData()
+  // Single source of truth for the org's currency (see DataProvider's
+  // currencyCode): `organizations.currency` is a legacy column the Settings
+  // currency picker never writes to (it only updates
+  // organization_settings.default_currency) and permanently defaults to
+  // 'USD' in the database, so checking it before orgSettings here — as this
+  // page previously did — meant changing the org's currency never took
+  // effect on this page: department budgets kept showing USD.
+  const currency = currencyCode
   const user = dbUser || currentUser
 
   // Matches the "Admins can manage departments" RLS policy (admin + finance).
