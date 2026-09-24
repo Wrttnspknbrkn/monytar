@@ -201,6 +201,29 @@ export const TASKS: GuideTask[] = [
   },
 ]
 
+/**
+ * Whose guides a person may read. You see your own role's guide and the guides
+ * of the roles below you, never the ones above (an Employee has no need for the
+ * Admin walkthroughs). Finance sits between Manager and Admin: it can do
+ * everything a Manager can, but not Admin-only things like inviting people.
+ */
+export const VISIBLE_ROLES: Record<UserRole, UserRole[]> = {
+  employee: ["employee"],
+  manager: ["employee", "manager"],
+  finance: ["employee", "manager", "finance"],
+  admin: ["employee", "manager", "finance", "admin"],
+}
+
+/** Tasks shown when reading the guide "as" a role. */
+export function tasksForRole(role: UserRole): GuideTask[] {
+  return TASKS.filter((t) => t.roles.includes(role))
+}
+
+/** True if a viewer may open this task at all — used to guard ?task= deep links and "Show me how" buttons. */
+export function canViewTask(viewer: UserRole, task: GuideTask): boolean {
+  return task.roles.some((r) => VISIBLE_ROLES[viewer].includes(r))
+}
+
 export const ROLE_TAGLINE: Record<UserRole, string> = {
   employee: "Submit and track your own expenses",
   manager: "Also approve your department's expenses",
