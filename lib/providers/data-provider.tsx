@@ -347,7 +347,10 @@ export function DataProvider({ children }: DataProviderProps) {
       employee: users.find(u => u.id === request.employee_id),
       vendor: request.vendor_id ? vendors.find(v => v.id === request.vendor_id) : undefined,
       department: request.department_id ? departments.find(d => d.id === request.department_id) : undefined,
-      approver: request.approved_by ? users.find(u => u.id === request.approved_by) : undefined,
+      // The reviewer who acted on it: the approver, or — for a rejected request,
+      // which has no approved_by — whoever rejected it. Without the rejected_by
+      // fallback the timeline read "Rejected by Unknown" for every rejection.
+      approver: (request.approved_by || request.rejected_by) ? users.find(u => u.id === (request.approved_by || request.rejected_by)) : undefined,
     }
   }, [expenseRequests, users, vendors, departments])
   
