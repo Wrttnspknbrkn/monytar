@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { pageMetadata } from "@/lib/seo"
 import Link from "next/link"
 import {
   FileText,
@@ -17,11 +18,12 @@ import { LandingFooter } from "@/components/landing/landing-footer"
 import { Reveal } from "@/components/landing/reveal"
 import { cn } from "@/lib/utils"
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Features",
   description:
     "Explore Monytar features: expense management, approval workflows, vendor management, budget control, reporting, mobile experience, notifications, and enterprise security.",
-}
+  path: "/features",
+})
 
 const features = [
   {

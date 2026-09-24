@@ -43,6 +43,11 @@ const nextConfig = {
           },
         ],
       },
+      {
+        // Belt and braces alongside robots.txt: the API and signed-in app are never search results.
+        source: "/:path(api|dashboard|requests|approvals|vendors|departments|users|reports|settings|notifications|help|demo-leads)/:rest*",
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+      },
     ]
   },
 }

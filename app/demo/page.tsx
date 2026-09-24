@@ -316,6 +316,7 @@ export default function DemoPage() {
     <Suspense
       fallback={
         <main className="min-h-screen bg-slate-950 flex items-center justify-center">
+          <h1 className="sr-only">Try the Monytar demo</h1>
           <Loader2 className="w-6 h-6 text-primary animate-spin" />
         </main>
       }

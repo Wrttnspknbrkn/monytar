@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { pageMetadata } from "@/lib/seo"
 import Link from "next/link"
 import Image from "next/image"
 import { ArrowRight, Clock } from "lucide-react"
@@ -15,17 +16,12 @@ import {
   formatPostDate,
 } from "@/lib/blog/posts"
 
-export const metadata: Metadata = {
-  title: "Blog | Monytar",
+export const metadata: Metadata = pageMetadata({
+  title: "Blog",
   description:
     "Practical writing on spend management, finance operations, and building software finance teams trust. From the team behind Monytar.",
-  openGraph: {
-    title: "Monytar Blog",
-    description:
-      "Practical writing on spend management, finance operations, and building software finance teams trust.",
-    type: "website",
-  },
-}
+  path: "/blog",
+})
 
 export default function BlogPage() {
   const featured = getFeaturedPost()

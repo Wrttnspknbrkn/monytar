@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { pageMetadata } from "@/lib/seo"
 import Link from "next/link"
 import {
   ArrowRight,
@@ -18,16 +19,12 @@ import { BlogCard } from "@/components/blog/blog-card"
 import { Reveal } from "@/components/landing/reveal"
 import { getRecentPosts } from "@/lib/blog/posts"
 
-export const metadata: Metadata = {
-  title: "Resources | Monytar",
+export const metadata: Metadata = pageMetadata({
+  title: "Resources",
   description:
     "Guides, playbooks, templates, and product updates to help finance teams run spend management well. Everything in one place.",
-  openGraph: {
-    title: "Monytar Resources",
-    description: "Guides, playbooks, templates, and product updates for finance teams.",
-    type: "website",
-  },
-}
+  path: "/resources",
+})
 
 const primaryResources = [
   {

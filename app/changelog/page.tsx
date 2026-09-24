@@ -1,14 +1,16 @@
 import type { Metadata } from "next"
+import { pageMetadata } from "@/lib/seo"
 import Link from "next/link"
 import { ArrowRight, Sparkles, Bug, Zap, Shield } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { LandingHeader } from "@/components/landing/landing-header"
 import { LandingFooter } from "@/components/landing/landing-footer"
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: "Changelog",
   description: "Stay up to date with the latest improvements, new features, and bug fixes in Monytar.",
-}
+  path: "/changelog",
+})
 
 const entries = [
   {

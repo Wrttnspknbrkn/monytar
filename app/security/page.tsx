@@ -1,4 +1,11 @@
 import { LegalPage } from "@/components/legal-page"
+import { pageMetadata } from "@/lib/seo"
+
+export const metadata = pageMetadata({
+  title: "Security",
+  description: "How Monytar protects your organization's data, and how to report a security concern.",
+  path: "/security",
+})
 
 export default function SecurityPage() {
   return (
