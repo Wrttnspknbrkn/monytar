@@ -6,6 +6,8 @@ import { loadApprovalSettings } from "@/lib/approvals/settings"
 import { shouldAutoApprove, isReceiptRequired } from "@/lib/approvals/engine"
 import { serverError } from "@/lib/api/errors"
 import { clampLimit, decodeCursor, buildPage } from "@/lib/api/pagination"
+import { insertWithUniqueRequestNumber } from "@/lib/requests/request-number"
+import { randomInt } from "node:crypto"
 
 export async function GET(request: Request) {
   try {
@@ -94,20 +96,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid category" }, { status: 400 })
     }
 
-    // Race-safe, per-org request number via the atomic RPC (migration 008).
-    // Falls back to a count-based number if the function isn't present yet.
-    let requestNumber: string
-    const { data: rpcNumber, error: rpcError } = await supabase.rpc("next_request_number", {
-      org: dbUser.organization_id,
-    })
-    if (!rpcError && rpcNumber) {
-      requestNumber = rpcNumber as string
-    } else {
-      const { count } = await supabase
-        .from("expense_requests")
-        .select("id", { count: "exact" })
-        .eq("organization_id", dbUser.organization_id)
-      requestNumber = `REQ-${new Date().getFullYear()}-${String((count || 0) + 1).padStart(5, "0")}`
+    // Race-safe, per-org request number via the atomic RPC (migration 008/014).
+    // It is allocated inside the insert loop below (not here) so that a number
+    // that turns out to be taken can simply be replaced by the next one.
+    const allocateRequestNumber = async (): Promise<string> => {
+      const { data: rpcNumber, error: rpcError } = await supabase.rpc("next_request_number", {
+        org: dbUser.organization_id,
+      })
+      if (!rpcError && rpcNumber) return rpcNumber as string
+      // The RPC should always exist (migration 014). If it doesn't, never fall
+      // back to counting rows: RLS only lets a user see their own requests, so
+      // that count collides with other people's numbers. A random number is
+      // safe because the insert loop retries on any collision.
+      return `REQ-${new Date().getFullYear()}-${String(randomInt(0, 100000)).padStart(5, "0")}`
     }
 
     // as_draft is a client intent signal, not a column — the server alone
@@ -142,20 +143,28 @@ export async function POST(request: Request) {
       }
     }
 
-    const { data, error } = await supabase.from("expense_requests").insert({
-      ...requestFields,
-      organization_id: dbUser.organization_id,
-      employee_id: user.id,
-      department_id: parsed.data.department_id || dbUser.department_id,
-      request_number: requestNumber,
-      status,
-      approved_at: approvedAt,
-      manager_comment: managerComment,
-      submitted_at: status === "draft" ? null : now,
-      payment_status: "unpaid",
-    }).select().single()
+    const { data, error, attempts } = await insertWithUniqueRequestNumber(allocateRequestNumber, (requestNumber) =>
+      supabase.from("expense_requests").insert({
+        ...requestFields,
+        organization_id: dbUser.organization_id,
+        employee_id: user.id,
+        department_id: parsed.data.department_id || dbUser.department_id,
+        request_number: requestNumber,
+        status,
+        approved_at: approvedAt,
+        manager_comment: managerComment,
+        submitted_at: status === "draft" ? null : now,
+        payment_status: "unpaid",
+      }).select().single(),
+    )
 
-    if (error) return serverError(error, { route: "requests.POST" })
+    if (error || !data) {
+      return serverError(error ?? new Error("Insert returned no row"), {
+        route: "requests.POST",
+        organizationId: dbUser.organization_id,
+        requestNumberAttempts: attempts,
+      })
+    }
 
     return NextResponse.json({
       data,
