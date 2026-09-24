@@ -11,6 +11,7 @@ import {
   LifeBuoy,
   Code2,
   Handshake,
+  Rocket,
 } from "lucide-react"
 import { LandingHeader } from "@/components/landing/landing-header"
 import { LandingFooter } from "@/components/landing/landing-footer"
@@ -27,6 +28,13 @@ export const metadata: Metadata = pageMetadata({
 })
 
 const primaryResources = [
+  {
+    icon: Rocket,
+    title: "Monytar Handbook",
+    description: "A short, interactive tour: how to get started, submit expenses, approve them and get paid back.",
+    href: "/handbook",
+    available: true,
+  },
   {
     icon: BookOpen,
     title: "Blog",
@@ -113,7 +121,7 @@ export default function ResourcesPage() {
 
       {/* Primary resources */}
       <section className="max-w-7xl mx-auto px-6 py-16">
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {primaryResources.map((resource, i) => {
             const Icon = resource.icon
             return (

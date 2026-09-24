@@ -3,6 +3,7 @@
 import Image from "next/image"
 import { ExternalLink } from "lucide-react"
 import markerData from "./markers.json"
+import startMarkerData from "@/components/handbook/start-markers.json"
 
 interface Marker {
   n: number
@@ -12,7 +13,9 @@ interface Marker {
   h: number
 }
 type Manifest = Record<string, { width: number; height: number; markers: Marker[] }>
-const manifest = markerData as Manifest
+// Help-page screenshots, plus the handbook's "Getting started" ones (own file, so re-running the
+// help capture script never wipes them).
+const manifest = { ...(markerData as Manifest), ...(startMarkerData as Manifest) }
 
 /**
  * A real screenshot of the app. When `active` is set, everything except that

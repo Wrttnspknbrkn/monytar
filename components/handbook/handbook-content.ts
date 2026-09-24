@@ -27,6 +27,63 @@ export const SHOWCASE: { image: string; caption: string }[] = [
   { image: "approvals", caption: "Approvers see what's waiting — and decide in a click" },
 ]
 
+export interface StartStep {
+  /** Screenshot in /public/images/help and the numbered marker on it to spotlight. */
+  image: string
+  marker: number
+  title: string
+  text: string
+}
+
+export interface StartPath {
+  id: "company" | "invited"
+  label: string
+  who: string
+  line: string
+  steps: StartStep[]
+  /** Shown after the last step. */
+  done: string
+}
+
+/** How people get into Monytar. Mirrors the real sign-up and invitation screens. */
+export const START_PATHS: StartPath[] = [
+  {
+    id: "company",
+    label: "Set up my company",
+    who: "For the person opening the account",
+    line: "Four short steps, then invite your team. You become the Admin.",
+    steps: [
+      { image: "start-signup-account", marker: 1, title: "Your details", text: "Enter your name, work email and a password of at least 8 characters." },
+      { image: "start-signup-org", marker: 1, title: "Your organization", text: "Type your company's name. Team size is optional." },
+      { image: "start-signup-plan", marker: 1, title: "Pick a plan", text: "Free is enough to start and covers up to 3 people. Paid plans add more people and continue to a payment step." },
+      { image: "start-signup-email", marker: 1, title: "Confirm your email", text: "We send you a confirmation link. Click it, then sign in." },
+      { image: "invite-user", marker: 1, title: "Invite your team", text: "Open Users, click Invite, then enter each person's work email, role and department." },
+    ],
+    done: "That's it. Your team gets an email and can join in a minute.",
+  },
+  {
+    id: "invited",
+    label: "I was invited",
+    who: "For everyone joining a company",
+    line: "Two minutes, from the email to your dashboard.",
+    steps: [
+      { image: "invite-user", marker: 4, title: "Your admin invites you", text: "They enter your work email and choose your role, then send the invitation. You get an email with a link." },
+      { image: "start-invite-join", marker: 1, title: "Open the link", text: "You'll see the company's name and the role you've been given." },
+      { image: "start-invite-join", marker: 2, title: "Add your name", text: "Type your full name." },
+      { image: "start-invite-join", marker: 3, title: "Choose a password", text: "Use at least 8 characters. You'll use it every time you sign in." },
+      { image: "start-invite-join", marker: 4, title: "Accept the invitation", text: "Click Accept invitation. If you're asked to confirm your email first, click the link we send, then sign in." },
+    ],
+    done: "You're in. Your dashboard is ready — try adding your first expense.",
+  },
+]
+
+/** Small, useful next stops for anyone getting started. */
+export const START_LINKS: { label: string; line: string; href: string }[] = [
+  { label: "Sign in", line: "Already have an account?", href: "/login" },
+  { label: "Forgot your password?", line: "Reset it by email.", href: "/forgot-password" },
+  { label: "Try the demo", line: "Look around first.", href: "/demo" },
+]
+
 export interface LoopStep {
   n: number
   title: string

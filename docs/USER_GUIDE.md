@@ -555,6 +555,7 @@ security design, internal numbers, customer names, or real people/emails.**
 
 - Copy lives in `components/handbook/handbook-content.ts` (plus the shared `components/help/guide-data.ts`).
 - `tests/handbook-safe.test.ts` scans all of that copy for banned terms and contact details and fails the build if one slips in.
+- The "Getting started" screenshots (sign-up and invitation) come from `node scripts/capture-handbook-start.mjs`. It opens the real pages with pretend server replies, so no account or email is ever created; markers go to `components/handbook/start-markers.json`.
 - After changing the handbook copy or screenshots, regenerate the PDF and commit it:
 
 ```bash

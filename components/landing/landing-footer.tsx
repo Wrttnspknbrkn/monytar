@@ -11,6 +11,7 @@ const productLinks = [
 const resourceLinks = [
   { label: "Blog", href: "/blog" },
   { label: "Resources", href: "/resources" },
+  { label: "Handbook", href: "/handbook" },
   { label: "Help Center", href: "/contact" },
 ]
 

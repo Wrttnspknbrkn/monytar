@@ -449,6 +449,15 @@ export default function SignupPage() {
               </Link>
             </p>
           )}
+
+          {step === 0 && (
+            <p className="text-xs text-center text-muted-foreground mt-3">
+              Not sure yet?{" "}
+              <Link href="/handbook#start" className="hover:text-foreground underline underline-offset-2">
+                See how getting started works
+              </Link>
+            </p>
+          )}
         </div>
       </div>
     </div>
