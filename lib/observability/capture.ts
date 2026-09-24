@@ -29,6 +29,15 @@ function normalizeError(err: unknown): { type: string; value: string; stack?: st
   if (err instanceof Error) {
     return { type: err.name || "Error", value: err.message, stack: err.stack }
   }
+  // Supabase/PostgREST errors are plain objects ({ code, message, details, hint }),
+  // not Error instances — without this they all showed up in Sentry as an
+  // anonymous "UnknownError" with a JSON blob, ungroupable and unsearchable.
+  if (err && typeof err === "object" && "message" in err) {
+    const e = err as { code?: unknown; message?: unknown; details?: unknown }
+    const code = typeof e.code === "string" && e.code ? e.code : undefined
+    const details = typeof e.details === "string" && e.details ? ` (${e.details})` : ""
+    return { type: code ? `DatabaseError ${code}` : "DatabaseError", value: `${String(e.message)}${details}` }
+  }
   return { type: "UnknownError", value: typeof err === "string" ? err : JSON.stringify(err) }
 }
 

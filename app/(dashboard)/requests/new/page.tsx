@@ -9,7 +9,6 @@ import { generateId, getCategoryLabel } from "@/lib/utils"
 import { getCurrencySymbol } from "@/lib/currency"
 import { isSupabaseConfigured } from "@/lib/supabase/config"
 import { uploadReceipts } from "@/lib/receipts/client"
-import { nextRequestNumber } from "@/lib/hooks/use-supabase-data"
 import { useExpenseCategories } from "@/lib/hooks/use-categories"
 import { isReceiptRequired } from "@/lib/approvals/engine"
 import { Button } from "@/components/ui/button"
@@ -131,11 +130,11 @@ function NewRequestContent() {
         needsSubmit = !asDraft
       } else {
         const orgId = organization?.id || user.organization_id
-        // Real orgs get a race-safe number from the server (see
-        // next_request_number() migration) — the client-side fallback used in
-        // demo mode computes from whatever this user's RLS view happens to
-        // include, which can collide across users/roles.
-        const requestNumber = isDemo ? getNextRequestNumber() : await nextRequestNumber(orgId)
+        // Real orgs: the server assigns the number (atomically, per organization) —
+        // the request body doesn't carry one. Asking for a number from the browser
+        // here used up a counter value on every submit and left gaps.
+        // Demo mode has no server, so it computes one locally.
+        const requestNumber = isDemo ? getNextRequestNumber() : undefined
         const created = await createRequest({
           id: generateId(),
           organization_id: orgId,

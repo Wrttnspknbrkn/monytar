@@ -334,16 +334,8 @@ export function useDashboardStats(orgId: string | undefined, userId: string | un
 }
 
 // Mutation helpers
-// Race-safe request number, generated atomically server-side (see
-// next_request_number() in supabase/migrations). The client-side fallback
-// used elsewhere for demo mode computes from whatever requests the current
-// user's RLS view happens to include, which can collide across users/roles.
-export async function nextRequestNumber(orgId: string): Promise<string> {
-  const supabase = getSupabaseBrowserClient()
-  const { data, error } = await supabase.rpc("next_request_number", { org: orgId })
-  if (error) throw error
-  return data as string
-}
+// Request numbers are assigned server-side in POST /api/requests (atomic, per
+// organization, with collision retry) — never from the browser.
 
 // Request creation, approval, rejection, and mark-paid all go through their
 // dedicated API routes (app/api/requests, .../approve, .../reject,
