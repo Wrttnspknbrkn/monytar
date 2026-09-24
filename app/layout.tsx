@@ -5,6 +5,7 @@ import localFont from "next/font/local"
 import { ThemeProvider } from "next-themes"
 import { Toaster } from "sonner"
 import { Providers } from "@/lib/providers"
+import { SITE_NAME, SITE_URL } from "@/lib/seo"
 
 import "./globals.css"
 
@@ -47,7 +48,8 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "GydGen" }],
   creator: "GydGen",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://monytar.com"),
+  metadataBase: new URL(SITE_URL),
+  applicationName: SITE_NAME,
   openGraph: {
     type: "website",
     locale: "en_US",
@@ -55,26 +57,19 @@ export const metadata: Metadata = {
     title: "Monytar - Modern Expense Management Platform",
     description:
       "Streamline expense requests, automate approvals, and gain real-time financial insights for your organization.",
-    images: [
-      {
-        url: "/images/dashboard-preview.png",
-        width: 1200,
-        height: 630,
-        alt: "Monytar Dashboard Preview",
-      },
-    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Monytar - Modern Expense Management Platform",
     description:
       "Streamline expense requests, automate approvals, and gain real-time financial insights.",
-    images: ["/images/dashboard-preview.png"],
   },
   robots: {
     index: true,
     follow: true,
   },
+  // Google Search Console "HTML tag" verification. Not needed if you verify the domain via DNS.
+  ...(process.env.GOOGLE_SITE_VERIFICATION ? { verification: { google: process.env.GOOGLE_SITE_VERIFICATION } } : {}),
 }
 
 export const viewport: Viewport = {

@@ -16,6 +16,8 @@ import {
   getRelatedPosts,
   formatPostDate,
 } from "@/lib/blog/posts"
+import { JsonLd } from "@/components/json-ld"
+import { absoluteUrl } from "@/lib/seo"
 
 interface PageProps {
   params: Promise<{ slug: string }>
@@ -28,22 +30,25 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params
   const post = getPostBySlug(slug)
-  if (!post) return { title: "Article not found | Monytar" }
+  if (!post) return { title: "Article not found", robots: { index: false, follow: false } }
 
   const author = getAuthor(post.authorId)
   return {
-    title: `${post.title} | Monytar Blog`,
+    title: { absolute: `${post.title} | Monytar Blog` },
     description: post.excerpt,
+    alternates: { canonical: `/blog/${post.slug}` },
     authors: [{ name: author.name }],
     keywords: post.tags,
     openGraph: {
       title: post.title,
       description: post.excerpt,
+      url: `/blog/${post.slug}`,
+      siteName: "Monytar",
       type: "article",
       publishedTime: post.publishedAt,
       modifiedTime: post.updatedAt ?? post.publishedAt,
       authors: [author.name],
-      images: [{ url: post.coverImage }],
+      images: [{ url: post.coverImage, alt: post.title }],
     },
     twitter: {
       card: "summary_large_image",
@@ -70,14 +75,17 @@ export default async function BlogArticlePage({ params }: PageProps) {
     "@type": "BlogPosting",
     headline: post.title,
     description: post.excerpt,
-    image: post.coverImage,
+    image: absoluteUrl(post.coverImage),
+    url: absoluteUrl(`/blog/${post.slug}`),
+    mainEntityOfPage: { "@type": "WebPage", "@id": absoluteUrl(`/blog/${post.slug}`) },
     datePublished: post.publishedAt,
     dateModified: post.updatedAt ?? post.publishedAt,
     author: { "@type": "Person", name: author.name },
     publisher: {
       "@type": "Organization",
       name: "Monytar",
-      logo: { "@type": "ImageObject", url: "/images/monytar-blue.png" },
+      url: absoluteUrl("/"),
+      logo: { "@type": "ImageObject", url: absoluteUrl("/images/monytar-blue.png") },
     },
     articleSection: post.category,
     keywords: post.tags.join(", "),
@@ -85,7 +93,7 @@ export default async function BlogArticlePage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-background">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <JsonLd data={jsonLd} />
       <LandingHeader />
 
       {/* Article header */}

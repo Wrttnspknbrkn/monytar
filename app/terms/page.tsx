@@ -1,4 +1,11 @@
 import { LegalPage } from "@/components/legal-page"
+import { pageMetadata } from "@/lib/seo"
+
+export const metadata = pageMetadata({
+  title: "Terms of Service",
+  description: "The terms that apply when you use Monytar: accounts, acceptable use, payment, data ownership and limits of liability.",
+  path: "/terms",
+})
 
 export default function TermsPage() {
   return (

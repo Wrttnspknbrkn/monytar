@@ -1,4 +1,11 @@
 import { LegalPage } from "@/components/legal-page"
+import { pageMetadata } from "@/lib/seo"
+
+export const metadata = pageMetadata({
+  title: "GDPR",
+  description: "How Monytar supports GDPR: your data rights and how to reach our Data Protection Officer.",
+  path: "/gdpr",
+})
 
 export default function GDPRPage() {
   return (
