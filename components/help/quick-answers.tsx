@@ -6,10 +6,11 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { FAQS, GLOSSARY, TASKS } from "./guide-data"
+import type { UserRole } from "@/lib/types"
+import { FAQS, GLOSSARY, TASKS, canViewTask } from "./guide-data"
 
 /** Type a word, get the short answer. Matches the question, the answer and related words. */
-export function QuickAnswers({ onOpenTask }: { onOpenTask: (taskId: string) => void }) {
+export function QuickAnswers({ onOpenTask, viewerRole }: { onOpenTask: (taskId: string) => void; viewerRole?: UserRole }) {
   const [query, setQuery] = useState("")
 
   const results = useMemo(() => {
@@ -48,7 +49,9 @@ export function QuickAnswers({ onOpenTask }: { onOpenTask: (taskId: string) => v
       ) : (
         <Accordion type="single" collapsible className="rounded-2xl border border-border/60 bg-card px-4">
           {results.map((f) => {
-            const task = f.taskId ? TASKS.find((t) => t.id === f.taskId) : undefined
+            const found = f.taskId ? TASKS.find((t) => t.id === f.taskId) : undefined
+            // Only offer "Show me how" for walkthroughs this person is allowed to open.
+            const task = found && (!viewerRole || canViewTask(viewerRole, found)) ? found : undefined
             return (
               <AccordionItem key={f.q} value={f.q} className="last:border-b-0">
                 <AccordionTrigger className="text-left text-sm font-semibold">{f.q}</AccordionTrigger>

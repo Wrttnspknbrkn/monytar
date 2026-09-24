@@ -10,18 +10,22 @@ import { AnnotatedShot } from "./annotated-shot"
 import type { GuideTask } from "./guide-data"
 
 /** Step-by-step walkthrough: the screenshot spotlights the spot for the step you're on. */
-export function TaskPlayer({ task, onClose }: { task: GuideTask | null; onClose: () => void }) {
+/**
+ * `openable` (default true) adds an "open it now" button on the last step. Turn it off
+ * where the reader may not have an account (the shared handbook).
+ */
+export function TaskPlayer({ task, onClose, openable = true }: { task: GuideTask | null; onClose: () => void; openable?: boolean }) {
   return (
     <Dialog open={!!task} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-5xl gap-0 p-0 sm:p-0 overflow-hidden">
         {/* keyed, so every task starts again at step 1 */}
-        {task && <Walkthrough key={task.id} task={task} />}
+        {task && <Walkthrough key={task.id} task={task} openable={openable} onDone={onClose} />}
       </DialogContent>
     </Dialog>
   )
 }
 
-function Walkthrough({ task }: { task: GuideTask }) {
+function Walkthrough({ task, openable, onDone }: { task: GuideTask; openable: boolean; onDone: () => void }) {
   const [step, setStep] = useState(0)
   const last = task.steps.length - 1
 
@@ -96,11 +100,15 @@ function Walkthrough({ task }: { task: GuideTask }) {
                 <Button variant="outline" size="sm" className="bg-transparent" disabled={step === 0} onClick={() => setStep((s) => Math.max(s - 1, 0))}>
                   <ArrowLeft className="mr-1.5 h-3.5 w-3.5" /> Back
                 </Button>
-                {done ? (
+                {done && openable ? (
                   <Button size="sm" asChild className="font-semibold">
                     <Link href={task.href}>
                       {task.openLabel} <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
                     </Link>
+                  </Button>
+                ) : done ? (
+                  <Button size="sm" className="font-semibold" onClick={onDone}>
+                    <Check className="mr-1.5 h-3.5 w-3.5" /> Got it
                   </Button>
                 ) : (
                   <Button size="sm" className="font-semibold" onClick={() => setStep((s) => Math.min(s + 1, last))}>

@@ -545,3 +545,19 @@ The script seeds a throwaway demo organization, signs in as each role in Google 
 `public/images/help/`, writes marker positions to `components/help/markers.json`, and deletes everything it
 created. Re-run it (and commit the results) whenever a screen shown in the Help page changes. The wording of the
 steps lives in `components/help/guide-data.ts`.
+
+## The shareable Monytar Handbook
+
+`/handbook` is a public, interactive handbook that can be shared by link (it is `noindex`, so search engines skip it),
+and `public/downloads/Monytar-Handbook.pdf` is its printable edition. Because it leaves the company, it may only say
+what a person using the product can already see on their own screen: **no technology, vendors, infrastructure,
+security design, internal numbers, customer names, or real people/emails.**
+
+- Copy lives in `components/handbook/handbook-content.ts` (plus the shared `components/help/guide-data.ts`).
+- `tests/handbook-safe.test.ts` scans all of that copy for banned terms and contact details and fails the build if one slips in.
+- After changing the handbook copy or screenshots, regenerate the PDF and commit it:
+
+```bash
+pnpm dev                                  # in one terminal
+node scripts/export-handbook-pdf.mjs      # in another
+```
