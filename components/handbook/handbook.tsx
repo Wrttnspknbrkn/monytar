@@ -13,6 +13,7 @@ import { QuickAnswers } from "@/components/help/quick-answers"
 import { ROLE_TAGLINE, TASKS, tasksForRole } from "@/components/help/guide-data"
 import type { UserRole } from "@/lib/types"
 import { ApprovalSimulator } from "./approval-simulator"
+import { GettingStarted } from "./getting-started"
 import { HeroShowcase } from "./hero-showcase"
 import { PrintHandbook } from "./print-handbook"
 import { ScreensTour } from "./screens-tour"
@@ -20,6 +21,7 @@ import { CLOSING, HANDBOOK_UPDATED, HERO, LOOP, PDF_HREF, ROLE_CARDS, TIPS } fro
 
 const SECTIONS = [
   { id: "how", label: "How it works" },
+  { id: "start", label: "Get started" },
   { id: "roles", label: "Roles" },
   { id: "guides", label: "Guides" },
   { id: "journey", label: "Journey" },
@@ -156,6 +158,11 @@ export function Handbook() {
                 )
               })}
             </ol>
+          </Section>
+
+          {/* Getting started */}
+          <Section id="start" eyebrow="New here?" title="Getting started takes about two minutes" hint="Pick how you're joining, then follow along on the real screens.">
+            <GettingStarted />
           </Section>
 
           {/* Roles */}

@@ -261,6 +261,21 @@ export interface Faq {
 }
 
 export const FAQS: Faq[] = [
+  {
+    q: "How do I create a Monytar account?",
+    a: "Choose Sign up, enter your name, work email and a password, name your organization, pick a plan and confirm your email. You become the Admin and can invite your team.",
+    keywords: "sign up signup register create account start new company organization admin",
+  },
+  {
+    q: "I was invited. How do I join?",
+    a: "Open the link in your invitation email, type your name, choose a password and click Accept invitation. You'll land on your dashboard.",
+    keywords: "invitation invited join accept link email new employee",
+  },
+  {
+    q: "My confirmation or invitation link doesn't work.",
+    a: "Links expire and work once. If your email is already confirmed, just sign in. If an invitation has expired, ask your admin to send a new one.",
+    keywords: "expired link invalid confirm confirmation invitation not working new again",
+  },
   { q: "I paid for something myself", a: "Add an expense and attach the receipt. Once approved, Finance records your payment.", keywords: "reimburse refund paid pocket money back", taskId: "add-expense" },
   { q: "My expense was rejected", a: "Open it, read the comment, click Edit, then Resubmit.", keywords: "declined denied turned down again", taskId: "fix-rejected" },
   { q: "I forgot my receipt", a: "If it's still a Draft or Rejected, click Edit and add it. Once Pending, ask your reviewer.", keywords: "attach upload missing photo invoice" },

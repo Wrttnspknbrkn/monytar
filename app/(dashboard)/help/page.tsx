@@ -158,7 +158,8 @@ function HelpContent() {
       </section>
 
       <p className="pb-2 text-center text-xs text-muted-foreground">
-        Still stuck? Ask an admin in your organization, or{" "}
+        Want to share this with someone new? Send them the{" "}
+        <Link href="/handbook" target="_blank" className="font-medium text-primary hover:underline">Monytar Handbook</Link>. Still stuck? Ask an admin in your organization, or{" "}
         <Link href="/contact" className="font-medium text-primary hover:underline">contact Monytar support</Link>.
       </p>
 

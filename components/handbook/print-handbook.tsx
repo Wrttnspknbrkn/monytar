@@ -1,5 +1,5 @@
 import { JOURNEY, REJECTED_INFO, FAQS, GLOSSARY, TASKS } from "@/components/help/guide-data"
-import { CLOSING, EXAMPLE_RULES, HANDBOOK_UPDATED, HERO, LOOP, ROLE_CARDS, TIPS } from "./handbook-content"
+import { CLOSING, EXAMPLE_RULES, HANDBOOK_UPDATED, HERO, LOOP, ROLE_CARDS, START_PATHS, TIPS } from "./handbook-content"
 
 const fmt = (n: number) => n.toLocaleString("en-US")
 
@@ -74,7 +74,31 @@ export function PrintHandbook() {
         </ul>
       </section>
 
-      <h2 className="break-before-page font-display text-[20pt]">Step-by-step guides</h2>
+      <section className="break-after-page">
+        <h2 className="font-display text-[20pt]">Getting started</h2>
+        {START_PATHS.map((p) => (
+          <div key={p.id} className="mt-5 break-inside-avoid">
+            <p className="text-[9pt] font-bold uppercase text-blue-700">{p.who}</p>
+            <h3 className="font-display text-[15pt]">{p.label}</h3>
+            <p className="text-[10pt] text-slate-600">{p.line}</p>
+            <div className="mt-2 flex items-start gap-2">
+              {[...new Set(p.steps.map((s) => s.image))].map((image) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img key={image} src={`/images/help/${image}.png`} alt="" className="max-h-[78mm] w-auto min-w-0 flex-1 rounded border border-slate-300 object-contain object-top" />
+              ))}
+            </div>
+            <ol className="mt-2 list-decimal columns-2 gap-6 pl-5 text-[10pt]">
+              {p.steps.map((s) => (
+                <li key={s.title} className="break-inside-avoid">
+                  <b>{s.title}.</b> {s.text}
+                </li>
+              ))}
+            </ol>
+          </div>
+        ))}
+      </section>
+
+      <h2 className="font-display text-[20pt]">Step-by-step guides</h2>
       {TASKS.map((t) => (
         <section key={t.id} className="mt-6 break-inside-avoid">
           <p className="text-[9pt] font-bold uppercase text-blue-700">For {t.roles.length === 4 ? "everyone" : t.roles.join(" · ")}</p>
