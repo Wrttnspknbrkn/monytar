@@ -173,38 +173,38 @@ export default function LoginPage() {
       </div>
 
       {/* Right Panel - Form */}
-      <div className="flex-1 flex items-center justify-center p-6 lg:p-12 bg-white">
+      <div className="flex-1 flex items-center justify-center p-6 lg:p-12 bg-background">
         <div className="w-full max-w-sm">
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center justify-center mb-10">
-            <Link href="/" className="font-display font-bold text-2xl text-slate-900">
+            <Link href="/" className="font-display font-bold text-2xl text-foreground">
               Monytar
             </Link>
           </div>
 
           {/* Header */}
           <div className="mb-8">
-            <h1 className="font-display text-2xl font-bold tracking-tight text-slate-900 mb-1.5">
+            <h1 className="font-display text-2xl font-bold tracking-tight text-foreground mb-1.5">
               Welcome back
             </h1>
-            <p className="text-sm text-slate-500">Sign in to your account to continue</p>
+            <p className="text-sm text-muted-foreground">Sign in to your account to continue</p>
           </div>
 
           {/* Form */}
           {notice && (
-            <div role="status" className="mb-5 flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2.5 text-sm text-blue-800">
+            <div role="status" className="mb-5 flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2.5 text-sm text-blue-800 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-200">
               <Info className="w-4 h-4 mt-0.5 shrink-0" /> <span>{notice}</span>
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-5" noValidate>
             {formError && (
-              <div role="alert" className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700">
+              <div role="alert" className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200">
                 <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" /> <span>{formError}</span>
               </div>
             )}
             <div className="flex flex-col gap-2">
-              <Label htmlFor="email" className="text-[13px] font-medium text-slate-700">
+              <Label htmlFor="email" className="text-[13px] font-medium text-foreground">
                 Email
               </Label>
               <Input
@@ -222,7 +222,7 @@ export default function LoginPage() {
 
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password" className="text-[13px] font-medium text-slate-700">
+                <Label htmlFor="password" className="text-[13px] font-medium text-foreground">
                   Password
                 </Label>
                 <Link
@@ -252,9 +252,9 @@ export default function LoginPage() {
                   aria-pressed={showPassword}
                 >
                   {showPassword ? (
-                    <EyeOff className="w-4 h-4 text-slate-400" />
+                    <EyeOff className="w-4 h-4 text-muted-foreground" />
                   ) : (
-                    <Eye className="w-4 h-4 text-slate-400" />
+                    <Eye className="w-4 h-4 text-muted-foreground" />
                   )}
                 </Button>
               </div>
@@ -271,7 +271,7 @@ export default function LoginPage() {
           </form>
 
           {/* Signup link */}
-          <p className="text-sm text-center text-slate-500 mt-6">
+          <p className="text-sm text-center text-muted-foreground mt-6">
             No account?{" "}
             <Link href="/signup" className="text-primary hover:underline font-semibold">
               Sign up
@@ -279,8 +279,8 @@ export default function LoginPage() {
           </p>
 
           {/* Demo link - subtle at bottom */}
-          <p className="text-xs text-center text-slate-400 mt-4">
-            <Link href="/demo" className="hover:text-slate-600 transition-colors">
+          <p className="text-xs text-center text-muted-foreground mt-4">
+            <Link href="/demo" className="hover:text-foreground transition-colors">
               Try the demo &rarr;
             </Link>
           </p>

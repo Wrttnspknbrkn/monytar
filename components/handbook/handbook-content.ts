@@ -164,7 +164,7 @@ export const TOUR: TourScreen[] = [
   { image: "new-request", title: "Adding an expense", looks: ["The amount you paid", "A category that fits", "A short reason", "Receipt upload right on the form", "Save as Draft, or Submit for Approval"] },
   { image: "approvals", title: "Approvals", looks: ["Search what's waiting for you", "Approve in one click", "A reason is required to reject", "View the details and receipt first"] },
   { image: "departments", title: "Budgets by department", looks: ["Add a department with a budget", "Green, amber, then red as it fills", "See who's in each team"] },
-  { image: "reports", title: "Reports", looks: ["Pick a date range", "Export to CSV or PDF", "Tabs for categories, teams and vendors"] },
+  { image: "reports", title: "Reports", looks: ["Any period, or your own dates", "Export to CSV or PDF", "Tabs for categories, teams and vendors"] },
 ]
 
 export const TIPS: { title: string; line: string }[] = [

@@ -220,8 +220,8 @@ function DemoContent() {
                     onChange={(e) => setForm((f) => ({ ...f, full_name: e.target.value }))}
                     placeholder="Ama Mensah"
                     className={cn(
-                      "w-full rounded-lg bg-white/5 border px-3.5 py-2.5 text-white placeholder:text-slate-500 text-sm outline-none transition-colors focus:border-primary/60",
-                      errors.full_name ? "border-red-500/60" : "border-white/15",
+                      "w-full rounded-lg bg-white/[0.07] border px-3.5 py-2.5 text-white placeholder:text-slate-400 text-sm outline-none transition-colors focus:border-primary/60",
+                      errors.full_name ? "border-red-500/60" : "border-white/35",
                     )}
                   />
                   {errors.full_name && <p className="text-red-400 text-xs mt-1">{errors.full_name}</p>}
@@ -238,8 +238,8 @@ function DemoContent() {
                     onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
                     placeholder="ama@company.com"
                     className={cn(
-                      "w-full rounded-lg bg-white/5 border px-3.5 py-2.5 text-white placeholder:text-slate-500 text-sm outline-none transition-colors focus:border-primary/60",
-                      errors.email ? "border-red-500/60" : "border-white/15",
+                      "w-full rounded-lg bg-white/[0.07] border px-3.5 py-2.5 text-white placeholder:text-slate-400 text-sm outline-none transition-colors focus:border-primary/60",
+                      errors.email ? "border-red-500/60" : "border-white/35",
                     )}
                   />
                   {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email}</p>}
@@ -248,7 +248,7 @@ function DemoContent() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label htmlFor="company_name" className="block text-sm font-medium text-slate-300 mb-1.5">
-                      Company <span className="text-slate-500 font-normal">(optional)</span>
+                      Company <span className="text-slate-400 font-normal">(optional)</span>
                     </label>
                     <input
                       id="company_name"
@@ -256,12 +256,12 @@ function DemoContent() {
                       value={form.company_name}
                       onChange={(e) => setForm((f) => ({ ...f, company_name: e.target.value }))}
                       placeholder="Acme Inc."
-                      className="w-full rounded-lg bg-white/5 border border-white/15 px-3.5 py-2.5 text-white placeholder:text-slate-500 text-sm outline-none transition-colors focus:border-primary/60"
+                      className="w-full rounded-lg bg-white/[0.07] border border-white/35 px-3.5 py-2.5 text-white placeholder:text-slate-400 text-sm outline-none transition-colors focus:border-primary/60"
                     />
                   </div>
                   <div>
                     <label htmlFor="phone" className="block text-sm font-medium text-slate-300 mb-1.5">
-                      Phone <span className="text-slate-500 font-normal">(optional)</span>
+                      Phone <span className="text-slate-400 font-normal">(optional)</span>
                     </label>
                     <input
                       id="phone"
@@ -269,7 +269,7 @@ function DemoContent() {
                       value={form.phone}
                       onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
                       placeholder="+233 ..."
-                      className="w-full rounded-lg bg-white/5 border border-white/15 px-3.5 py-2.5 text-white placeholder:text-slate-500 text-sm outline-none transition-colors focus:border-primary/60"
+                      className="w-full rounded-lg bg-white/[0.07] border border-white/35 px-3.5 py-2.5 text-white placeholder:text-slate-400 text-sm outline-none transition-colors focus:border-primary/60"
                     />
                   </div>
                 </div>
@@ -291,7 +291,7 @@ function DemoContent() {
                 )}
               </button>
 
-              <p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-slate-500">
+              <p className="mt-4 flex items-center justify-center gap-1.5 text-xs text-slate-400">
                 <ShieldCheck className="w-3.5 h-3.5" />
                 No spam. We use this only to follow up about your demo.
               </p>

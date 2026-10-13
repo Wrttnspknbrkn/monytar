@@ -311,11 +311,13 @@ Click **Archive** on a department card. Archived departments stay on past reques
 
 *Reports are only available to Finance and Admin.*
 
-Click **Reports** in the left menu. At the top, four summary cards show **Total Submitted**, **Total Approved**, **Total Paid**, and **Avg. Request** for whichever date range you've picked (**Last 30 days**, **Last 3 months**, **Last 6 months**, **Last 12 months**, or **All time** — the dropdown next to Export).
+Click **Reports** in the left menu. At the top, four summary cards show **Total Submitted**, **Total Approved**, **Total Paid**, and **Avg. Request** for whichever period you've picked with the **date range** button next to Export.
+
+Pick a ready-made period (**Last 30 days**, **This month**, **Last month**, **Last 3 / 6 / 12 months**, **This year**, **Last year**, or **All time**), or choose **any dates you like** under **Custom range** — type them, or click them on the calendar, then click **Apply**. There is no limit on how far back you can go. A request counts under the date it was submitted.
 
 Four tabs dig deeper:
 
-- **Overview** — a monthly trend chart (submitted vs. approved vs. paid) and a status breakdown pie chart.
+- **Overview** — a trend chart (submitted vs. approved vs. paid) and a status breakdown pie chart. The trend is shown by day for about a month, by week for a quarter, and by month beyond that, so a short period is never a single dot.
 - **Categories** — spending by category, as a bar chart and a detailed list with percentages.
 - **Departments** — each department's budget usage as a bar chart, a "Budget Health" list with percentages, and a ranked table of departments by total spend.
 - **Vendors** — a ranked table of your top vendors by total spend, with each one's share of total spending.
@@ -327,7 +329,9 @@ Click **Export**, then choose:
 - **Download CSV** — a spreadsheet-ready file you can open in Excel or Google Sheets.
 - **Print / Save as PDF** — opens a print-friendly report you can print or save as a PDF from your browser's print dialog.
 
-Both exports reflect whatever date range is currently selected.
+Both exports reflect whatever period is currently selected. The file name includes the dates (for example `expense-report_2026-01-01_to_2026-03-31.csv`), and the printable report states the period at the top.
+
+The **Dashboard** charts (Spending Trend and By Category) have the same date range button, for everyone. The cards above them are live figures and are not affected.
 
 ---
 

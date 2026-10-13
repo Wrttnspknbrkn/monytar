@@ -143,7 +143,7 @@ export const TASKS: GuideTask[] = [
     roles: ["finance", "admin"],
     image: "reports",
     steps: [
-      "Pick the date range.",
+      "Pick a period, or choose your own dates.",
       "Export as CSV or print to PDF.",
       "Switch tabs for categories, departments and vendors.",
     ],
@@ -276,6 +276,7 @@ export const FAQS: Faq[] = [
     a: "Links expire and work once. If your email is already confirmed, just sign in. If an invitation has expired, ask your admin to send a new one.",
     keywords: "expired link invalid confirm confirmation invitation not working new again",
   },
+  { q: "Can I see a specific period, like last year?", a: "Yes. On Reports and the Dashboard, click the date range button. Pick a ready-made period or choose your own dates. There is no limit on how far back you can go.", keywords: "date range period custom dates last year month quarter filter from to older history", taskId: "reports" },
   { q: "I paid for something myself", a: "Add an expense and attach the receipt. Once approved, Finance records your payment.", keywords: "reimburse refund paid pocket money back", taskId: "add-expense" },
   { q: "My expense was rejected", a: "Open it, read the comment, click Edit, then Resubmit.", keywords: "declined denied turned down again", taskId: "fix-rejected" },
   { q: "I forgot my receipt", a: "If it's still a Draft or Rejected, click Edit and add it. Once Pending, ask your reviewer.", keywords: "attach upload missing photo invoice" },

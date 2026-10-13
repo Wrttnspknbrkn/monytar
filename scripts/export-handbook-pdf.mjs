@@ -19,13 +19,20 @@ const browser = await chromium.launch({ channel: "chrome" })
 const page = await browser.newPage()
 await page.goto(`${BASE}/handbook`, { waitUntil: "networkidle", timeout: 120000 })
 await page.emulateMedia({ media: "print" })
-// Wait for every print-edition image and the display font before printing.
-await page.evaluate(async () => {
+// Wait for the display font and every print-edition image, but never forever: an image that
+// can't load must not hang the export. Anything still missing after 20s is reported.
+const stillLoading = await page.evaluate(async () => {
   await document.fonts.ready
-  await Promise.all(
-    [...document.images].filter((i) => i.offsetParent !== null || getComputedStyle(i).display !== "none").map((i) => (i.complete ? null : new Promise((r) => { i.onload = i.onerror = r }))),
-  )
+  const imgs = [...document.images].filter((i) => i.getClientRects().length > 0)
+  const pending = imgs.filter((i) => !i.complete)
+  const timeout = new Promise((r) => setTimeout(r, 20000))
+  await Promise.race([
+    Promise.all(pending.map((i) => new Promise((r) => { i.onload = i.onerror = r }))),
+    timeout,
+  ])
+  return imgs.filter((i) => !i.complete || i.naturalWidth === 0).map((i) => i.getAttribute("src"))
 })
+if (stillLoading.length) console.warn("Warning: these images did not load:", stillLoading.join(", "))
 await page.pdf({
   path: OUT,
   format: "A4",

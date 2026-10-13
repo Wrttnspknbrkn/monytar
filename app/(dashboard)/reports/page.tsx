@@ -7,7 +7,7 @@ import {
   DollarSign,
   FileText,
   Download,
-  Calendar,
+  CalendarX2,
 } from "lucide-react"
 import { useData, useAuth } from "@/lib/providers"
 import { cn, getCategoryLabel } from "@/lib/utils"
@@ -17,37 +17,26 @@ import {
   spendByCategory,
   countByStatus,
   topVendors,
-  monthlyTrend,
   spendByDepartment,
 } from "@/lib/reports/aggregate"
+import {
+  DEFAULT_RANGE,
+  GRANULARITY_LABEL,
+  filterByRange,
+  rangeFileSuffix,
+  resolveRange,
+  spendTrend,
+  type RangeSelection,
+} from "@/lib/reports/date-range"
+import { DateRangePicker } from "@/components/reports/date-range-picker"
 import { buildExpenseReport } from "@/lib/reports/export"
 import { downloadCSV, downloadHTMLReport } from "@/lib/reports/download"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { StatCard } from "@/components/dashboard/stat-card"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AccessDenied } from "@/components/layout/access-denied"
-import type { ExpenseRequest } from "@/lib/types"
-
-// Reports used to have no date-range control at all — every total, chart,
-// and export was silently "all time" (audit P2-12). Presets rather than a
-// free-form picker: covers the real use cases without the extra UI weight.
-const RANGE_OPTIONS = [
-  { value: "30d", label: "Last 30 days", days: 30, months: 1 },
-  { value: "90d", label: "Last 3 months", days: 90, months: 3 },
-  { value: "180d", label: "Last 6 months", days: 180, months: 6 },
-  { value: "365d", label: "Last 12 months", days: 365, months: 12 },
-  { value: "all", label: "All time", days: null, months: 24 },
-] as const
-
-function filterByRange(requests: ExpenseRequest[], days: number | null): ExpenseRequest[] {
-  if (days === null) return requests
-  const cutoff = new Date()
-  cutoff.setDate(cutoff.getDate() - days)
-  return requests.filter((r) => new Date(r.created_at) >= cutoff)
-}
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Progress } from "@/components/ui/progress"
 import {
@@ -83,12 +72,14 @@ export default function ReportsPage() {
   const user = dbUser || currentUser
   const isRestricted = user?.role === "employee" || user?.role === "manager"
 
-  const [range, setRange] = useState<string>("180d")
-  const rangeOption = RANGE_OPTIONS.find((o) => o.value === range) ?? RANGE_OPTIONS[2]
-  const filteredRequests = useMemo(
-    () => filterByRange(expenseRequests, rangeOption.days),
-    [expenseRequests, rangeOption.days],
-  )
+  // Any period: a ready-made one or custom dates. Everything on the page, and both exports, follow it.
+  const [selection, setSelection] = useState<RangeSelection>(DEFAULT_RANGE)
+  const range = useMemo(() => resolveRange(selection), [selection])
+  const filteredRequests = useMemo(() => filterByRange(expenseRequests, range), [expenseRequests, range])
+
+  // Compact axis numbers that stay readable for both small (daily) and large (monthly) values.
+  const currencySymbol = getCurrencySymbol(currencyCode)
+  const axisMoney = (v: number) => `${currencySymbol}${Math.abs(v) >= 1000 ? `${+(v / 1000).toFixed(1)}k` : v}`
 
   const totals = useMemo(() => computeTotals(filteredRequests), [filteredRequests])
   const totalAmount = totals.submitted
@@ -96,12 +87,10 @@ export default function ReportsPage() {
   const paidAmount = totals.paid
   const avgRequestAmount = totals.avg
 
-  // Real monthly trend derived from request dates (no random data). Window
-  // length now follows the selected range instead of a fixed 6 months.
-  const monthlyData = useMemo(
-    () => monthlyTrend(filteredRequests, rangeOption.months).map((p) => ({ month: p.label, ...p })),
-    [filteredRequests, rangeOption.months],
-  )
+  // Real trend derived from request dates (no random data). Buckets follow the
+  // range: days for a short one, weeks for a quarter, months beyond that.
+  const trend = useMemo(() => spendTrend(filteredRequests, range), [filteredRequests, range])
+  const monthlyData = useMemo(() => trend.points.map((p) => ({ month: p.label, ...p })), [trend])
 
   const categoryBreakdown = useMemo(
     () =>
@@ -160,12 +149,13 @@ export default function ReportsPage() {
       vendors,
       users,
       organizationName: organization?.name,
+      periodLabel: range.dates,
     })
-    const stamp = new Date().toISOString().slice(0, 10)
+    const name = `expense-report_${rangeFileSuffix(range)}`
     if (format === "csv") {
-      downloadCSV(report.csv, `expense-report-${stamp}.csv`)
+      downloadCSV(report.csv, `${name}.csv`)
     } else {
-      downloadHTMLReport(report.html, `expense-report-${stamp}`)
+      downloadHTMLReport(report.html, name)
     }
   }
 
@@ -180,20 +170,12 @@ export default function ReportsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="font-heading text-2xl font-extrabold tracking-tight">Reports</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">Financial analytics and spending insights</p>
+          <p className="text-muted-foreground text-sm mt-0.5">
+            {selection.kind === "preset" && selection.preset !== "all" ? `${range.label} · ${range.dates}` : range.dates} · {filteredRequests.length} {filteredRequests.length === 1 ? "request" : "requests"}
+          </p>
         </div>
         <div className="flex items-center gap-2">
-          <Select value={range} onValueChange={setRange}>
-            <SelectTrigger className="w-[160px] h-9 text-sm">
-              <Calendar className="w-3.5 h-3.5 mr-1.5 text-muted-foreground" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {RANGE_OPTIONS.map((o) => (
-                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <DateRangePicker value={selection} onChange={setSelection} />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="bg-transparent font-semibold">
@@ -211,6 +193,19 @@ export default function ReportsPage() {
         </DropdownMenu>
         </div>
       </div>
+
+      {filteredRequests.length === 0 && (
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-2xl border border-dashed border-border bg-secondary/30 p-4">
+          <CalendarX2 className="h-5 w-5 shrink-0 text-muted-foreground" />
+          <p className="flex-1 text-sm">
+            <span className="font-semibold">No requests in this period.</span>{" "}
+            <span className="text-muted-foreground">Try a wider range to see your spending.</span>
+          </p>
+          <Button variant="outline" size="sm" className="bg-transparent" onClick={() => setSelection({ kind: "preset", preset: "all" })}>
+            Show all time
+          </Button>
+        </div>
+      )}
 
       {/* Summary Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -233,8 +228,8 @@ export default function ReportsPage() {
           <div className="grid lg:grid-cols-3 gap-5">
             <Card className="lg:col-span-2 border-border/60">
               <CardHeader className="pb-2">
-                <CardTitle className="font-heading text-base font-bold">Monthly Spending Trend</CardTitle>
-                <CardDescription className="text-xs">Submitted vs approved vs paid — {rangeOption.label.toLowerCase()}</CardDescription>
+                <CardTitle className="font-heading text-base font-bold">Spending Trend</CardTitle>
+                <CardDescription className="text-xs">Submitted vs approved vs paid — {GRANULARITY_LABEL[trend.granularity]}</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="h-72">
@@ -252,12 +247,12 @@ export default function ReportsPage() {
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis dataKey="month" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} axisLine={false} tickLine={false} />
-                      <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${getCurrencySymbol(currencyCode)}${v / 1000}k`} />
+                      <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={axisMoney} />
                       <Tooltip
                         contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "10px", fontSize: "13px", color: "hsl(var(--foreground))", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)" }}
                         formatter={(value: number) => [formatAmount(value)]}
                       />
-                      <Legend wrapperStyle={{ fontSize: "12px" }} />
+                      <Legend wrapperStyle={{ fontSize: "12px" }} formatter={(v) => <span className="text-muted-foreground">{v}</span>} />
                       <Area type="monotone" dataKey="submitted" stroke="hsl(221, 83%, 53%)" fill="url(#submitted)" strokeWidth={2} />
                       <Area type="monotone" dataKey="approved" stroke="hsl(162, 64%, 41%)" fill="url(#approved)" strokeWidth={2} />
                       <Line type="monotone" dataKey="paid" stroke="hsl(35, 92%, 52%)" strokeWidth={2} dot={{ r: 3 }} />
@@ -270,7 +265,7 @@ export default function ReportsPage() {
             <Card className="border-border/60">
               <CardHeader className="pb-2">
                 <CardTitle className="font-heading text-base font-bold">Status Breakdown</CardTitle>
-                <CardDescription className="text-xs">Distribution of all requests</CardDescription>
+                <CardDescription className="text-xs">Requests in this period</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="h-48">
@@ -312,7 +307,7 @@ export default function ReportsPage() {
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={categoryBreakdown} layout="vertical">
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
-                      <XAxis type="number" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${getCurrencySymbol(currencyCode)}${v / 1000}k`} />
+                      <XAxis type="number" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={axisMoney} />
                       <YAxis type="category" dataKey="name" width={120} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} axisLine={false} tickLine={false} />
                       <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "10px", fontSize: "13px", color: "hsl(var(--foreground))" }} formatter={(value: number) => [formatAmount(value), "Amount"]} />
                       <Bar dataKey="amount" radius={[0, 6, 6, 0]}>
@@ -365,9 +360,9 @@ export default function ReportsPage() {
                     <BarChart data={deptData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis dataKey="name" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} />
-                      <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${getCurrencySymbol(currencyCode)}${v / 1000}k`} />
+                      <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={axisMoney} />
                       <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "10px", fontSize: "13px", color: "hsl(var(--foreground))" }} formatter={(value: number) => [formatAmount(value)]} />
-                      <Legend wrapperStyle={{ fontSize: "12px" }} />
+                      <Legend wrapperStyle={{ fontSize: "12px" }} formatter={(v) => <span className="text-muted-foreground">{v}</span>} />
                       <Bar dataKey="spend" name="Spent" fill="hsl(221, 83%, 53%)" radius={[4, 4, 0, 0]} />
                       <Bar dataKey="budget" name="Budget" fill="hsl(var(--border))" radius={[4, 4, 0, 0]} />
                     </BarChart>
