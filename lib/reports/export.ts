@@ -41,13 +41,15 @@ export type ReportInput = {
   users: User[]
   organizationName?: string
   generatedAt?: Date
+  /** The period the report covers, e.g. "Mar 1 – Mar 31, 2025" or "All time". */
+  periodLabel?: string
 }
 
 export type BuiltReport = { csv: string; html: string }
 
 /** Builds both a detailed CSV and a printable HTML summary from the same data. */
 export function buildExpenseReport(input: ReportInput): BuiltReport {
-  const { requests, departments, vendors, users, organizationName = "Organization" } = input
+  const { requests, departments, vendors, users, organizationName = "Organization", periodLabel } = input
   const generatedAt = input.generatedAt ?? new Date()
 
   const deptName = (id?: string) => departments.find((d) => d.id === id)?.name ?? ""
@@ -158,7 +160,7 @@ export function buildExpenseReport(input: ReportInput): BuiltReport {
 <body>
   <header>
     <h1>Expense Report</h1>
-    <div class="muted">${escapeHTML(organizationName)} &middot; Generated ${escapeHTML(generatedAt.toLocaleString("en-US"))}</div>
+    <div class="muted">${escapeHTML(organizationName)}${periodLabel ? ` &middot; Period: ${escapeHTML(periodLabel)}` : ""} &middot; Generated ${escapeHTML(generatedAt.toLocaleString("en-US"))}</div>
   </header>
 
   <h2>Summary</h2>

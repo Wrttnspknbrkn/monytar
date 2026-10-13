@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useState } from "react"
 import Link from "next/link"
 import {
   FileText,
@@ -18,7 +18,15 @@ import { useData } from "@/lib/providers"
 import { useAuth } from "@/lib/providers"
 import { formatRelativeTime, cn } from "@/lib/utils"
 import { getCurrencySymbol } from "@/lib/currency"
-import { monthlyTrend as computeMonthlyTrend } from "@/lib/reports/aggregate"
+import {
+  DEFAULT_RANGE,
+  GRANULARITY_LABEL,
+  filterByRange,
+  resolveRange,
+  spendTrend,
+  type RangeSelection,
+} from "@/lib/reports/date-range"
+import { DateRangePicker } from "@/components/reports/date-range-picker"
 import { StatCard } from "@/components/dashboard/stat-card"
 import { GettingStartedChecklist } from "@/components/dashboard/getting-started-checklist"
 import { RequestStatusBadge } from "@/components/requests/request-status-badge"
@@ -78,9 +86,14 @@ export default function DashboardPage() {
     [expenseRequests, user],
   )
 
+  // The charts follow a period you choose (default: last 6 months). The stat cards above are
+  // live "right now" figures, so they are deliberately not affected.
+  const [selection, setSelection] = useState<RangeSelection>(DEFAULT_RANGE)
+  const range = useMemo(() => resolveRange(selection), [selection])
+
   const categoryData = useMemo(() => {
     const cats: Record<string, number> = {}
-    const source = role === "employee" ? myRequests : expenseRequests
+    const source = filterByRange(role === "employee" ? myRequests : expenseRequests, range)
     for (const r of source.filter((r) => r.status !== "draft" && r.status !== "cancelled")) {
       cats[r.category] = (cats[r.category] || 0) + r.amount
     }
@@ -88,12 +101,14 @@ export default function DashboardPage() {
       name: name.charAt(0).toUpperCase() + name.slice(1),
       value: Math.round(value),
     }))
-  }, [expenseRequests, myRequests, role])
+  }, [expenseRequests, myRequests, role, range])
 
-  const monthlyTrend = useMemo(
-    () => computeMonthlyTrend(expenseRequests, 6).map((p) => ({ month: p.label, amount: p.submitted })),
-    [expenseRequests],
-  )
+  const trend = useMemo(() => spendTrend(filterByRange(expenseRequests, range), range), [expenseRequests, range])
+  const monthlyTrend = useMemo(() => trend.points.map((p) => ({ month: p.label, amount: p.submitted })), [trend])
+
+  // Compact axis numbers that stay readable for small (daily) and large (monthly) values.
+  const currencySymbol = getCurrencySymbol(currencyCode)
+  const axisMoney = (v: number) => `${currencySymbol}${Math.abs(v) >= 1000 ? `${+(v / 1000).toFixed(1)}k` : v}`
 
   if (isLoading || !user) {
     return (
@@ -194,11 +209,17 @@ export default function DashboardPage() {
       )}
 
       {/* Charts */}
+      <div className="flex flex-wrap items-center justify-between gap-3 -mb-2">
+        <p className="text-sm text-muted-foreground">
+          Showing <span className="font-medium text-foreground">{range.dates}</span>
+        </p>
+        <DateRangePicker value={selection} onChange={setSelection} />
+      </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-5">
         <Card className="lg:col-span-2 border-border/60">
           <CardHeader className="pb-2">
             <CardTitle className="font-heading text-base font-bold">Spending Trend</CardTitle>
-            <CardDescription className="text-xs">Monthly expense totals over the last 6 months</CardDescription>
+            <CardDescription className="text-xs">Expense totals {GRANULARITY_LABEL[trend.granularity]}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-60">
@@ -206,7 +227,7 @@ export default function DashboardPage() {
                 <LineChart data={monthlyTrend}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="month" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${getCurrencySymbol(currencyCode)}${v / 1000}k`} />
+                  <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={axisMoney} />
                   <Tooltip
                     contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "10px", fontSize: "13px", color: "hsl(var(--foreground))", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)" }}
                     formatter={(value: number) => [formatAmount(value), "Amount"]}
