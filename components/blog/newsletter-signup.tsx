@@ -29,7 +29,7 @@ export function NewsletterSignup({ variant = "card" }: NewsletterSignupProps) {
 
   if (variant === "inline") {
     return (
-      <div className="rounded-2xl border border-border bg-secondary/40 p-6 md:p-8">
+      <div className="force-light rounded-2xl border border-border bg-secondary/40 p-6 md:p-8">
         <h3 className="font-heading text-xl font-bold mb-2">Get finance insights in your inbox</h3>
         <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
           Practical writing on spend management and finance operations. One email a month, no noise.

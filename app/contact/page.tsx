@@ -21,7 +21,7 @@ export default function ContactPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="force-light min-h-screen bg-white">
       <LandingHeader />
 
       {/* HERO */}
@@ -31,7 +31,7 @@ export default function ContactPage() {
         <div className="absolute inset-0 bg-[url('/images/dot-grid.svg')] opacity-[0.06]" />
 
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 pt-10 text-center">
-          <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/8 px-4 py-1.5 text-sm text-primary/90 mb-8 backdrop-blur-sm">
+          <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/8 px-4 py-1.5 text-sm text-blue-300 mb-8 backdrop-blur-sm">
             <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
             We usually reply within 24 hours
             <ChevronRight className="w-3.5 h-3.5 opacity-50" />
@@ -69,7 +69,7 @@ export default function ContactPage() {
                     <Icon className="w-4 h-4 text-primary" />
                   </div>
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">
                       {item.label}
                     </p>
                     {item.href ? (

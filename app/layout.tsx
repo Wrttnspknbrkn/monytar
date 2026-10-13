@@ -3,7 +3,7 @@ import type { Metadata, Viewport } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
 import localFont from "next/font/local"
 import { ThemeProvider } from "next-themes"
-import { Toaster } from "sonner"
+import { Toaster } from "@/components/ui/sonner"
 import { Providers } from "@/lib/providers"
 import { SITE_NAME, SITE_URL } from "@/lib/seo"
 
