@@ -252,7 +252,7 @@ export default function ReportsPage() {
                         contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "10px", fontSize: "13px", color: "hsl(var(--foreground))", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)" }}
                         formatter={(value: number) => [formatAmount(value)]}
                       />
-                      <Legend wrapperStyle={{ fontSize: "12px" }} />
+                      <Legend wrapperStyle={{ fontSize: "12px" }} formatter={(v) => <span className="text-muted-foreground">{v}</span>} />
                       <Area type="monotone" dataKey="submitted" stroke="hsl(221, 83%, 53%)" fill="url(#submitted)" strokeWidth={2} />
                       <Area type="monotone" dataKey="approved" stroke="hsl(162, 64%, 41%)" fill="url(#approved)" strokeWidth={2} />
                       <Line type="monotone" dataKey="paid" stroke="hsl(35, 92%, 52%)" strokeWidth={2} dot={{ r: 3 }} />
@@ -362,7 +362,7 @@ export default function ReportsPage() {
                       <XAxis dataKey="name" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} axisLine={false} tickLine={false} />
                       <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={axisMoney} />
                       <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "10px", fontSize: "13px", color: "hsl(var(--foreground))" }} formatter={(value: number) => [formatAmount(value)]} />
-                      <Legend wrapperStyle={{ fontSize: "12px" }} />
+                      <Legend wrapperStyle={{ fontSize: "12px" }} formatter={(v) => <span className="text-muted-foreground">{v}</span>} />
                       <Bar dataKey="spend" name="Spent" fill="hsl(221, 83%, 53%)" radius={[4, 4, 0, 0]} />
                       <Bar dataKey="budget" name="Budget" fill="hsl(var(--border))" radius={[4, 4, 0, 0]} />
                     </BarChart>

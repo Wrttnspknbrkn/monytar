@@ -166,7 +166,7 @@ export default function SignupPage() {
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div className="text-center">
                         <p className="text-white font-heading text-lg font-extrabold">$24.5k</p>
-                        <p className="text-white/40 text-[9px]">Total</p>
+                        <p className="text-white/65 text-[9px]">Total</p>
                       </div>
                     </div>
                   </div>
@@ -180,7 +180,7 @@ export default function SignupPage() {
                       <div key={cat.label} className="flex items-center gap-2">
                         <div className={cn("w-2 h-2 rounded-full", cat.color)} />
                         <span className="text-white/70 text-xs">{cat.label}</span>
-                        <span className="text-white/40 text-xs ml-auto">{cat.pct}</span>
+                        <span className="text-white/65 text-xs ml-auto">{cat.pct}</span>
                       </div>
                     ))}
                   </div>

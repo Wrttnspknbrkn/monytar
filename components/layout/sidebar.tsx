@@ -135,7 +135,7 @@ export function Sidebar() {
               </Tooltip>
             ) : (
               <div className="rounded-xl border border-sidebar-border/60 bg-sidebar-accent/30 p-2.5 flex flex-col gap-2">
-                <SignedInAs compact className="[&_p]:text-sidebar-foreground [&_p.text-muted-foreground]:text-sidebar-foreground/60 [&_p:first-child]:text-sidebar-foreground/50" />
+                <SignedInAs compact className="[&_p]:text-sidebar-foreground [&_p.text-muted-foreground]:text-sidebar-foreground/80 [&_p:first-child]:text-sidebar-foreground/70" />
                 <button
                   type="button"
                   onClick={() => void signOut()}
@@ -165,8 +165,8 @@ export function Sidebar() {
             </TooltipContent>
           </Tooltip>
           {!collapsed && (
-            <p className="text-[10px] text-sidebar-foreground/40 text-center pb-1">
-              Developed by <a href="https://www.gydgen.com" target="_blank" rel="noopener noreferrer" className="font-medium text-sidebar-foreground/60 hover:text-sidebar-primary transition-colors">GydGen</a>
+            <p className="text-[10px] text-sidebar-foreground/80 text-center pb-1">
+              Developed by <a href="https://www.gydgen.com" target="_blank" rel="noopener noreferrer" className="font-medium text-sidebar-foreground/85 hover:text-sidebar-primary transition-colors">GydGen</a>
             </p>
           )}
         </div>
