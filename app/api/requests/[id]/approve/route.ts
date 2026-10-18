@@ -8,6 +8,8 @@ import { computeBudgetStatus, budgetLevelToAlertType } from "@/lib/budgets/calc"
 import { notify } from "@/lib/notifications/service"
 import { requestApprovedEmail } from "@/lib/notifications/templates"
 import { formatMoney } from "@/lib/currency"
+import { decideApproval, isManagerApproved } from "@/lib/approvals/engine"
+import { loadApprovalSettings } from "@/lib/approvals/settings"
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -29,6 +31,79 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const { supabase, userId, organizationId, departmentId, role } = actor
 
     const now = new Date().toISOString()
+
+    // Which step is this request on, and may this person take it? Large requests need the manager first and
+    // then Finance (see lib/approvals/engine.ts), so a manager's approval alone must not finish them.
+    const { data: existing } = await supabase
+      .from("expense_requests")
+      .select("id, amount, status, metadata")
+      .eq("id", id)
+      .eq("organization_id", organizationId)
+      .maybeSingle()
+    const notAllowed = () =>
+      NextResponse.json({ error: "Request not found or you are not authorized to approve it" }, { status: 403 })
+    if (!existing || existing.status !== "pending") return notAllowed()
+
+    const settings = await loadApprovalSettings(supabase, organizationId)
+    const decision = decideApproval({
+      role,
+      amount: Number(existing.amount),
+      settings,
+      managerApproved: isManagerApproved(existing.metadata),
+    })
+    if (!decision.allowed) return NextResponse.json({ error: decision.reason }, { status: 403 })
+
+    if (!decision.finalizes) {
+      // The manager's step of a two-step approval: record it and leave the request pending for Finance.
+      const stageMetadata = {
+        ...((existing.metadata ?? {}) as Record<string, unknown>),
+        manager_approved_by: userId,
+        manager_approved_at: now,
+        manager_approval_comment: parsed.data.comment || null,
+      }
+      let stageQuery = supabase
+        .from("expense_requests")
+        .update({ metadata: stageMetadata })
+        .eq("id", id)
+        .eq("status", "pending")
+        .eq("organization_id", organizationId)
+        .neq("employee_id", userId)
+      if (role === "manager") stageQuery = stageQuery.eq("department_id", departmentId)
+
+      const { data: staged, error: stageError } = await stageQuery.select().single()
+      if (stageError && stageError.code === "PGRST116") return notAllowed()
+      if (stageError) return serverError(stageError, { route: "requests.[id].approve", id, stage: "manager" })
+
+      if (staged) {
+        await notify(supabase, {
+          organizationId,
+          userId: staged.employee_id,
+          type: "request_approved",
+          title: "Approved by your manager",
+          message: `Your request ${staged.request_number} was approved by a manager and is now waiting for a Finance review.`,
+          relatedEntityType: "expense_request",
+          relatedEntityId: id,
+        })
+        const { data: financeUsers } = await supabase
+          .from("users")
+          .select("id")
+          .eq("organization_id", organizationId)
+          .eq("role", "finance")
+          .eq("is_active", true)
+        for (const f of financeUsers ?? []) {
+          await notify(supabase, {
+            organizationId,
+            userId: f.id,
+            type: "request_submitted",
+            title: "Ready for Finance review",
+            message: `${staged.request_number} was approved by a manager and needs your review.`,
+            relatedEntityType: "expense_request",
+            relatedEntityId: id,
+          })
+        }
+      }
+      return NextResponse.json({ data: staged, awaiting_finance: true })
+    }
 
     let updateQuery = supabase
       .from("expense_requests")

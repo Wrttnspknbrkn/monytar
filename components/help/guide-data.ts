@@ -277,6 +277,7 @@ export const FAQS: Faq[] = [
     keywords: "expired link invalid confirm confirmation invitation not working new again",
   },
   { q: "Can I see a specific period, like last year?", a: "Yes. On Reports and the Dashboard, click the date range button. Pick a ready-made period or choose your own dates. There is no limit on how far back you can go.", keywords: "date range period custom dates last year month quarter filter from to older history", taskId: "reports" },
+  { q: "What are payment terms on a vendor?", a: "How long you have to pay that vendor after they send their invoice. Net 30 means within 30 days; Due on receipt means straight away. It's a note for your records and doesn't change how requests are approved.", keywords: "vendor payment terms net 30 net 15 due invoice supplier" },
   { q: "I paid for something myself", a: "Add an expense and attach the receipt. Once approved, Finance records your payment.", keywords: "reimburse refund paid pocket money back", taskId: "add-expense" },
   { q: "My expense was rejected", a: "Open it, read the comment, click Edit, then Resubmit.", keywords: "declined denied turned down again", taskId: "fix-rejected" },
   { q: "I forgot my receipt", a: "If it's still a Draft or Rejected, click Edit and add it. Once Pending, ask your reviewer.", keywords: "attach upload missing photo invoice" },

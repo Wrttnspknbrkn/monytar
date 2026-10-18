@@ -1,7 +1,7 @@
 "use client"
 
 import { CheckCircle2, XCircle, Clock, Circle, Zap } from "lucide-react"
-import { buildApprovalChain, shouldAutoApprove } from "@/lib/approvals/engine"
+import { buildApprovalChain, isManagerApproved, shouldAutoApprove } from "@/lib/approvals/engine"
 import { cn } from "@/lib/utils"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { ExpenseRequest, OrganizationSettings } from "@/lib/types"
@@ -42,8 +42,11 @@ export function ApprovalChain({ request, settings }: ApprovalChainProps) {
       return index === 0 ? "rejected" : "upcoming"
     }
     if (request.status === "approved" || request.status === "paid") return "approved"
-    // pending: first stage is current, the rest upcoming
-    return index === 0 ? "current" : "upcoming"
+    // pending: stages the manager has already signed off are done; the first stage still open is current
+    const managerDone = isManagerApproved(request.metadata)
+    const firstOpen = stages.findIndex((s) => !(s.role === "manager" && managerDone))
+    if (stages[index].role === "manager" && managerDone) return "approved"
+    return index === firstOpen ? "current" : "upcoming"
   }
 
   return (

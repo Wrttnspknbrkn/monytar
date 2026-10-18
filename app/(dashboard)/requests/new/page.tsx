@@ -20,6 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ReceiptUploader } from "@/components/requests/receipt-uploader"
 import { RequestReceipts } from "@/components/requests/request-receipts"
 import { toast } from "sonner"
+import { getErrorMessage } from "@/lib/errors"
 import type { ExpenseCategory, Priority } from "@/lib/types"
 import Link from "next/link"
 
@@ -184,7 +185,7 @@ function NewRequestContent() {
       router.push(editing ? `/requests/${requestId}` : "/requests")
     } catch (err) {
       console.error("[Requests] save failed:", err)
-      toast.error(err instanceof Error ? err.message : "Failed to save the request. Please try again.")
+      toast.error(getErrorMessage(err, "Failed to save the request. Please try again."))
     } finally {
       setSubmitting(false)
     }

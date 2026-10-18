@@ -56,7 +56,8 @@ export const departmentSchema = z.object({
   name: z.string().min(2, "Department name is required").max(200),
   budget_amount: z.number().nonnegative("Budget must be non-negative"),
   budget_period: z.enum(["monthly", "quarterly", "yearly"]).default("monthly"),
-  manager_id: z.string().optional(),
+  manager_id: z.string().uuid().optional(),
+  description: z.string().max(500).optional(),
 })
 
 export const userSchema = z.object({

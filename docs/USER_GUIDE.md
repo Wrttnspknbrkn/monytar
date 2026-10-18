@@ -208,7 +208,8 @@ On the **Requests** page:
 - **Managers** only see and can approve requests from people in **their own department**.
 - **Finance and Admin** can see and approve **any** pending request in the organization.
 - You can never approve your own request, no matter your role.
-- Depending on your organization's settings, a request may need a manager's approval, a finance review, or both, before it's fully approved — and any request above a set "finance review" amount always gets a finance review, even if that isn't normally required. Requests below the auto-approve threshold skip this entirely.
+- Depending on your organization's settings, a request may need a manager's approval, a finance review, or both, before it's fully approved — and any request at or above the "finance review" amount always gets a finance review, even if that isn't normally required. Requests below the auto-approve threshold skip this entirely.
+- **How a two-step approval works.** For a request that needs both, the **manager approves first**. Their approval does *not* finish it: the request stays **Pending**, the employee is told it is now waiting for Finance, Finance is notified, and it moves out of the manager's queue into Finance's. **Finance (or an admin) then approves it** and it becomes Approved. Finance and admins can also approve a large request directly, without waiting for the manager. If only Finance review is required (manager approval switched off), managers can't approve that request. The **Approval Chain** panel on the request shows which step it is on.
 
 ### How to approve
 
@@ -255,13 +256,15 @@ Monytar doesn't automatically wire money to anyone. "Processing payment" in Mony
 
 A **Vendor** is anyone or any company your organization pays — a software provider, a supplier, a contractor, etc. Registering vendors means requests can reference "who was paid" consistently instead of everyone typing it differently.
 
-Click **Vendors** in the left menu. Everyone can view and use vendors on their requests; **Admin, Finance, and Manager** can add and manage them.
+Click **Vendors** in the left menu. **Everyone** can view vendors, add a new one, and use them on their requests; only **Admin, Finance, and Manager** can approve or archive them.
 
 ### How to add a vendor
 
 1. Click **Add vendor**.
 2. Enter the **Name** (required — must be unique) and optionally a **Category**, **Email**, **Phone**, **Address**, **Payment terms**, and **Notes**.
 3. Click **Add vendor**.
+
+**What are "Payment terms"?** They say how long you have to pay this vendor after they send their invoice. **Net 30** means within 30 days, **Net 15** within 15 days, and **Due on receipt** means straight away. The field starts as *Net 30* and you can type anything else your vendor agreed (for example "2/10 Net 30": 2% off if paid within 10 days, otherwise due in 30). It is a note for your records: it is shown on the vendor's card, but it doesn't change how requests are approved or paid in Monytar.
 
 New vendors are automatically **Approved** and immediately selectable on expense requests.
 

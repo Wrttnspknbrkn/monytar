@@ -136,3 +136,64 @@ export function canActOnStage(role: UserRole, stage: ApprovalStage | null): bool
   if (role === "manager") return stage.role === "manager"
   return false
 }
+
+// ---------------------------------------------------------------------------------------------
+// Enforcing the chain on real requests
+//
+// The manager stage is recorded on the request itself (metadata.manager_approved_at) so a request can stay
+// "pending" between the manager's approval and Finance's. The server's approve/reject routes and the app's
+// approval queues all ask this one function, so what the screen offers and what the server accepts can't drift.
+
+/** True once a manager has signed off on a request that is still waiting for a later stage. */
+export function isManagerApproved(metadata: unknown): boolean {
+  return typeof metadata === "object" && metadata !== null && typeof (metadata as Record<string, unknown>).manager_approved_at === "string"
+}
+
+export type ApprovalDecision =
+  | { allowed: true; /** true when this approval completes the request */ finalizes: boolean; stage: ApprovalStage | null }
+  | { allowed: false; reason: string }
+
+/**
+ * May someone in `role` approve (or reject) this pending request right now, and would that finish it?
+ *
+ *  - A request below the finance threshold needs one approval: the manager's (Finance or an admin can also give it).
+ *  - A request at/above the threshold (or when Finance review is switched on) needs the manager first, then Finance.
+ *    A manager's approval alone leaves it pending for Finance. Finance or an admin approving finishes it.
+ *  - If only Finance review is required (manager approval switched off), a manager can't approve it.
+ */
+export function decideApproval(input: {
+  role: UserRole
+  amount: number
+  settings: BuildChainOptions["settings"]
+  managerApproved: boolean
+}): ApprovalDecision {
+  const { role, amount, settings, managerApproved } = input
+  if (role !== "manager" && role !== "finance" && role !== "admin") {
+    return { allowed: false, reason: "Only managers, Finance and admins can approve requests." }
+  }
+
+  const stages = buildApprovalChain({ amount, settings }).map((s) =>
+    s.role === "manager" && managerApproved ? { ...s, status: "approved" as ApprovalStatus } : s,
+  )
+
+  // Settings changed after submission (e.g. the limit was raised): nothing left to wait for, so one approval finishes it.
+  if (stages.length === 0) return { allowed: true, finalizes: true, stage: null }
+
+  const current = getCurrentStage(stages)
+  if (!current) return { allowed: true, finalizes: true, stage: null }
+
+  if (!canActOnStage(role, current)) {
+    return {
+      allowed: false,
+      reason:
+        current.role === "finance"
+          ? managerApproved
+            ? "A manager has already approved this. It is now waiting for Finance."
+            : "This request needs a Finance review."
+          : "This request is waiting for a manager's approval.",
+    }
+  }
+
+  const isLast = stages.indexOf(current) === stages.length - 1
+  return { allowed: true, finalizes: role !== "manager" || isLast, stage: current }
+}

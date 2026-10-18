@@ -24,6 +24,13 @@ import { useInitialSearchQuery } from "@/lib/hooks/use-url-query"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { toast } from "sonner"
+import { getErrorMessage } from "@/lib/errors"
+
+// "Payment terms" is how long you have to pay a vendor once they send their invoice. It is a note for
+// your records: it does not change how requests are approved or paid in Monytar.
+const DEFAULT_PAYMENT_TERMS = "Net 30"
+const PAYMENT_TERMS_OPTIONS = ["Due on receipt", "Net 7", "Net 15", "Net 30", "Net 45", "Net 60", "Net 90"]
+const EMPTY_VENDOR_FORM = { name: "", category: "", contact_email: "", contact_phone: "", address: "", payment_terms: DEFAULT_PAYMENT_TERMS, notes: "" }
 
 export default function VendorsPage() {
   const { vendors, addVendor, updateVendor, organization, currentUser } = useData()
@@ -39,7 +46,7 @@ export default function VendorsPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [archivingId, setArchivingId] = useState<string | null>(null)
-  const [form, setForm] = useState({ name: "", category: "", contact_email: "", contact_phone: "", address: "", payment_terms: "", notes: "" })
+  const [form, setForm] = useState(EMPTY_VENDOR_FORM)
 
   const archivedCount = useMemo(() => vendors.filter((v) => v.is_active === false).length, [vendors])
 
@@ -60,18 +67,22 @@ export default function VendorsPage() {
     setSaving(true)
     const now = new Date().toISOString()
     try {
-      await addVendor({
+      const created = await addVendor({
         id: generateId(), organization_id: organization?.id || currentUser?.organization_id || "", name: form.name, category: form.category || undefined,
         contact_email: form.contact_email || undefined, contact_phone: form.contact_phone || undefined,
         address: form.address || undefined, payment_terms: form.payment_terms || undefined, notes: form.notes || undefined,
         is_approved: true, approval_required: false, created_at: now, updated_at: now,
       })
-      toast.success(`${form.name.trim()} was added and is ready to use on requests.`)
-      setForm({ name: "", category: "", contact_email: "", contact_phone: "", address: "", payment_terms: "", notes: "" })
+      if (created?.notes_not_saved) {
+        toast.warning(`${form.name.trim()} was added, but its note couldn't be saved yet. Ask your administrator to apply the latest database update, then add the note again.`)
+      } else {
+        toast.success(`${form.name.trim()} was added and is ready to use on requests.`)
+      }
+      setForm(EMPTY_VENDOR_FORM)
       setDialogOpen(false)
     } catch (err) {
       console.error("[Vendors] create failed:", err)
-      setFormError(err instanceof Error && err.message ? err.message : "Couldn't add the vendor. Please try again.")
+      setFormError(getErrorMessage(err, "Couldn't add the vendor. Please try again."))
     } finally {
       setSaving(false)
     }
@@ -133,7 +144,14 @@ export default function VendorsPage() {
                 <div className="flex flex-col gap-2"><Label htmlFor="vendor-phone" className="text-[13px] font-medium">Phone</Label><Input id="vendor-phone" type="tel" placeholder="+1 (555) 000-0000" value={form.contact_phone} onChange={(e) => setForm({ ...form, contact_phone: e.target.value })} /></div>
               </div>
               <div className="flex flex-col gap-2"><Label htmlFor="vendor-address" className="text-[13px] font-medium">Address</Label><Input id="vendor-address" placeholder="123 Main St" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></div>
-              <div className="flex flex-col gap-2"><Label htmlFor="vendor-terms" className="text-[13px] font-medium">Payment terms</Label><Input id="vendor-terms" placeholder="e.g. Net 30" value={form.payment_terms} onChange={(e) => setForm({ ...form, payment_terms: e.target.value })} /></div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="vendor-terms" className="text-[13px] font-medium">Payment terms</Label>
+                <Input id="vendor-terms" list="vendor-terms-options" aria-describedby="vendor-terms-help" placeholder="e.g. Net 30" value={form.payment_terms} onChange={(e) => setForm({ ...form, payment_terms: e.target.value })} />
+                <datalist id="vendor-terms-options">{PAYMENT_TERMS_OPTIONS.map((o) => <option key={o} value={o} />)}</datalist>
+                <p id="vendor-terms-help" className="text-xs text-muted-foreground">
+                  How long you have to pay this vendor after they send their invoice. <b className="font-semibold text-foreground">Net 30</b> means within 30 days; <b className="font-semibold text-foreground">Due on receipt</b> means straight away. It&apos;s for your records and doesn&apos;t change how requests are approved.
+                </p>
+              </div>
               <div className="flex flex-col gap-2"><Label htmlFor="vendor-notes" className="text-[13px] font-medium">Notes</Label><Textarea id="vendor-notes" placeholder="Additional notes..." value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} /></div>
             </div>
             <DialogFooter>
@@ -219,8 +237,14 @@ export default function VendorsPage() {
                 </div>
                 {vendor.payment_terms && (
                   <div className="mt-3 pt-3 border-t border-border/50">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-0.5">Payment Terms</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-0.5" title="How long you have to pay this vendor after they send their invoice">Payment Terms</p>
                     <p className="text-xs">{vendor.payment_terms}</p>
+                  </div>
+                )}
+                {vendor.notes && (
+                  <div className="mt-3 pt-3 border-t border-border/50">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-0.5">Notes</p>
+                    <p className="text-xs whitespace-pre-line break-words">{vendor.notes}</p>
                   </div>
                 )}
                 <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/50">
