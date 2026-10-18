@@ -31,6 +31,7 @@ import type {
   User,
   ExpenseRequest,
   Vendor,
+  CreatedVendor,
   Department,
   Notification,
   Organization,
@@ -50,6 +51,7 @@ import {
   budgetAlerts as mockBudgetAlerts,
 } from "@/lib/mock-data"
 import type { BudgetAlert } from "@/lib/types"
+import { decideApproval, isManagerApproved } from "@/lib/approvals/engine"
 
 interface DataContextValue {
   // State
@@ -76,7 +78,8 @@ interface DataContextValue {
   } | null
   
   // Actions
-  approveRequest: (id: string, comment?: string) => Promise<void>
+  /** `awaitingFinance` is true when a manager's approval sent the request on to Finance instead of finishing it. */
+  approveRequest: (id: string, comment?: string) => Promise<{ awaitingFinance: boolean }>
   rejectRequest: (id: string, comment: string) => Promise<void>
   markPaid: (id: string, paymentRef: string, paymentMethod: string) => Promise<void>
   markNotificationRead: (id: string) => Promise<void>
@@ -90,7 +93,7 @@ interface DataContextValue {
   addExpenseRequest: (data: ExpenseRequest) => void
   addDepartment: (data: Partial<Department>) => Promise<Department | undefined>
   updateDepartment: (id: string, updates: Partial<Department>) => Promise<Department | undefined>
-  addVendor: (data: Partial<Vendor>) => Promise<Vendor | undefined>
+  addVendor: (data: Partial<Vendor>) => Promise<CreatedVendor | undefined>
   updateVendor: (id: string, updates: Partial<Vendor>) => Promise<Vendor | undefined>
   addUser: (data: User) => void
   updateUser: (id: string, updates: Partial<User>) => Promise<User | undefined>
@@ -223,7 +226,7 @@ export function DataProvider({ children }: DataProviderProps) {
   const handleApproveRequest = useCallback(async (id: string, comment?: string) => {
     if (isDemo) {
       console.warn("Demo mode: approve action simulated")
-      return
+      return { awaitingFinance: false }
     }
     const res = await fetch(`/api/requests/${id}/approve`, {
       method: "POST",
@@ -231,7 +234,9 @@ export function DataProvider({ children }: DataProviderProps) {
       body: JSON.stringify({ comment }),
     })
     if (!res.ok) await parseApiError(res, "Failed to approve request")
+    const result = await res.json().catch(() => ({}))
     invalidateRequestCaches()
+    return { awaitingFinance: result?.awaiting_finance === true }
   }, [isDemo])
 
   const handleRejectRequest = useCallback(async (id: string, comment: string) => {
@@ -359,22 +364,34 @@ export function DataProvider({ children }: DataProviderProps) {
     return expenseRequests.filter(r => r.employee_id === currentUser.id)
   }, [expenseRequests, currentUser])
   
+  // Is the request on a step this person may take? Large requests go manager first, then Finance, so a
+  // request the manager has already approved only shows in Finance's queue. The server enforces the same rule.
+  const stageAllows = useCallback((request: ExpenseRequest) => {
+    if (!currentUser || !orgSettings) return true // settings not loaded yet: show it, the server still decides
+    return decideApproval({
+      role: currentUser.role,
+      amount: request.amount,
+      settings: orgSettings,
+      managerApproved: isManagerApproved(request.metadata),
+    }).allowed
+  }, [currentUser, orgSettings])
+
   const getPendingApprovals = useCallback(() => {
     if (!currentUser) return []
-    
+
     if (currentUser.role === "employee") return []
-    
+
     if (currentUser.role === "admin" || currentUser.role === "finance") {
-      return expenseRequests.filter(r => r.status === "pending")
+      return expenseRequests.filter(r => r.status === "pending" && stageAllows(r))
     }
-    
+
     // Manager: only requests from their department
     const deptUsers = users.filter(
       u => u.department_id === currentUser.department_id && u.id !== currentUser.id
     )
     const deptUserIds = new Set(deptUsers.map(u => u.id))
-    return expenseRequests.filter(r => r.status === "pending" && deptUserIds.has(r.employee_id))
-  }, [expenseRequests, currentUser, users])
+    return expenseRequests.filter(r => r.status === "pending" && deptUserIds.has(r.employee_id) && stageAllows(r))
+  }, [expenseRequests, currentUser, users, stageAllows])
   
   const getDepartmentSpend = useCallback((deptId: string) => {
     return expenseRequests
@@ -402,16 +419,16 @@ export function DataProvider({ children }: DataProviderProps) {
     if (request.status !== "pending") return false
     
     if (currentUser.role === "admin" || currentUser.role === "finance") {
-      return true
+      return stageAllows(request)
     }
-    
+
     if (currentUser.role === "manager") {
       const employee = users.find(u => u.id === request.employee_id)
-      return employee?.department_id === currentUser.department_id
+      return employee?.department_id === currentUser.department_id && stageAllows(request)
     }
-    
+
     return false
-  }, [currentUser, users])
+  }, [currentUser, users, stageAllows])
   
   // Stub implementations for demo mode - in production these would call Supabase
   const addExpenseRequest = useCallback((data: ExpenseRequest) => {

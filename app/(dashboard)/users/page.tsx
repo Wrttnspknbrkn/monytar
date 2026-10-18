@@ -26,6 +26,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { toast } from "sonner"
+import { getErrorMessage } from "@/lib/errors"
 import { useInitialSearchQuery } from "@/lib/hooks/use-url-query"
 import type { User, UserRole } from "@/lib/types"
 
@@ -71,7 +72,7 @@ async function fetchInvitations(url: string): Promise<InvitationRow[]> {
 }
 
 function errorText(err: unknown, fallback: string): string {
-  return err instanceof Error && err.message ? err.message : fallback
+  return getErrorMessage(err, fallback)
 }
 
 export default function UsersPage() {

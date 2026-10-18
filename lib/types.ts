@@ -85,6 +85,9 @@ export interface Department {
   updated_at: string
 }
 
+/** A vendor just created. `notes_not_saved` is set when the database could not store the Notes text. */
+export type CreatedVendor = Vendor & { notes_not_saved?: boolean }
+
 export interface Vendor {
   id: string
   organization_id: string

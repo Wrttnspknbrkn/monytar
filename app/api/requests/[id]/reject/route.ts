@@ -6,6 +6,8 @@ import { serverError } from "@/lib/api/errors"
 import { notify } from "@/lib/notifications/service"
 import { requestRejectedEmail } from "@/lib/notifications/templates"
 import { formatMoney } from "@/lib/currency"
+import { decideApproval, isManagerApproved } from "@/lib/approvals/engine"
+import { loadApprovalSettings } from "@/lib/approvals/settings"
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -30,6 +32,26 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const { supabase, userId, organizationId, departmentId, role } = actor
 
     const now = new Date().toISOString()
+
+    // Same step rules as approving: you can only reject a request while it is on your step
+    // (a manager who has already approved it can't reject it later; Finance and admins can).
+    const { data: existing } = await supabase
+      .from("expense_requests")
+      .select("id, amount, status, metadata")
+      .eq("id", id)
+      .eq("organization_id", organizationId)
+      .maybeSingle()
+    if (!existing || existing.status !== "pending") {
+      return NextResponse.json({ error: "Request not found or you are not authorized to reject it" }, { status: 403 })
+    }
+    const settings = await loadApprovalSettings(supabase, organizationId)
+    const decision = decideApproval({
+      role,
+      amount: Number(existing.amount),
+      settings,
+      managerApproved: isManagerApproved(existing.metadata),
+    })
+    if (!decision.allowed) return NextResponse.json({ error: decision.reason }, { status: 403 })
 
     let updateQuery = supabase
       .from("expense_requests")

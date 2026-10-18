@@ -27,6 +27,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { toast } from "sonner"
+import { getErrorMessage } from "@/lib/errors"
 import type { BudgetPeriod, Department, User } from "@/lib/types"
 
 const NO_MANAGER = "none"
@@ -42,7 +43,7 @@ interface DeptForm {
 const EMPTY_FORM: DeptForm = { name: "", description: "", budget_amount: "", budget_period: "monthly", manager_id: NO_MANAGER }
 
 function errorText(err: unknown, fallback: string): string {
-  return err instanceof Error && err.message ? err.message : fallback
+  return getErrorMessage(err, fallback)
 }
 
 export default function DepartmentsPage() {

@@ -3,10 +3,12 @@
 import useSWR, { mutate } from "swr"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 import { isSupabaseConfigured } from "@/lib/supabase/config"
+import { isMissingColumnError } from "@/lib/errors"
 import type {
   User,
   ExpenseRequest,
   Vendor,
+  CreatedVendor,
   Department,
   Notification,
   Organization,
@@ -391,18 +393,27 @@ export async function createNotification(data: Partial<Notification>) {
   mutate((key: string) => key?.startsWith("notifications:"))
 }
 
+// Goes through the server route (not a direct insert) so the plan's department limit is enforced.
 export async function createDepartment(data: Partial<Department>) {
-  const supabase = getSupabaseBrowserClient()
-  const { data: result, error } = await supabase
-    .from("departments")
-    .insert(data)
-    .select()
-    .single()
-
-  if (error) throw error
+  const res = await fetch("/api/departments", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name: data.name,
+      description: data.description || undefined,
+      manager_id: data.manager_id || undefined,
+      budget_amount: Number(data.budget_amount ?? 0),
+      budget_period: data.budget_period,
+    }),
+  })
+  const body = await res.json().catch(() => ({}))
+  if (!res.ok) {
+    const detail = body?.details ? Object.values(body.details as Record<string, string[]>).flat()[0] : undefined
+    throw new Error(detail || body?.error || "Couldn't create the department.")
+  }
 
   mutate((key: string) => key?.startsWith("departments:"))
-  return result
+  return body.data as Department
 }
 
 export async function updateDepartmentRecord(id: string, updates: Partial<Department>) {
@@ -420,18 +431,23 @@ export async function updateDepartmentRecord(id: string, updates: Partial<Depart
   return data
 }
 
-export async function createVendor(data: Partial<Vendor>) {
+export async function createVendor(data: Partial<Vendor>): Promise<CreatedVendor> {
   const supabase = getSupabaseBrowserClient()
-  const { data: result, error } = await supabase
-    .from("vendors")
-    .insert(data)
-    .select()
-    .single()
+  let { data: result, error } = await supabase.from("vendors").insert(data).select().single()
+  let notesNotSaved = false
+
+  // The Notes box needs the vendors.notes column (migration 025). If the database has not been updated yet,
+  // add the vendor without the note rather than refusing the whole thing, and tell the caller.
+  if (error && data.notes !== undefined && isMissingColumnError(error, "notes")) {
+    const { notes: _dropped, ...withoutNotes } = data
+    ;({ data: result, error } = await supabase.from("vendors").insert(withoutNotes).select().single())
+    notesNotSaved = !error
+  }
 
   if (error) throw error
 
   mutate((key: string) => key?.startsWith("vendors:"))
-  return result
+  return { ...result, ...(notesNotSaved ? { notes_not_saved: true } : {}) } as CreatedVendor
 }
 
 export async function updateVendorRecord(id: string, updates: Partial<Vendor>) {

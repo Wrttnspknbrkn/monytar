@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { toast } from "sonner"
+import { getErrorMessage } from "@/lib/errors"
 
 type ActionState = {
   [requestId: string]: "approving" | "rejecting" | "approved" | "rejected"
@@ -47,9 +48,9 @@ export default function ApprovalsPage() {
     setActionStates(prev => ({ ...prev, [id]: "approving" }))
     
     try {
-      await approveRequest(id)
+      const { awaitingFinance } = await approveRequest(id)
       setActionStates(prev => ({ ...prev, [id]: "approved" }))
-      toast.success("Request approved successfully")
+      toast.success(awaitingFinance ? "Approved. It now goes to Finance for review." : "Request approved successfully")
       
       // Remove from list after animation
       setTimeout(() => {
@@ -59,13 +60,13 @@ export default function ApprovalsPage() {
           return newState
         })
       }, 2000)
-    } catch {
+    } catch (err) {
       setActionStates(prev => {
         const newState = { ...prev }
         delete newState[id]
         return newState
       })
-      toast.error("Failed to approve request")
+      toast.error(getErrorMessage(err, "Failed to approve request"))
     }
   }, [approveRequest, actionStates])
 

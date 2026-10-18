@@ -19,6 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { toast } from "sonner"
+import { getErrorMessage } from "@/lib/errors"
 import { useTheme } from "next-themes"
 import Link from "next/link"
 import { mutate } from "swr"
@@ -83,7 +84,7 @@ export default function SettingsPage() {
       setTimeout(() => setSaved(false), 2000)
     } catch (err) {
       console.error("[Settings] profile update failed:", err)
-      setProfileError(err instanceof Error && err.message ? err.message : "Couldn't update your profile. Please try again.")
+      setProfileError(getErrorMessage(err, "Couldn't update your profile. Please try again."))
     } finally {
       setSavingProfile(false)
     }
@@ -248,7 +249,7 @@ export default function SettingsPage() {
       toast.success("Logo updated")
       if (organization?.id) mutate(`organization:${organization.id}`)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to upload logo")
+      toast.error(getErrorMessage(err, "Failed to upload logo"))
     } finally {
       setLogoUploading(false)
     }
@@ -262,7 +263,7 @@ export default function SettingsPage() {
       toast.success("Logo removed")
       if (organization?.id) mutate(`organization:${organization.id}`)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to remove logo")
+      toast.error(getErrorMessage(err, "Failed to remove logo"))
     } finally {
       setLogoUploading(false)
     }

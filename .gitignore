@@ -17,3 +17,6 @@ node_modules/
 
 .vercel
 .env*
+
+# Output of scripts/e2e-crud.mjs
+e2e-report.json

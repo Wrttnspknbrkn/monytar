@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
+import { getErrorMessage } from "@/lib/errors"
 
 export default function RequestDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
@@ -63,7 +64,7 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
       const { autoApproved } = await submitRequest(id)
       toast.success(autoApproved ? "Submitted and auto-approved" : "Submitted for approval")
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to submit request")
+      toast.error(getErrorMessage(err, "Failed to submit request"))
     } finally {
       setIsProcessing(false)
     }
@@ -78,11 +79,11 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
     if (isProcessing) return
     setIsProcessing(true)
     try {
-      await approveRequest(id, comment || undefined)
-      toast.success("Request approved successfully")
+      const { awaitingFinance } = await approveRequest(id, comment || undefined)
+      toast.success(awaitingFinance ? "Approved. It now goes to Finance for review." : "Request approved successfully")
       setComment("")
-    } catch {
-      toast.error("Failed to approve request")
+    } catch (err) {
+      toast.error(getErrorMessage(err, "Failed to approve request"))
     } finally {
       setIsProcessing(false)
     }
